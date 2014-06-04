@@ -289,8 +289,11 @@ typedef struct {
 	void *buffer;
 	size_t size;
 	uint32_t flags;
-	/* Implementation-Defined */
-	int fd;
+	/* Implementation-Defined, must match what the kernel driver have */
+	union {
+		int fd;
+		void *ptr;
+	} d;
 	uint8_t registered;
 } TEEC_SharedMemory;
 

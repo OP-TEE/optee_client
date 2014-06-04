@@ -166,11 +166,11 @@ TEEC_Result TEEC_AllocateSharedMemory(TEEC_Context *context,
 				    (shared_memory->size ==
 				     0) ? 8 : shared_memory->size,
 				    PROT_READ | PROT_WRITE, MAP_SHARED,
-				    shared_memory->fd, 0);
+				    shared_memory->d.fd, 0);
 	if (shared_memory->buffer == (void *)MAP_FAILED) {
 		EMSG("Mmap failed (%s)\n", strerror(errno));
 		shared_memory->buffer = NULL;
-		close(shared_memory->fd);
+		close(shared_memory->d.fd);
 		return TEEC_ERROR_OUT_OF_MEMORY;
 	}
 
@@ -186,12 +186,12 @@ void TEEC_ReleaseSharedMemory(TEEC_SharedMemory *shared_memory)
 	if (shared_memory == NULL)
 		return;
 
-	if (shared_memory->fd != 0) {
+	if (shared_memory->d.fd != 0) {
 		if (shared_memory->registered == 0)
 			munmap(shared_memory->buffer, shared_memory->size);
 
-		close(shared_memory->fd);
-		shared_memory->fd = 0;
+		close(shared_memory->d.fd);
+		shared_memory->d.fd = 0;
 	}
 
 	shared_memory->buffer = NULL;
@@ -212,7 +212,7 @@ TEEC_Result TEEC_RegisterSharedMemory(TEEC_Context *context,
 		 * The buffer not repect platform constraints (not continuous)
 		 * and thus can't be used with zero-copy.
 		 */
-		shared_memory->fd = 0;
+		shared_memory->d.fd = 0;
 
 	shared_memory->registered = 1;
 	return TEEC_SUCCESS;

@@ -11,7 +11,8 @@ all: tee-supplicant
 PACKAGE_NAME	:= tee-supplicant
 
 TEES_SRCS	:= tee_supplicant.c \
-		   tee_supp_fs.c
+		   tee_supp_fs.c \
+		   handle.c
 
 TEES_SRC_DIR	:= src
 TEES_OBJ_DIR	:= $(OUT_DIR)
