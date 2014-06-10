@@ -84,8 +84,7 @@ static void teec_mutex_unlock(pthread_mutex_t *mu)
  * This function initializes a new TEE Context, connecting this Client
  * application to the TEE indentified by the name name.
  *
- * name == NULL will give the default TEE. This is currently the only
- * supported!
+ * name == NULL will give the default TEE.
  */
 TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 {
@@ -96,7 +95,7 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 
 	/*
 	 * Specification says that when no name is provided it should fall back
-	 * on a predefined TEE, hence no check for NULL.
+	 * on a predefined TEE.
 	 */
 	if (name == NULL)
 		name_size = strlcpy(context->devname, TEEC_DEV_PATH,
