@@ -31,7 +31,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#define TEEC_VERSION (1_0)
+#define TEEC_VERSION    0x0100
 
 
 /*
