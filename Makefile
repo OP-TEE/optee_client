@@ -1,11 +1,5 @@
-# Define specific repositories
-CFG_TEE_TEEC_GENERIC_PATH	?= $(abspath .)
-CFG_TEE_TEEC_SPECIFIC_PATH	?= $(abspath .)
-export CFG_TEE_TEEC_GENERIC_PATH
-export CFG_TEE_TEEC_SPECIFIC_PATH
-
 # Public variables are stored in config.mk
-include $(CFG_TEE_TEEC_SPECIFIC_PATH)/config.mk
+include ./config.mk
 
 #########################################################################
 # Set Internal Variables						#
@@ -18,21 +12,16 @@ VPREFIX:=
 endif
 export VPREFIX
 
-CURRENTDIR	:= $(abspath .)
-FORESTROOT_DIR	:= ${CURRENTDIR}/..
-CROSS_PREFIX	?= ${ARM_GCC_PREFIX}
-export FORESTROOT_DIR
+EXPORT_DIR ?= $(O)/export
 
-# Path to the arm compiler
-TOOLCHAINPATH	= ${ARM_TOOLCHAIN_DIR}
-
-.PHONY: all build build-libteec install copy copy_public copy_rootfs \
+.PHONY: all build build-libteec install copy_export copy_rootfs \
 	clean cscope clean-cscope \
 	checkpatch-pre-req checkpatch-modified-patch checkpatch-modified-file \
 	checkpatch-last-commit-patch checkpatch-last-commit-file \
 	checkpatch-base-commit-patch checkpatch-base-commit-file \
 	checkpatch-all-files distclean
-all: build copy_public copy_rootfs
+
+all: build install
 
 build-libteec:
 	@echo "Building libteec.so"
@@ -44,9 +33,7 @@ build-tee-supplicant: build-libteec
 
 build: build-libteec build-tee-supplicant
 
-install: build copy_public copy_rootfs
-
-copy: copy_public copy_rootfs
+install: copy_export copy_rootfs
 
 clean: clean-libteec clean-tee-supplicant clean-cscope
 
@@ -130,18 +117,21 @@ checkpatch-all-files: checkpatch-pre-req
 
 distclean: clean
 
-EXPORT_DIR ?= $(O)/export
-
 ifdef ROOTFS_DIR
 copy_rootfs:
 	cp ${O}/libteec/libteec.so* ${ROOTFS_DIR}/usr/lib
 	cp ${O}/tee-supplicant/tee-supplicant ${ROOTFS_DIR}/usr/local/bin
+clean_rootfs:
+	rm -f ${ROOTFS_DIR}/usr/lib/libteec.so*
+	rm -f ${ROOTFS_DIR}/usr/local/bin/tee-supplicant
 else
 copy_rootfs:
 	@echo Rootfs copy cannot be done because ROOTFS_DIR is not defined
+clean_rootfs:
+	@echo Rootfs clean cannot be done because ROOTFS_DIR is not defined
 endif
 
-copy_public:
+copy_export:
 	mkdir -p ${EXPORT_DIR}/lib ${EXPORT_DIR}/include ${EXPORT_DIR}/bin
 	cp ${O}/libteec/libteec.so* ${EXPORT_DIR}/lib
 	cp ${O}/tee-supplicant/tee-supplicant ${EXPORT_DIR}/bin

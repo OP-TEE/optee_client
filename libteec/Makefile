@@ -1,4 +1,4 @@
-include $(CFG_TEE_TEEC_SPECIFIC_PATH)/flags.mk
+include ../flags.mk
 
 OUT_DIR		?= ${CURDIR}/../$(O)/libteec
 
