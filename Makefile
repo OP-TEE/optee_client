@@ -118,7 +118,7 @@ checkpatch-all-files: checkpatch-pre-req
 distclean: clean
 
 ifdef ROOTFS_DIR
-copy_rootfs:
+copy_rootfs: build
 	cp ${O}/libteec/libteec.so* ${ROOTFS_DIR}/usr/lib
 	cp ${O}/tee-supplicant/tee-supplicant ${ROOTFS_DIR}/usr/local/bin
 clean_rootfs:
@@ -131,7 +131,7 @@ clean_rootfs:
 	@echo Rootfs clean cannot be done because ROOTFS_DIR is not defined
 endif
 
-copy_export:
+copy_export: build
 	mkdir -p ${EXPORT_DIR}/lib ${EXPORT_DIR}/include ${EXPORT_DIR}/bin
 	cp ${O}/libteec/libteec.so* ${EXPORT_DIR}/lib
 	cp ${O}/tee-supplicant/tee-supplicant ${EXPORT_DIR}/bin

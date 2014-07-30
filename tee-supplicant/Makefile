@@ -30,7 +30,7 @@ tee-supplicant: $(TEES_FILE)
 
 $(TEES_FILE): $(TEES_OBJS)
 	@echo "  LD      $@"
-	$(VPREFIX)$(CC) $(TEES_LDFLAGS) -o $@ $+
+	$(VPREFIX)$(CC) -o $@ $+ $(TEES_LDFLAGS)
 	@echo ""
 
 $(TEES_OBJ_DIR)/%.o: $(TEES_SRC_DIR)/%.c
