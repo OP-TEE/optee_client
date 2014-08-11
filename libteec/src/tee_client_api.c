@@ -41,7 +41,6 @@
 #include <teec_trace.h>
 #include <teec.h>
 #include <tee_client_api.h>
-#include <teec_ta_load.h>
 #include <malloc.h>
 
 #ifndef TEEC_DEV_PATH
@@ -55,14 +54,6 @@ static pthread_mutex_t mutex = PTHREAD_ERRORCHECK_MUTEX_INITIALIZER_NP;
 #else
 static pthread_mutex_t mutex = PTHREAD_ERRORCHECK_MUTEX_INITIALIZER;
 #endif
-
-static enum tee_target get_tee_target(TEEC_Context *context)
-{
-	if ((strlen(context->devname) == 10) &&
-	    (strncmp(context->devname, "/dev/teetz", 10) == 0))
-		return TEE_TARGET_TZ;
-	return TEE_TARGET_UNKNOWN;
-}
 
 static void teec_mutex_lock(pthread_mutex_t *mu)
 {
@@ -233,7 +224,6 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context,
 			     TEEC_Operation *operation, uint32_t *error_origin)
 {
 	TEEC_Operation dummy_op;
-	size_t ta_size = 0;
 	struct tee_cmd tc;
 	uint32_t origin = TEEC_ORIGIN_API;
 	TEEC_Result res = TEEC_SUCCESS;
@@ -274,21 +264,7 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context,
 		goto error;
 	}
 
-	/*
-	 * Check if the TA binary is found on the filesystem.
-	 * If no, assume it is a static TA.
-	 */
-	if (TEECI_LoadSecureModule
-	    (get_tee_target(context), destination, &ta,
-	     &ta_size) == TA_BINARY_FOUND) {
-		tc.uuid = (TEEC_UUID *)destination;
-		tc.data = ta;
-		tc.data_size = ta_size;
-	} else {
-		tc.uuid = (TEEC_UUID *)destination;
-		tc.data = NULL;
-		tc.data_size = 0;
-	}
+	tc.uuid = (TEEC_UUID *)destination;
 
 	if (operation == NULL) {
 		/*
