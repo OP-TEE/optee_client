@@ -38,6 +38,7 @@
 #include <sys/time.h>
 #include <sys/mman.h>
 #include <sys/ioctl.h>
+#include <sys/queue.h>
 #include <unistd.h>
 
 #include <teec_trace.h>
@@ -79,85 +80,67 @@ static bool read_request(int fd, struct tee_rpc_invoke *request);
 static void write_response(int fd, struct tee_rpc_invoke *request);
 static void free_param(TEEC_SharedMemory *shared_mem);
 
-struct share_mem_linked_list {
+struct share_mem_entry {
 	TEEC_SharedMemory shared_mem;
-	struct share_mem_linked_list *next;
-	struct share_mem_linked_list *prev;
+	TAILQ_ENTRY(share_mem_entry) link;
 };
-static struct share_mem_linked_list *shared_memory_list;
+static TAILQ_HEAD(, share_mem_entry) shared_memory_list =
+	TAILQ_HEAD_INITIALIZER(shared_memory_list);
 
 static void free_all_shared_memory(void)
 {
-	struct share_mem_linked_list *list;
-	struct share_mem_linked_list *next;
+	struct share_mem_entry *entry;
+
 	DMSG(">");
-	for (list = shared_memory_list; list; list = next) {
-		next = list->next;
-		free_param(&list->shared_mem);
-		free(list);
+	while (!TAILQ_EMPTY(&shared_memory_list)) {
+		entry = TAILQ_FIRST(&shared_memory_list);
+		TAILQ_REMOVE(&shared_memory_list, entry, link);
+		free_param(&entry->shared_mem);
+		free(entry);
 	}
 	DMSG("<");
 }
 
-static void free_shared_memory(struct share_mem_linked_list *list)
+static void free_shared_memory(struct share_mem_entry *entry)
 {
-	free_param(&list->shared_mem);
+	free_param(&entry->shared_mem);
 
-	if (list->prev)
-		list->prev->next = list->next;
-	if (list->next)
-		list->next->prev = list->prev;
-	if (list->prev == 0)
-		shared_memory_list = list->next;
-	free(list);
+	TAILQ_REMOVE(&shared_memory_list, entry, link);
+	free(entry);
 }
 
 static void free_shared_memory_with_fd(int fd)
 {
-	struct share_mem_linked_list *list;
-	for (list = shared_memory_list; list; list = list->next) {
-		if (list->shared_mem.d.fd == fd)
-			break;
-	}
+	struct share_mem_entry *entry;
 
-	if (!list) {
+	TAILQ_FOREACH(entry, &shared_memory_list, link)
+		if (entry->shared_mem.d.fd == fd)
+			break;
+
+	if (!entry) {
 		EMSG("Cannot find fd=%d\n", fd);
 		return;
 	}
 
-	if (list->prev == 0)
-		shared_memory_list = list->next;
-
-	free_shared_memory(list);
+	free_shared_memory(entry);
 }
 
 static TEEC_SharedMemory *add_shared_memory(int fd, size_t size)
 {
-	TEEC_SharedMemory *shared_mem = 0;
+	TEEC_SharedMemory *shared_mem;
+	struct share_mem_entry *entry;
 
-	struct share_mem_linked_list *new =
-		malloc(sizeof(struct share_mem_linked_list));
+	entry = calloc(1, sizeof(struct share_mem_entry));
+	if (!entry)
+		return NULL;
 
-	if (new == 0)
-		return 0;
-
-	memset(new, 0, sizeof(struct share_mem_linked_list));
-
-	if (shared_memory_list == 0) {
-		shared_memory_list = new;
-	} else {
-		shared_memory_list->prev = new;
-		new->next = shared_memory_list;
-		shared_memory_list = new;
-	}
-
-	shared_mem = &new->shared_mem;
+	shared_mem = &entry->shared_mem;
 	shared_mem->size = size;
 
 	if (ioctl(fd, TEE_ALLOC_SHM_IOC, shared_mem) != 0) {
 		EMSG("Ioctl(TEE_ALLOC_SHM_IOC) failed! (%s)", strerror(errno));
-		shared_mem->buffer = 0;
-		return 0;
+		shared_mem = NULL;
+		goto out;
 	}
 
 	shared_mem->buffer = mmap(NULL, size,
@@ -166,10 +149,15 @@ static TEEC_SharedMemory *add_shared_memory(int fd, size_t size)
 
 	if (shared_mem->buffer == (void *)MAP_FAILED) {
 		EMSG("mmap(%zu) failed - Error = %s", size, strerror(errno));
-		shared_mem->buffer = 0;
 		close(shared_mem->d.fd);
-		return 0;
+		shared_mem = NULL;
+		goto out;
 	}
+
+	TAILQ_INSERT_TAIL(&shared_memory_list, entry, link);
+out:
+	if (!shared_mem)
+		free(entry);
 
 	return shared_mem;
 }
