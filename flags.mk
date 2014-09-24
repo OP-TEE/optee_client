@@ -3,7 +3,7 @@
 #########################################################################
 
 CROSS_COMPILE   ?= arm-linux-gnueabihf-
-CC              := $(CROSS_COMPILE)gcc
+CC              ?= $(CROSS_COMPILE)gcc
 
 CFLAGS          := -Wall -Wbad-function-cast -Wcast-align \
 		   -Werror-implicit-function-declaration -Wextra \
