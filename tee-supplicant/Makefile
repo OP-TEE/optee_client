@@ -11,8 +11,8 @@ all: tee-supplicant
 PACKAGE_NAME	:= tee-supplicant
 
 TEES_SRCS	:= tee_supplicant.c \
-		   tee_supp_fs.c \
 		   teec_ta_load.c \
+		   tee_supp_fs.c \
 		   handle.c
 
 TEES_SRC_DIR	:= src
@@ -20,7 +20,8 @@ TEES_OBJ_DIR	:= $(OUT_DIR)
 TEES_OBJS 	:= $(patsubst %.c,$(TEES_OBJ_DIR)/%.o, $(TEES_SRCS))
 TEES_INCLUDES 	:= ${CURDIR}/../libteec/include \
 		   ${CURDIR}/src \
-		   ${CURDIR}/../public
+		   ${CURDIR}/../public \
+		   ${CURDIR}/../../optee_linuxdriver/include
 
 TEES_CFLAGS	:= $(addprefix -I, $(TEES_INCLUDES)) $(CFLAGS) \
 		   -DDEBUGLEVEL_$(CFG_TEE_SUPP_LOG_LEVEL) \

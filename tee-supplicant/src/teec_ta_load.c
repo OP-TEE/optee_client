@@ -35,10 +35,6 @@
 #include <teec_trace.h>
 #include <teec_ta_load.h>
 
-#ifndef TEEC_DEV_PATH
-#define TEEC_DEV_PATH "/dev/tee"
-#endif
-
 #ifndef TEEC_LOAD_PATH
 #define TEEC_LOAD_PATH "/lib"
 #endif
@@ -46,8 +42,6 @@
 #ifndef PATH_MAX
 #define PATH_MAX 255
 #endif
-
-static const char ta_path_tz[] = "teetz";
 
 struct tee_rpc_cmd {
 	void *buffer;
@@ -69,19 +63,13 @@ struct tee_rpc_cmd {
  *
  * @return              0 if TA was found, otherwise -1.
  */
-int TEECI_LoadSecureModule(enum tee_target target,
+int TEECI_LoadSecureModule(const char* dev_path,
 			   const TEEC_UUID *destination, void **ta,
 			   size_t *ta_size)
 {
 	char fname[PATH_MAX];
-	char const *p;
 	FILE *file = NULL;
 	int n;
-
-	if (target == TEE_TARGET_TZ)
-		p = ta_path_tz;
-	else
-		return TA_BINARY_NOT_FOUND;
 
 	if (!ta_size || !ta || !destination) {
 		printf("wrong inparameter to TEECI_LoadSecureModule\n");
@@ -90,7 +78,7 @@ int TEECI_LoadSecureModule(enum tee_target target,
 
 	n = snprintf(fname, PATH_MAX,
 		     "%s/%s/%08x-%04x-%04x-%02x%02x%02x%02x%02x%02x%02x%02x.ta",
-		     TEEC_LOAD_PATH, p,
+		     TEEC_LOAD_PATH, dev_path,
 		     destination->timeLow,
 		     destination->timeMid,
 		     destination->timeHiAndVersion,
@@ -103,8 +91,10 @@ int TEECI_LoadSecureModule(enum tee_target target,
 		     destination->clockSeqAndNode[6],
 		     destination->clockSeqAndNode[7]);
 
+	DMSG("Attempt to load %s", fname);
+
 	if ((n < 0) || (n >= PATH_MAX)) {
-		printf("wrong TA path in TEECI_LoadSecureModule\n");
+		EMSG("wrong TA path [%s]", fname);
 		return TA_BINARY_NOT_FOUND;
 	}
 

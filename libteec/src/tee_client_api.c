@@ -43,11 +43,14 @@
 #include <tee_client_api.h>
 #include <malloc.h>
 
-#ifndef TEEC_DEV_PATH
-#define TEEC_DEV_PATH "/dev/teetz"
-#endif
+#define TEE_TZ_DEVICE_NAME "opteearmtz00"
 
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
+/*
+ * Maximum size of the device name
+ */
+#define TEEC_MAX_DEVNAME_SIZE 256
 
 #ifdef _GNU_SOURCE
 static pthread_mutex_t mutex = PTHREAD_ERRORCHECK_MUTEX_INITIALIZER_NP;
@@ -71,6 +74,20 @@ static void teec_mutex_unlock(pthread_mutex_t *mu)
 		EMSG("pthread_mutex_unlock failed: %d\n", e);
 }
 
+static void teec_resetTeeCmd(struct tee_cmd_io *cmd)
+{
+	cmd->fd_sess	= -1;
+	cmd->cmd	= 0;
+	cmd->uuid	= NULL;
+	cmd->origin	= TEEC_ORIGIN_API;
+	cmd->err	= TEEC_SUCCESS;
+	cmd->data	= NULL;
+	cmd->data_size	= 0;
+	cmd->op		= NULL;
+}
+
+
+
 /*
  * This function initializes a new TEE Context, connecting this Client
  * application to the TEE indentified by the name name.
@@ -80,6 +97,9 @@ static void teec_mutex_unlock(pthread_mutex_t *mu)
 TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 {
 	int name_size = 0;
+	const char* _name = name;
+
+	INMSG("%s", name);
 
 	if (context == NULL)
 		return TEEC_ERROR_BAD_PARAMETERS;
@@ -89,12 +109,10 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 	 * on a predefined TEE.
 	 */
 	if (name == NULL)
-		name_size = strlcpy(context->devname, TEEC_DEV_PATH,
-				    TEEC_MAX_DEVNAME_SIZE);
-	else {
-		name_size = snprintf(context->devname, TEEC_MAX_DEVNAME_SIZE,
-				     "/dev/%s", name);
-	}
+		_name = TEE_TZ_DEVICE_NAME;
+
+	name_size = snprintf(context->devname, TEEC_MAX_DEVNAME_SIZE,
+			     "/dev/%s", _name);
 
 	if (name_size >= TEEC_MAX_DEVNAME_SIZE)
 		return TEEC_ERROR_BAD_PARAMETERS; /* Device name truncated */
@@ -103,6 +121,7 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 	if (context->fd == -1)
 		return TEEC_ERROR_ITEM_NOT_FOUND;
 
+	OUTMSG("");
 	return TEEC_SUCCESS;
 }
 
@@ -125,6 +144,7 @@ TEEC_Result TEEC_FinalizeContext(TEEC_Context *context)
 TEEC_Result TEEC_AllocateSharedMemory(TEEC_Context *context,
 				      TEEC_SharedMemory *shared_memory)
 {
+	struct tee_shm_io shm;
 	size_t size;
 	uint32_t flags;
 
@@ -137,11 +157,20 @@ TEEC_Result TEEC_AllocateSharedMemory(TEEC_Context *context,
 	shared_memory->size = size;
 	shared_memory->flags = flags;
 
-	if (ioctl(context->fd, TEE_ALLOC_SHM_IOC, shared_memory) != 0) {
+	shm.buffer = NULL;
+	shm.size   = size;
+	shm.registered = 0;
+	shm.fd_shm = 0;
+	shm.flags = TEEC_MEM_INPUT | TEEC_MEM_OUTPUT;
+	if (ioctl(context->fd, TEE_ALLOC_SHM_IOC, &shm) != 0) {
 		EMSG("Ioctl(TEE_ALLOC_SHM_IOC) failed! (%s)\n",
 		     strerror(errno));
 		return TEEC_ERROR_OUT_OF_MEMORY;
 	}
+	DMSG("fd %d size %zu", shared_memory->d.fd, shared_memory->size);
+
+	shared_memory->size = size;
+	shared_memory->d.fd = shm.fd_shm;
 
 	/*
 	 * Map memory to current user space process.
@@ -174,13 +203,15 @@ TEEC_Result TEEC_AllocateSharedMemory(TEEC_Context *context,
  */
 void TEEC_ReleaseSharedMemory(TEEC_SharedMemory *shared_memory)
 {
-	if (shared_memory == NULL)
+	if (!shared_memory)
+		return;
+
+	if (shared_memory->registered)
 		return;
 
 	if (shared_memory->d.fd != 0) {
-		if (shared_memory->registered == 0)
-			munmap(shared_memory->buffer, shared_memory->size);
-
+		munmap(shared_memory->buffer, (shared_memory->size ==
+			     0) ? 8 : shared_memory->size);
 		close(shared_memory->d.fd);
 		shared_memory->d.fd = 0;
 	}
@@ -194,16 +225,8 @@ void TEEC_ReleaseSharedMemory(TEEC_SharedMemory *shared_memory)
 TEEC_Result TEEC_RegisterSharedMemory(TEEC_Context *context,
 				      TEEC_SharedMemory *shared_memory)
 {
-	if (context == NULL || shared_memory == NULL || shared_memory->buffer
-	    == NULL)
+	if (!context || !shared_memory)
 		return TEEC_ERROR_BAD_PARAMETERS;
-
-	if (ioctl(context->fd, TEE_ALLOC_SHM_IOC, shared_memory) != 0)
-		/*
-		 * The buffer not repect platform constraints (not continuous)
-		 * and thus can't be used with zero-copy.
-		 */
-		shared_memory->d.fd = 0;
 
 	shared_memory->registered = 1;
 	return TEEC_SUCCESS;
@@ -224,11 +247,10 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context,
 			     TEEC_Operation *operation, uint32_t *error_origin)
 {
 	TEEC_Operation dummy_op;
-	struct tee_cmd tc;
 	uint32_t origin = TEEC_ORIGIN_API;
 	TEEC_Result res = TEEC_SUCCESS;
-	void *ta = NULL;
 	(void)connection_data;
+	struct tee_cmd_io cmd;
 
 	if (session != NULL)
 		session->fd = -1;
@@ -238,33 +260,13 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context,
 		goto error;
 	}
 
-	/* Check that context->fd is a valid file descriptor */
-	session->fd = dup(context->fd);
-	if (session->fd == -1) {
-		res = TEEC_ERROR_BAD_PARAMETERS;
-		goto error;
-	}
-	close(session->fd);
-	session->fd = -1;
-
 	if (connection_method != TEEC_LOGIN_PUBLIC) {
 		res = TEEC_ERROR_NOT_SUPPORTED;
 		goto error;
 	}
 
-	memset(&tc, 0, sizeof(struct tee_cmd));
-
-	/*
-	 * Save the fd in the session for later use when invoke command and
-	 * close the session.
-	 */
-	session->fd = open(context->devname, O_RDWR);
-	if (session->fd == -1) {
-		res = TEEC_ERROR_BAD_PARAMETERS;
-		goto error;
-	}
-
-	tc.uuid = (TEEC_UUID *)destination;
+	teec_resetTeeCmd(&cmd);
+	cmd.uuid = (TEEC_UUID *)destination;
 
 	if (operation == NULL) {
 		/*
@@ -278,25 +280,35 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context,
 		operation = &dummy_op;
 	}
 
-	tc.op = operation;
+	cmd.op = operation;
 
-	if (ioctl(session->fd, TEE_OPEN_SESSION_IOC, &tc) != 0) {
+	errno = 0;
+	if (ioctl(context->fd, TEE_OPEN_SESSION_IOC, &cmd) != 0) {
 		EMSG("Ioctl(TEE_OPEN_SESSION_IOC) failed! (%s)\n",
 		     strerror(errno));
-		origin = TEEC_ORIGIN_COMMS;
-		res = TEEC_ERROR_COMMUNICATION;
+		if (cmd.origin)
+			origin = cmd.origin;
+		else
+			origin = TEEC_ORIGIN_COMMS;
+		if (cmd.err)
+			res = cmd.err;
+		else
+			res = TEEC_ERROR_COMMUNICATION;
 		goto error;
 	}
+	session->fd = cmd.fd_sess;
 
-	if (tc.err != 0) {
-		EMSG("UUID %x %x %x can't be loaded !!!\n",
+	if (cmd.err != 0) {
+		EMSG("open session to TA UUID %x %x %x failed\n",
 		     destination->timeLow,
 		     destination->timeMid, destination->timeHiAndVersion);
 	}
-	origin = tc.origin;
-	res = tc.err;
+	origin = cmd.origin;
+	res = cmd.err;
 
 error:
+	// printf("**** res=0x%08x, org=%d, seeid=%d ***\n", res, origin, cmd.fd_sess)
+
 	/*
 	 * We do this check at the end instead of checking on every place where
 	 * we set the error origin.
@@ -311,9 +323,6 @@ error:
 	if (error_origin != NULL)
 		*error_origin = origin;
 
-	if (ta)
-		free(ta);
-
 	return res;
 }
 
@@ -323,14 +332,8 @@ error:
  */
 void TEEC_CloseSession(TEEC_Session *session)
 {
-	uint32_t dummyvalue = 0;
-
 	if (session == NULL)
 		return;
-
-	if (ioctl(session->fd, TEE_CLOSE_SESSION_IOC, &dummyvalue) != 0)
-		EMSG("Ioctl(TEE_CLOSE_SESSION_IOC) failed! (%s)\n",
-		     strerror(errno));
 
 	close(session->fd);
 }
@@ -344,7 +347,7 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session,
 			       uint32_t *error_origin)
 {
 	INMSG("session: [%p], cmd_id: [%d]", session, cmd_id);
-	struct tee_cmd tc;
+	struct tee_cmd_io cmd;
 	TEEC_Operation dummy_op;
 	TEEC_Result result = TEEC_SUCCESS;
 	uint32_t origin = TEEC_ORIGIN_API;
@@ -371,12 +374,12 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session,
 	operation->session = session;
 	teec_mutex_unlock(&mutex);
 
-	memset(&tc, 0, sizeof(struct tee_cmd));
+	teec_resetTeeCmd(&cmd);
 
-	tc.cmd = cmd_id;
-	tc.op = operation;
+	cmd.cmd = cmd_id;
+	cmd.op = operation;
 
-	if (ioctl(session->fd, TEE_INVOKE_COMMAND_IOC, &tc) != 0)
+	if (ioctl(session->fd, TEE_INVOKE_COMMAND_IOC, &cmd) != 0)
 		EMSG("Ioctl(TEE_INVOKE_COMMAND_IOC) failed! (%s)\n",
 		     strerror(errno));
 
@@ -388,8 +391,8 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session,
 		teec_mutex_unlock(&mutex);
 	}
 
-	origin = tc.origin;
-	result = tc.err;
+	origin = cmd.origin;
+	result = cmd.err;
 
 error:
 
@@ -401,7 +404,7 @@ error:
 
 void TEEC_RequestCancellation(TEEC_Operation *operation)
 {
-	struct tee_cmd tc;
+	struct tee_cmd_io cmd;
 	TEEC_Session *session;
 
 	if (operation == NULL)
@@ -414,11 +417,11 @@ void TEEC_RequestCancellation(TEEC_Operation *operation)
 	if (session == NULL)
 		return;
 
-	memset(&tc, 0, sizeof(struct tee_cmd));
+	teec_resetTeeCmd(&cmd);
 
-	tc.op = operation;
+	cmd.op = operation;
 
-	if (ioctl(session->fd, TEE_REQUEST_CANCELLATION_IOC, &tc) != 0)
+	if (ioctl(session->fd, TEE_REQUEST_CANCELLATION_IOC, &cmd) != 0)
 		EMSG("Ioctl(TEE_REQUEST_CANCELLATION_IOC) failed! (%s)\n",
 		     strerror(errno));
 }

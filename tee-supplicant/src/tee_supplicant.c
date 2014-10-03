@@ -47,13 +47,16 @@
 #include <tee_supp_fs.h>
 #include <teec.h>
 
-#include <assert.h>
-
-#define BUFFER_LENGTH 0x100
 #define TEE_RPC_BUFFER_NUMBER 5
 
 /* Flags of the shared memory. Also defined in tee_service.h in the kernel. */
-#define SHM_ALLOCATE_FROM_PHYSICAL 0x100
+/*
+ * Maximum size of the device name
+ */
+#define TEEC_MAX_DEVNAME_SIZE 256
+
+char devname1[TEEC_MAX_DEVNAME_SIZE];
+char devname2[TEEC_MAX_DEVNAME_SIZE];
 
 struct tee_rpc_cmd {
 	void *buffer;
@@ -73,8 +76,6 @@ struct tee_rpc_ta {
 	TEEC_UUID uuid;
 	uint32_t supp_ta_handle;
 };
-
-static enum tee_target tee_target = TEE_TARGET_UNKNOWN;
 
 static bool read_request(int fd, struct tee_rpc_invoke *request);
 static void write_response(int fd, struct tee_rpc_invoke *request);
@@ -127,6 +128,7 @@ static void free_shared_memory_with_fd(int fd)
 
 static TEEC_SharedMemory *add_shared_memory(int fd, size_t size)
 {
+	struct tee_shm_io shm;
 	TEEC_SharedMemory *shared_mem;
 	struct share_mem_entry *entry;
 
@@ -135,13 +137,20 @@ static TEEC_SharedMemory *add_shared_memory(int fd, size_t size)
 		return NULL;
 
 	shared_mem = &entry->shared_mem;
-	shared_mem->size = size;
 
-	if (ioctl(fd, TEE_ALLOC_SHM_IOC, shared_mem) != 0) {
+	shm.buffer = NULL;
+	shm.size   = size;
+	shm.registered = 0;
+	shm.fd_shm = 0;
+	shm.flags = TEEC_MEM_INPUT | TEEC_MEM_OUTPUT;
+	if (ioctl(fd, TEE_ALLOC_SHM_IOC, &shm) != 0) {
 		EMSG("Ioctl(TEE_ALLOC_SHM_IOC) failed! (%s)", strerror(errno));
 		shared_mem = NULL;
 		goto out;
 	}
+
+	shared_mem->size = size;
+	shared_mem->d.fd = shm.fd_shm;
 
 	shared_mem->buffer = mmap(NULL, size,
 				  PROT_READ | PROT_WRITE, MAP_SHARED,
@@ -166,22 +175,32 @@ out:
 static int get_param(int fd, struct tee_rpc_invoke *inv, const uint32_t idx,
 		     TEEC_SharedMemory *shared_mem)
 {
+	struct tee_shm_io shm;
+
 	if (idx >= inv->nbr_bf)
 		return -1;
 
-	memset(shared_mem, 0, sizeof(TEEC_SharedMemory));
-	shared_mem->size = inv->cmds[idx].size;
-	shared_mem->flags |= SHM_ALLOCATE_FROM_PHYSICAL;
-	shared_mem->buffer = inv->cmds[idx].buffer;
-	if (ioctl(fd, TEE_ALLOC_SHM_IOC, shared_mem) != 0) {
+	shm.buffer = inv->cmds[idx].buffer;
+	shm.size   = inv->cmds[idx].size;
+	shm.registered = 0;
+	shm.fd_shm = 0;
+	shm.flags = TEEC_MEM_INPUT | TEEC_MEM_OUTPUT;
+
+	if (ioctl(fd, TEE_GET_FD_FOR_RPC_SHM_IOC, &shm) != 0) {
 		EMSG("Ioctl(TEE_ALLOC_SHM_IOC) failed! (%s)", strerror(errno));
 		return -1;
 	}
 
+	memset(shared_mem, 0, sizeof(TEEC_SharedMemory));
+	shared_mem->size = shm.size;
+	shared_mem->flags = shm.flags;
+	shared_mem->d.fd = shm.fd_shm;
+
+	DMSG("size %zu fd_shm %d", shared_mem->size, shared_mem->d.fd);
+
 	shared_mem->buffer = mmap(NULL, shared_mem->size,
 				     PROT_READ | PROT_WRITE, MAP_SHARED,
 				     shared_mem->d.fd, 0);
-	shared_mem->flags &= (~SHM_ALLOCATE_FROM_PHYSICAL);
 
 	if (shared_mem->buffer == (void *)MAP_FAILED) {
 		dprintf(TRACE_ERROR, "mmap(%d, %p) failed - Error = %s\n",
@@ -271,7 +290,10 @@ static void load_ta(int fd, struct tee_rpc_invoke *inv)
 	}
 	cmd = (struct tee_rpc_ta *)shared_mem.buffer;
 
-	ta_found = TEECI_LoadSecureModule(tee_target, &cmd->uuid, &ta, &size);
+	ta_found = TEECI_LoadSecureModule(devname1, &cmd->uuid, &ta, &size);
+	/* Tracked by 6408 */
+	if (ta_found != TA_BINARY_FOUND)
+		ta_found = TEECI_LoadSecureModule(devname2, &cmd->uuid, &ta, &size);
 
 	if (ta_found == TA_BINARY_FOUND) {
 		TEEC_SharedMemory *ta_shm = alloc_param(fd, inv, 1, size);
@@ -305,6 +327,7 @@ static void free_ta(struct tee_rpc_invoke *inv)
 	/* TODO This parameter should come as a value parameter instead. */
 	fd = (int)(uintptr_t)inv->cmds[0].buffer;
 	free_shared_memory_with_fd(fd);
+	inv->cmds[0].buffer = NULL;
 	inv->res = TEEC_SUCCESS;
 	OUTMSG();
 }
@@ -353,31 +376,27 @@ int main(int argc, char *argv[])
 {
 	int fd;
 	int n = 0;
-	char devname[TEEC_MAX_DEVNAME_SIZE];
-	memset(&devname, 0, sizeof(devname));
+	char devpath[TEEC_MAX_DEVNAME_SIZE];
+
+	sprintf(devpath, "/dev/opteearmtz00");
+	sprintf(devname1, "optee_armtz");
+	sprintf(devname2, "teetz");
 
 	while (--argc) {
 		n++;
-		if ((strlen(argv[n]) == 5) &&
-		    (strncmp(argv[n], "teetz", 5) == 0)) {
-			tee_target = TEE_TARGET_TZ;
-			snprintf(devname, TEEC_MAX_DEVNAME_SIZE, "%s",
-				 "/dev/teetz");
+		if (strncmp(argv[n], "opteearmtz00", 12) == 0) {
+			snprintf(devpath, TEEC_MAX_DEVNAME_SIZE, "%s", "/dev/opteearmtz00");
+			snprintf(devname1, TEEC_MAX_DEVNAME_SIZE, "%s", "optee_armtz");
+			snprintf(devname2, TEEC_MAX_DEVNAME_SIZE, "%s", "teetz");
 		} else {
 			EMSG("Invalid argument #%d", n);
 			exit(EXIT_FAILURE);
 		}
 	}
 
-	/* If no arguments have been given, then we default to LX. */
-	if (tee_target == TEE_TARGET_UNKNOWN) {
-		tee_target = TEE_TARGET_TZ;
-		sprintf(devname, "/dev/teetz");
-	}
-
-	fd = open(devname, O_RDWR);
+	fd = open(devpath, O_RDWR);
 	if (fd < 0) {
-		EMSG("error opening [%s]", devname);
+		EMSG("error opening [%s]", devpath);
 		exit(EXIT_FAILURE);
 	}
 
@@ -386,7 +405,7 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	IMSG("tee-supplicant running on %s", devname);
+	IMSG("tee-supplicant running on %s", devpath);
 
 	while (true) {
 		struct tee_rpc_invoke request;
@@ -439,7 +458,7 @@ static bool read_request(int fd, struct tee_rpc_invoke *request)
 		return false;
 	}
 
-	res = read(fd, request, BUFFER_LENGTH);
+	res = read(fd, request, sizeof(*request));
 	if (res < sizeof(*request) - sizeof(request->cmds)) {
 		EMSG("error reading from driver");
 		return false;

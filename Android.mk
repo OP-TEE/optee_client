@@ -28,6 +28,7 @@ LOCAL_SRC_FILES += libteec/src/teec_trace.c
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/public \
 		$(LOCAL_PATH)/libteec/include \
+		$(LOCAL_PATH)/../optee_linuxdriver/include \
 
 LOCAL_PRELINK_MODULE := false
 LOCAL_MODULE := libteec
