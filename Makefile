@@ -120,10 +120,10 @@ distclean: clean
 ifdef ROOTFS_DIR
 copy_rootfs: build
 	cp ${O}/libteec/libteec.so* ${ROOTFS_DIR}/usr/lib
-	cp ${O}/tee-supplicant/tee-supplicant ${ROOTFS_DIR}/usr/local/bin
+	cp ${O}/tee-supplicant/tee-supplicant ${ROOTFS_DIR}/usr/bin
 clean_rootfs:
 	rm -f ${ROOTFS_DIR}/usr/lib/libteec.so*
-	rm -f ${ROOTFS_DIR}/usr/local/bin/tee-supplicant
+	rm -f ${ROOTFS_DIR}/usr/bin/tee-supplicant
 else
 copy_rootfs:
 	@echo Rootfs copy cannot be done because ROOTFS_DIR is not defined
