@@ -1,0 +1,21 @@
+# One may have a look at http://docs.travis-ci.com/user/installing-dependencies/
+
+notifications:
+  - email: true
+
+# Installation of ia32 libs, required by the compiler
+before_install:
+  - sudo apt-get update -qq
+  - if [ `uname -m` = x86_64 ]; then sudo apt-get install -qq --force-yes libgd2-xpm ia32-libs ia32-libs-multiarch; fi
+
+# Download the arm compiler to use
+before_script:
+  - wget http://releases.linaro.org/14.05/components/toolchain/binaries/gcc-linaro-arm-linux-gnueabihf-4.9-2014.05_linux.tar.xz
+  - tar xvf gcc-linaro-arm-linux-gnueabihf-4.9-2014.05_linux.tar.xz
+  - export PATH=$PATH:$PWD/gcc-linaro-arm-linux-gnueabihf-4.9-2014.05_linux/bin
+
+# Several compilation options are checked
+script:
+  - make clean all
+  - CFG_TEE_CLIENT_LOG_LEVEL=0 make clean all
+  - CFG_TEE_CLIENT_LOG_LEVEL=5 make clean all
