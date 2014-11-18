@@ -184,7 +184,7 @@ static int get_param(int fd, struct tee_rpc_invoke *inv, const uint32_t idx,
 	shared_mem->flags &= (~SHM_ALLOCATE_FROM_PHYSICAL);
 
 	if (shared_mem->buffer == (void *)MAP_FAILED) {
-		dprintf(ERROR, "mmap(%d, %p) failed - Error = %s\n",
+		dprintf(TRACE_ERROR, "mmap(%d, %p) failed - Error = %s\n",
 			inv->cmds[idx].size, inv->cmds[idx].buffer,
 			strerror(errno));
 		close(shared_mem->d.fd);

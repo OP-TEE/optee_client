@@ -37,9 +37,6 @@
 /*
  * Trace levels.
  *
- * ALWAYS is used when you always want a print to be seen, but it is not always
- * an error.
- *
  * ERROR is used when some kind of error has happened, this is most likely the
  * print you will use most of the time when you report some kind of error.
  *
@@ -52,42 +49,28 @@
  *
  * */
 
-#define TRACE_ALWAYS 1
-#define TRACE_ERROR  2
-#define TRACE_INFO   3
-#define TRACE_DEBUG  4
-#define TRACE_FLOW   5
-
-/*
- * Deprecated: keep for backward compatibility.
- */
-#define CRITICAL    TRACE_ALWAYS
-#define ERROR       TRACE_ERROR
-#define ALWAYS      TRACE_ALWAYS
-#define INFO        TRACE_INFO
-#define FLOOD       TRACE_FLOW
+#define TRACE_ERROR  1
+#define TRACE_INFO   2
+#define TRACE_DEBUG  3
+#define TRACE_FLOW   4
 
 #if defined(DEBUGLEVEL_0) && !defined(DEBUGLEVEL)
-#define DEBUGLEVEL TRACE_ALWAYS
-#endif
-
-#if defined(DEBUGLEVEL_1) && !defined(DEBUGLEVEL)
-#define DEBUGLEVEL TRACE_ALWAYS
-#endif
-
-#if defined(DEBUGLEVEL_2) && !defined(DEBUGLEVEL)
 #define DEBUGLEVEL TRACE_ERROR
 #endif
 
-#if defined(DEBUGLEVEL_3) && !defined(DEBUGLEVEL)
+#if defined(DEBUGLEVEL_1) && !defined(DEBUGLEVEL)
+#define DEBUGLEVEL TRACE_ERROR
+#endif
+
+#if defined(DEBUGLEVEL_2) && !defined(DEBUGLEVEL)
 #define DEBUGLEVEL TRACE_INFO
 #endif
 
-#if defined(DEBUGLEVEL_4) && !defined(DEBUGLEVEL)
+#if defined(DEBUGLEVEL_3) && !defined(DEBUGLEVEL)
 #define DEBUGLEVEL TRACE_DEBUG
 #endif
 
-#if defined(DEBUGLEVEL_5) && !defined(DEBUGLEVEL)
+#if defined(DEBUGLEVEL_4) && !defined(DEBUGLEVEL)
 #define DEBUGLEVEL TRACE_FLOW
 #endif
 
@@ -113,7 +96,6 @@ int _dprintf(const char *function, int flen, int line, int level,
 		} \
 	} while (0)
 
-#define AMSG(fmt, ...)   dprintf(TRACE_ALWAYS, fmt "\n", ##__VA_ARGS__)
 #define EMSG(fmt, ...)   dprintf(TRACE_ERROR, fmt "\n", ##__VA_ARGS__)
 #define IMSG(fmt, ...)   dprintf(TRACE_INFO, fmt "\n", ##__VA_ARGS__)
 #define DMSG(fmt, ...)   dprintf(TRACE_DEBUG, fmt "\n", ##__VA_ARGS__)
@@ -134,7 +116,6 @@ int _dprintf(const char *function, int flen, int line, int level,
 			_dprintf(0, 0, 0, (level), BINARY_PREFIX, x); \
 	} while (0)
 
-#define AMSG_RAW(fmt, ...)   dprintf_raw(TRACE_ALWAYS, fmt, ##__VA_ARGS__)
 #define EMSG_RAW(fmt, ...)   dprintf_raw(TRACE_ERROR, fmt, ##__VA_ARGS__)
 #define IMSG_RAW(fmt, ...)   dprintf_raw(TRACE_INFO, fmt, ##__VA_ARGS__)
 #define DMSG_RAW(fmt, ...)   dprintf_raw(TRACE_DEBUG, fmt, ##__VA_ARGS__)
