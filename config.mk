@@ -2,22 +2,22 @@
 # Public variables                                                      #
 # Developers may override these values when calling the makefile,       #
 # as for example                                                        #
-#       CFG_TEE_CLIENT_LOG_LEVEL=1 make                             #
+#       CFG_TEE_CLIENT_LOG_LEVEL=1 make                                 #
 # or by declaring the variable in their environement, as for example    #
-#       export CFG_TEE_CLIENT_LOG_LEVEL=1                           #
+#       export CFG_TEE_CLIENT_LOG_LEVEL=1                               #
 #       make                                                            #
 #########################################################################
 
 # CFG_TEE_CLIENT_LOG_LEVEL
 #   Client (User Non Secure) log level
-#   Supported values: 0 (no traces) to 5 (all traces)
-CFG_TEE_CLIENT_LOG_LEVEL?=2
+#   Supported values: 0 (no traces) to 4 (all traces)
+CFG_TEE_CLIENT_LOG_LEVEL?=1
 export CFG_TEE_CLIENT_LOG_LEVEL
 
 # CFG_TEE_SUPP_LOG_LEVEL
 #   Supplicant log level
-#   Supported values: 0 (no traces) to 5 (all traces)
-CFG_TEE_SUPP_LOG_LEVEL?=2
+#   Supported values: 0 (no traces) to 4 (all traces)
+CFG_TEE_SUPP_LOG_LEVEL?=1
 export CFG_TEE_SUPP_LOG_LEVEL
 
 # Default out dir.

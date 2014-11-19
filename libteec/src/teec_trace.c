@@ -66,7 +66,7 @@ static void log_to_file(const char *buffer)
 #endif
 
 static const char * const trace_level_strings[] = {
-	"", "ALW", "ERR", "INF", "DBG", "FLW"
+	"", "ERR", "INF", "DBG", "FLW"
 };
 
 int _dprintf(const char *function, int flen, int line, int level,
