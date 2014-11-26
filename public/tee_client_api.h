@@ -24,40 +24,28 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef _TEE_CLIENT_API_H
-#define _TEE_CLIENT_API_H
+#ifndef TEE_CLIENT_API_H
+#define TEE_CLIENT_API_H
 
-#include <stddef.h>
+#ifndef __KERNEL__
 #include <stdint.h>
-#include <string.h>
-
-#define TEEC_VERSION    0x0100
-
+#include <stddef.h>
+#endif /* __KERNEL__ */
 
 /*
  * Defines the number of available memory references in an open session or
  * invoke command operation payload.
  */
-#define TEEC_PAYLOAD_REF_COUNT 4
+#define TEEC_CONFIG_PAYLOAD_REF_COUNT 4
 
-/*
+/**
  * Defines the maximum size of a single shared memory block, in bytes, of both
  * API allocated and API registered memory. The size is currently set to
  * 512 * kB (512 * 1024).
  */
 #define TEEC_CONFIG_SHAREDMEM_MAX_SIZE 0x8000
 
-/*
- * Flag constants indicating which of the memory references in an open session
- * or invoke command operation payload (TEEC_Operation) that are used. Type is
- * uint32_t.
- */
-#define TEEC_MEMREF_0_USED  0x00000001
-#define TEEC_MEMREF_1_USED  0x00000002
-#define TEEC_MEMREF_2_USED  0x00000004
-#define TEEC_MEMREF_3_USED  0x00000008
-
-/*
+/**
  * Flag constants indicating the type of parameters encoded inside the
  * operation payload (TEEC_Operation), Type is uint32_t.
  *
@@ -123,7 +111,7 @@
 #define TEEC_MEMREF_PARTIAL_OUTPUT  0x0000000E
 #define TEEC_MEMREF_PARTIAL_INOUT   0x0000000F
 
-/*
+/**
  * Flag constants indicating the data transfer direction of memory in
  * TEEC_Parameter. TEEC_MEM_INPUT signifies data transfer direction from the
  * client application to the TEE. TEEC_MEM_OUTPUT signifies data transfer
@@ -137,7 +125,7 @@
 #define TEEC_MEM_INPUT   0x00000001
 #define TEEC_MEM_OUTPUT  0x00000002
 
-/*
+/**
  * Return values. Type is TEEC_Result
  *
  * TEEC_SUCCESS                 The operation was successful.
@@ -162,9 +150,11 @@
  * TEEC_ERROR_SECURITY          A security fault was detected.
  * TEEC_ERROR_SHORT_BUFFER      The supplied buffer is too short for the
  *                              generated output.
+ * TEEC_ERROR_TARGET_DEAD       Trusted Application has panicked
+ *                              during the operation.
  */
 
-/*
+/**
  *  Standard defined error codes.
  */
 #define TEEC_SUCCESS                0x00000000
@@ -185,8 +175,9 @@
 #define TEEC_ERROR_COMMUNICATION    0xFFFF000E
 #define TEEC_ERROR_SECURITY         0xFFFF000F
 #define TEEC_ERROR_SHORT_BUFFER     0xFFFF0010
+#define TEEC_ERROR_TARGET_DEAD      0xFFFF3024
 
-/*
+/**
  * Function error origins, of type TEEC_ErrorOrigin. These indicate where in
  * the software stack a particular return value originates from.
  *
@@ -204,9 +195,9 @@
 #define TEEC_ORIGIN_TEE          0x00000003
 #define TEEC_ORIGIN_TRUSTED_APP  0x00000004
 
-/*
+/**
  * Session login methods, for use in TEEC_OpenSession() as parameter
- * connection_method. Type is uint32_t.
+ * connectionMethod. Type is uint32_t.
  *
  * TEEC_LOGIN_PUBLIC       No login data is provided.
  * TEEC_LOGIN_USER         Login data about the user running the Client
@@ -221,7 +212,7 @@
 #define TEEC_LOGIN_GROUP        0x00000002
 #define TEEC_LOGIN_APPLICATION  0x00000004
 
-/*
+/**
  * Encode the paramTypes according to the supplied types.
  *
  * @param p0 The first param type.
@@ -232,7 +223,7 @@
 #define TEEC_PARAM_TYPES(p0, p1, p2, p3) \
 	((p0) | ((p1) << 4) | ((p2) << 8) | ((p3) << 12))
 
-/*
+/**
  * Get the i_th param type from the paramType.
  *
  * @param p The paramType.
@@ -240,24 +231,18 @@
  */
 #define TEEC_PARAM_TYPE_GET(p, i) (((p) >> (i * 4)) & 0xF)
 
-/*
- * Maximum size of the device name
- */
-#define TEEC_MAX_DEVNAME_SIZE 256
-
 typedef uint32_t TEEC_Result;
-typedef uint32_t TEEC_ErrorOrigin;
 
-/*
+/**
  * struct TEEC_Context - Represents a connection between a client application
  * and a TEE.
  */
 typedef struct {
-	char devname[TEEC_MAX_DEVNAME_SIZE];
+	char devname[256];
 	int fd;
 } TEEC_Context;
 
-/*
+/**
  * This type contains a Universally Unique Resource Identifier (UUID) type as
  * defined in RFC4122. These UUID values are used to identify Trusted
  * Applications.
@@ -269,7 +254,7 @@ typedef struct {
 	uint8_t clockSeqAndNode[8];
 } TEEC_UUID;
 
-/*
+/**
  * struct TEEC_SharedMemory - Memory to transfer data between a client
  * application and trusted code.
  *
@@ -297,7 +282,7 @@ typedef struct {
 	uint8_t registered;
 } TEEC_SharedMemory;
 
-/*
+/**
  * struct TEEC_TempMemoryReference - Temporary memory to transfer data between
  * a client application and trusted code, only used for the duration of the
  * operation.
@@ -314,7 +299,7 @@ typedef struct {
 	size_t size;
 } TEEC_TempMemoryReference;
 
-/*
+/**
  * struct TEEC_RegisteredMemoryReference - use a pre-registered or
  * pre-allocated shared memory block of memory to transfer data between
  * a client application and trusted code.
@@ -335,7 +320,7 @@ typedef struct {
 	size_t offset;
 } TEEC_RegisteredMemoryReference;
 
-/*
+/**
  * struct TEEC_Value - Small raw data container
  *
  * Instead of allocating a shared memory buffer this structure can be used
@@ -350,7 +335,7 @@ typedef struct {
 	uint32_t b;
 } TEEC_Value;
 
-/*
+/**
  * union TEEC_Parameter - Memory container to be used when passing data between
  *                        client application and trusted code.
  *
@@ -370,7 +355,7 @@ typedef union {
 	TEEC_Value value;
 } TEEC_Parameter;
 
-/*
+/**
  * struct TEEC_Session - Represents a connection between a client application
  * and a trusted application.
  */
@@ -378,7 +363,7 @@ typedef struct {
 	int fd;
 } TEEC_Session;
 
-/*
+/**
  * struct TEEC_Operation - Holds information and memory references used in
  * TEEC_InvokeCommand().
  *
@@ -395,14 +380,14 @@ typedef struct {
 typedef struct {
 	uint32_t started;
 	uint32_t paramTypes;
-	TEEC_Parameter params[TEEC_PAYLOAD_REF_COUNT];
+	TEEC_Parameter params[TEEC_CONFIG_PAYLOAD_REF_COUNT];
 	/* Implementation-Defined */
 	TEEC_Session *session;
-	TEEC_SharedMemory mem_refs[TEEC_PAYLOAD_REF_COUNT];
+	TEEC_SharedMemory memRefs[TEEC_CONFIG_PAYLOAD_REF_COUNT];
 	uint32_t flags;
 } TEEC_Operation;
 
-/*
+/**
  * TEEC_InitializeContext() - Initializes a context holding connection
  * information on the specific TEE, designated by the name string.
 
@@ -418,7 +403,7 @@ typedef struct {
  */
 TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context);
 
-/*
+/**
  * TEEC_FinalizeContext() - Destroys a context holding connection information
  * on the specific TEE.
  *
@@ -435,7 +420,7 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context);
  */
 TEEC_Result TEEC_FinalizeContext(TEEC_Context *context);
 
-/*
+/**
  * TEEC_OpenSession() - Opens a new session with the specified trusted
  *                      application.
  *
@@ -445,15 +430,15 @@ TEEC_Result TEEC_FinalizeContext(TEEC_Context *context);
  * @param destination        A structure identifying the trusted application
  *                           with which to open a session.
  *
- * @param connection_method  The connection method to use.
- * @param connection_data    Any data necessary to connect with the chosen
+ * @param connectionMethod   The connection method to use.
+ * @param connectionData     Any data necessary to connect with the chosen
  *                           connection method. Not supported, should be set to
  *                           NULL.
  * @param operation          An operation structure to use in the session. May
  *                           be set to NULL to signify no operation structure
  *                           needed.
  *
- * @param return_origin      A parameter which will hold the error origin if
+ * @param returnOrigin       A parameter which will hold the error origin if
  *                           this function returns any value other than
  *                           TEEC_SUCCESS.
  *
@@ -464,12 +449,12 @@ TEEC_Result TEEC_FinalizeContext(TEEC_Context *context);
 TEEC_Result TEEC_OpenSession(TEEC_Context *context,
 			     TEEC_Session *session,
 			     const TEEC_UUID *destination,
-			     uint32_t connection_method,
-			     const void *connection_data,
+			     uint32_t connectionMethod,
+			     const void *connectionData,
 			     TEEC_Operation *operation,
-			     uint32_t *return_origin);
+			     uint32_t *returnOrigin);
 
-/*
+/**
  * TEEC_CloseSession() - Closes the session which has been opened with the
  * specific trusted application.
  *
@@ -477,65 +462,65 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context,
  */
 void TEEC_CloseSession(TEEC_Session *session);
 
-/*
+/**
  * TEEC_InvokeCommand() - Executes a command in the specified trusted
  * application.
  *
  * @param session        A handle to an open connection to the trusted
  *                       application.
- * @param cmd_id         Identifier of the command in the trusted application
+ * @param commandID      Identifier of the command in the trusted application
  *                       to invoke.
  * @param operation      An operation structure to use in the invoke command.
  *                       May be set to NULL to signify no operation structure
  *                       needed.
- * @param return_origin  A parameter which will hold the error origin if this
+ * @param returnOrigin   A parameter which will hold the error origin if this
  *                       function returns any value other than TEEC_SUCCESS.
  *
  * @return TEEC_SUCCESS  OpenSession successfully opened a new session.
  * @return TEEC_Result   Something failed.
  */
 TEEC_Result TEEC_InvokeCommand(TEEC_Session *session,
-			       uint32_t cmd_id,
+			       uint32_t commandID,
 			       TEEC_Operation *operation,
-			       uint32_t *return_origin);
+			       uint32_t *returnOrigin);
 
-/*
+/**
  * TEEC_RegisterSharedMemory() - Register a block of existing memory as a
  * shared block within the scope of the specified context.
  *
- * @param context     The initialized TEE context structure in which scope to
- *                    open the session.
- * @param shared_mem  pointer to the shared memory structure to register.
+ * @param context    The initialized TEE context structure in which scope to
+ *                   open the session.
+ * @param sharedMem  pointer to the shared memory structure to register.
  *
  * @return TEEC_SUCCESS              The registration was successful.
  * @return TEEC_ERROR_OUT_OF_MEMORY  Memory exhaustion.
  * @return TEEC_Result               Something failed.
  */
 TEEC_Result TEEC_RegisterSharedMemory(TEEC_Context *context,
-				      TEEC_SharedMemory *shared_mem);
+				      TEEC_SharedMemory *sharedMem);
 
-/*
+/**
  * TEEC_AllocateSharedMemory() - Allocate shared memory for TEE.
  *
  * @param context     The initialized TEE context structure in which scope to
  *                    open the session.
- * @param shared_mem  Pointer to the allocated shared memory.
+ * @param sharedMem   Pointer to the allocated shared memory.
  *
  * @return TEEC_SUCCESS              The registration was successful.
  * @return TEEC_ERROR_OUT_OF_MEMORY  Memory exhaustion.
  * @return TEEC_Result               Something failed.
  */
 TEEC_Result TEEC_AllocateSharedMemory(TEEC_Context *context,
-				      TEEC_SharedMemory *shared_mem);
+				      TEEC_SharedMemory *sharedMem);
 
-/*
+/**
  * TEEC_ReleaseSharedMemory() - Free or deregister the shared memory.
  *
- * @param shared_mem  Pointer to the shared memory to be freed.
+ * @param sharedMem  Pointer to the shared memory to be freed.
  */
-void TEEC_ReleaseSharedMemory(TEEC_SharedMemory *shared_memory);
+void TEEC_ReleaseSharedMemory(TEEC_SharedMemory *sharedMemory);
 
-/*
+/**
  * TEEC_RequestCancellation() - Request the cancellation of a pending open
  *                              session or command invocation.
  *
@@ -544,11 +529,9 @@ void TEEC_ReleaseSharedMemory(TEEC_SharedMemory *shared_memory);
  */
 void TEEC_RequestCancellation(TEEC_Operation *operation);
 
-/*
+/**
  * Register a pre-allocated Trusted Application This is mainly intended for
  * OS-FREE contexts or when a filesystem is not available.
- *
- * This function is an extension to TEE Client API.
  *
  * @param ta   Pointer to the trusted application binary
  * @param size The size of the TA binary
@@ -558,11 +541,9 @@ void TEEC_RequestCancellation(TEEC_Operation *operation);
  */
 TEEC_Result TEEC_RegisterTA(const void *ta, const size_t size);
 
-/*
+/**
  * Unregister a pre-allocated Trusted Application This is mainly intended for
  * OS-FREE contexts or when a filesystem is not available.
- *
- * This function is an extension to TEE Client API.
  *
  * @param ta Pointer to the trusted application binary
  */

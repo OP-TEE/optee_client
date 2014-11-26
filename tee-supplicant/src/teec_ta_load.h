@@ -28,12 +28,6 @@
 #define _TEEC_TA_LOAD_H
 #include <tee_client_api.h>
 
-/* store target TEE instance */
-enum tee_target {
-	TEE_TARGET_TZ,
-	TEE_TARGET_UNKNOWN,
-};
-
 #define TA_BINARY_FOUND 0
 #define TA_BINARY_NOT_FOUND -1
 
@@ -50,7 +44,7 @@ enum tee_target {
  *
  * @return              0 if TA was found, otherwise -1.
  */
-int TEECI_LoadSecureModule(enum tee_target target,
+int TEECI_LoadSecureModule(const char *name,
 			   const TEEC_UUID *destination, void **ta,
 			   size_t *ta_size);
 #endif

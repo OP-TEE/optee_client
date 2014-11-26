@@ -29,38 +29,10 @@
 
 #include <stdint.h>
 #include "tee_client_api.h"
+#include <linux/tee_ioc.h>
 
 #ifndef strlcpy
 #define strlcpy(dst, src, size) snprintf((dst), (size), "%s", (src))
 #endif
-
-/**
- * struct tee_cmd - The command sent to an open tee device.
- * @err: Error code (as in Global Platform TEE Client API spec)
- * @origin: Origin for the error code (also from spec).
- * @cmd: The command to be executed in the trusted application.
- * @uuid: The uuid for the trusted application.
- * @data: The trusted application or memory block.
- * @data_size: The size of the trusted application or memory block.
- * @op: The payload for the trusted application.
- *
- * This structure is mainly used in the Linux kernel for communication
- * with the user space.
- */
-struct tee_cmd {
-	TEEC_Result err;
-	uint32_t origin;
-	uint32_t cmd;
-	TEEC_UUID *uuid;
-	void *data;
-	uint32_t data_size;
-	TEEC_Operation *op;
-};
-
-#define TEE_OPEN_SESSION_IOC _IOWR('t', 161, struct tee_cmd)
-#define TEE_CLOSE_SESSION_IOC _IOWR('t', 162, unsigned long)
-#define TEE_INVOKE_COMMAND_IOC _IOWR('t', 163, struct tee_cmd)
-#define TEE_REQUEST_CANCELLATION_IOC _IOWR('t', 164, struct tee_cmd)
-#define TEE_ALLOC_SHM_IOC _IOWR('t', 165, TEEC_SharedMemory)
 
 #endif

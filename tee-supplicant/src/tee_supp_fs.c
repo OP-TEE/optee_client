@@ -31,12 +31,9 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <string.h>
-#include <limits.h>
 #include <tee_supp_fs.h>
 #include <pthread.h>
 #include "handle.h"
-
-#include <assert.h>
 
 /*
  * Operations and defines shared with TEE.

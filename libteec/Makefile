@@ -16,12 +16,14 @@ LIB_MAJ_MIN	:= $(LIB_NAME).$(MAJOR_VERSION).$(MINOR_VERSION)
 
 TEEC_SRCS	:= tee_client_api.c \
 		   teec_trace.c
+
 TEEC_SRC_DIR	:= src
 TEEC_OBJ_DIR	:= $(OUT_DIR)
 TEEC_OBJS 	:= $(patsubst %.c,$(TEEC_OBJ_DIR)/%.o, $(TEEC_SRCS))
 TEEC_INCLUDES 	:= \
 		   ${CURDIR}/include \
-		   ${CURDIR}/../public
+		   ${CURDIR}/../public \
+		   ${CURDIR}/../../optee_linuxdriver/include
 
 TEEC_CFLAGS	:= $(addprefix -I, $(TEEC_INCLUDES)) $(CFLAGS) -D_GNU_SOURCE \
 		   -DDEBUGLEVEL_$(CFG_TEE_CLIENT_LOG_LEVEL) \

@@ -13,6 +13,17 @@ before_script:
   - wget http://releases.linaro.org/14.05/components/toolchain/binaries/gcc-linaro-arm-linux-gnueabihf-4.9-2014.05_linux.tar.xz
   - tar xvf gcc-linaro-arm-linux-gnueabihf-4.9-2014.05_linux.tar.xz
   - export PATH=$PATH:$PWD/gcc-linaro-arm-linux-gnueabihf-4.9-2014.05_linux/bin
+  - echo " START TEMPORARY TRAVIS PATCH - optee_linuxdriver dependency"
+  - echo $PWD
+  - cd ..
+  - git clone -b dev/new_optee_linuxdriver_100314 git://github.com/cedric-chaumont-st-dev/optee_linuxdriver.git
+  - cd optee_linuxdriver
+  - echo $PWD
+  - git branch --all
+  - git checkout origin/dev/new_optee_linuxdriver_100314
+  - cd ../optee_client
+  - echo $PWD
+  - echo " END TEMPORARY TRAVIS PATCH - optee_linuxdriver dependency"
 
 # Several compilation options are checked
 script:
