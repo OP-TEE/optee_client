@@ -20,6 +20,18 @@ export CFG_TEE_CLIENT_LOG_LEVEL
 CFG_TEE_SUPP_LOG_LEVEL?=1
 export CFG_TEE_SUPP_LOG_LEVEL
 
+# CFG_TEE_CLIENT_LOG_FILE
+# The location of the client log file when logging to file is enabled.
+CFG_TEE_CLIENT_LOG_FILE ?= \"/data/teec.log\"
+
+# CFG_TEE_SUPP_LOG_FILE
+# The location of the supplicant log file when logging to file is enabled.
+CFG_TEE_SUPP_LOG_FILE ?= \"/data/teesupp.log\"
+
+# CFG_TEE_CLIENT_LOAD_PATH
+# The location of the client library file.
+CFG_TEE_CLIENT_LOAD_PATH ?= /system/lib
+
 # Default out dir.
 # Must be a relative path with respect to the op-tee-client root directory
 O               ?= out
