@@ -23,7 +23,6 @@ TEEC_OBJS 	:= $(patsubst %.c,$(TEEC_OBJ_DIR)/%.o, $(TEEC_SRCS))
 TEEC_INCLUDES 	:= \
 		   ${CURDIR}/include \
 		   ${CURDIR}/../public \
-		   ${CURDIR}/../../optee_linuxdriver/include
 
 TEEC_CFLAGS	:= $(addprefix -I, $(TEEC_INCLUDES)) $(CFLAGS) -D_GNU_SOURCE \
 		   -DDEBUGLEVEL_$(CFG_TEE_CLIENT_LOG_LEVEL) \
