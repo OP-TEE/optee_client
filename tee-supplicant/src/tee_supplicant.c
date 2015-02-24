@@ -77,7 +77,7 @@ struct tee_rpc_ta {
 	uint32_t supp_ta_handle;
 };
 
-static bool read_request(int fd, struct tee_rpc_invoke *request);
+static int read_request(int fd, struct tee_rpc_invoke *request);
 static void write_response(int fd, struct tee_rpc_invoke *request);
 static void free_param(TEEC_SharedMemory *shared_mem);
 
@@ -217,7 +217,7 @@ static int get_param(int fd, struct tee_rpc_invoke *inv, const uint32_t idx,
 
 /* Allocate new parameter to be used in RPC communication */
 static TEEC_SharedMemory *alloc_param(int fd, struct tee_rpc_invoke *inv,
-			const uint32_t idx, size_t size)
+				      const uint32_t idx, size_t size)
 {
 	TEEC_SharedMemory *shared_mem;
 
@@ -377,6 +377,8 @@ int main(int argc, char *argv[])
 	int fd;
 	int n = 0;
 	char devpath[TEEC_MAX_DEVNAME_SIZE];
+	struct tee_rpc_invoke request;
+	int ret;
 
 	sprintf(devpath, "/dev/opteearmtz00");
 	sprintf(devname1, "optee_armtz");
@@ -407,11 +409,11 @@ int main(int argc, char *argv[])
 
 	IMSG("tee-supplicant running on %s", devpath);
 
-	while (true) {
-		struct tee_rpc_invoke request;
+	/* major failure on read kills supplicant, malformed data will not */
+	do {
 		DMSG("looping");
-
-		if (read_request(fd, &request)) {
+		ret = read_request(fd, &request);
+		if (ret == 0) {
 			switch (request.cmd) {
 			case TEE_RPC_LOAD_TA:
 				load_ta(fd, &request);
@@ -441,7 +443,7 @@ int main(int argc, char *argv[])
 
 			write_response(fd, &request);
 		}
-	}
+	} while (ret >= 0);
 
 	free_all_shared_memory();
 	close(fd);
@@ -449,28 +451,31 @@ int main(int argc, char *argv[])
 	return EXIT_SUCCESS;
 }
 
-static bool read_request(int fd, struct tee_rpc_invoke *request)
+static int read_request(int fd, struct tee_rpc_invoke *request)
 {
-	size_t res = 0;
+	ssize_t res = 0;
 
 	if (fd < 0) {
 		EMSG("invalid fd");
-		return false;
+		return -1;
 	}
 
 	res = read(fd, request, sizeof(*request));
-	if (res < sizeof(*request) - sizeof(request->cmds)) {
+	if (res < 0)
+		return -1;
+
+	if ((size_t)res < sizeof(*request) - sizeof(request->cmds)) {
 		EMSG("error reading from driver");
-		return false;
+		return 1;
 	}
 
 	if (sizeof(*request) - sizeof(request->cmds) +
-	    sizeof(request->cmds[0]) * request->nbr_bf != res) {
+	    sizeof(request->cmds[0]) * request->nbr_bf != (size_t)res) {
 		DMSG("length read does not equal expected length");
-		return false;
+		return 1;
 	}
 
-	return true;
+	return 0;
 }
 
 static void write_response(int fd, struct tee_rpc_invoke *request)
