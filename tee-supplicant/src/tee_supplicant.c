@@ -327,6 +327,7 @@ static void free_ta(struct tee_rpc_invoke *inv)
 	/* TODO This parameter should come as a value parameter instead. */
 	fd = (int)(uintptr_t)inv->cmds[0].buffer;
 	free_shared_memory_with_fd(fd);
+	inv->nbr_bf = 0;
 	inv->cmds[0].buffer = NULL;
 	inv->res = TEEC_SUCCESS;
 	OUTMSG();
@@ -336,6 +337,7 @@ static void free_ta_with_fd(struct tee_rpc_invoke *inv)
 {
 	INMSG();
 	free_shared_memory_with_fd(inv->cmds[0].fd);
+	inv->nbr_bf = 0;
 	inv->res = TEEC_SUCCESS;
 	OUTMSG();
 }
