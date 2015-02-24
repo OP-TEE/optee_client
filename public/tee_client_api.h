@@ -274,7 +274,12 @@ typedef struct {
 	void *buffer;
 	size_t size;
 	uint32_t flags;
-	/* Implementation-Defined, must match what the kernel driver have */
+	/*
+	 * Implementation-Defined, must match what the kernel driver have
+	 *
+	 * Identifier can store a handle (int) or a structure pointer (void *).
+	 * Define this union to match case where sizeof(int)!=sizeof(void *).
+	 */
 	union {
 		int fd;
 		void *ptr;

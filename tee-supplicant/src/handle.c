@@ -139,6 +139,8 @@ void *handle_lookup(struct handle_db *db, int handle)
 	if (!db || handle < 0)
 		return NULL;
 
+	mutex_lock(db);
+
 	if ((size_t)handle >= db->max_ptrs) {
 		p = NULL;
 		goto out;

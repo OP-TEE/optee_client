@@ -90,7 +90,7 @@ static void teec_resetTeeCmd(struct tee_cmd_io *cmd)
 
 /*
  * This function initializes a new TEE Context, connecting this Client
- * application to the TEE indentified by the name name.
+ * application to the TEE identified by the name name.
  *
  * name == NULL will give the default TEE.
  */
@@ -284,8 +284,8 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context,
 
 	errno = 0;
 	if (ioctl(context->fd, TEE_OPEN_SESSION_IOC, &cmd) != 0) {
-		EMSG("Ioctl(TEE_OPEN_SESSION_IOC) failed! (%s)\n",
-		     strerror(errno));
+		EMSG("Ioctl(TEE_OPEN_SESSION_IOC) failed! (%s) err %08x ori %08x\n",
+		     strerror(errno), cmd.err, cmd.origin);
 		if (cmd.origin)
 			origin = cmd.origin;
 		else
