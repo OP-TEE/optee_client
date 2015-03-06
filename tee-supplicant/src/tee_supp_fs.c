@@ -32,8 +32,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <tee_supp_fs.h>
-#include <pthread.h>
-#include "handle.h"
+#include <handle.h>
 
 /*
  * Operations and defines shared with TEE.

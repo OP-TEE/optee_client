@@ -142,7 +142,6 @@ void TEEC_FinalizeContext(TEEC_Context *context)
 TEEC_Result TEEC_AllocateSharedMemory(TEEC_Context *context,
 				      TEEC_SharedMemory *shared_memory)
 {
-	struct tee_shm_io shm;
 	size_t size;
 	uint32_t flags;
 
@@ -155,20 +154,12 @@ TEEC_Result TEEC_AllocateSharedMemory(TEEC_Context *context,
 	shared_memory->size = size;
 	shared_memory->flags = flags;
 
-	shm.buffer = NULL;
-	shm.size   = size;
-	shm.registered = 0;
-	shm.fd_shm = 0;
-	shm.flags = TEEC_MEM_INPUT | TEEC_MEM_OUTPUT;
-	if (ioctl(context->fd, TEE_ALLOC_SHM_IOC, &shm) != 0) {
+	if (ioctl(context->fd, TEE_ALLOC_SHM_IOC, shared_memory) != 0) {
 		EMSG("Ioctl(TEE_ALLOC_SHM_IOC) failed! (%s)\n",
 		     strerror(errno));
 		return TEEC_ERROR_OUT_OF_MEMORY;
 	}
-	DMSG("fd %d size %zu", shared_memory->d.fd, shared_memory->size);
-
-	shared_memory->size = size;
-	shared_memory->d.fd = shm.fd_shm;
+	DMSG("fd %d size %zd flags %08x", shared_memory->d.fd, shared_memory->size, shared_memory->flags);
 
 	/*
 	 * Map memory to current user space process.
@@ -227,6 +218,11 @@ TEEC_Result TEEC_RegisterSharedMemory(TEEC_Context *context,
 		return TEEC_ERROR_BAD_PARAMETERS;
 
 	shared_memory->registered = 1;
+
+	/* Use a default fd when not using the dma_buf framework */
+	if (!(shared_memory->flags & TEEC_MEM_DMABUF))
+		shared_memory->d.fd = 0;
+
 	return TEEC_SUCCESS;
 }
 

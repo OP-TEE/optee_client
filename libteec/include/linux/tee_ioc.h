@@ -61,7 +61,10 @@ struct tee_shm_io {
 	void __user *buffer;
 	size_t size;
 	uint32_t flags;
-	int fd_shm;
+	union {
+		int fd_shm;
+		void *ptr;
+	};
 	uint8_t registered;
 };
 
