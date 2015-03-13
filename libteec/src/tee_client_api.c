@@ -130,12 +130,10 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
  * between the Client and the TEE.
  * The function implementation MUST do nothing if context is NULL
  */
-TEEC_Result TEEC_FinalizeContext(TEEC_Context *context)
+void TEEC_FinalizeContext(TEEC_Context *context)
 {
 	if (context)
 		close(context->fd);
-
-	return TEEC_SUCCESS;
 }
 
 /*

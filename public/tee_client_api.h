@@ -415,15 +415,11 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context);
  * This function destroys an initialized TEE context, closing the connection
  * between the client application and the TEE. This function must only be
  * called when all sessions related to this TEE context have been closed and
- * all shared memory blocks have been released, otherwise an error will be
- * returned.
+ * all shared memory blocks have been released.
  *
  * @param context       The context to be destroyed.
- *
- * @return TEEC_SUCCESS The function call was successful.
- * @return TEEC_Result  Something failed.
  */
-TEEC_Result TEEC_FinalizeContext(TEEC_Context *context);
+void TEEC_FinalizeContext(TEEC_Context *context);
 
 /**
  * TEEC_OpenSession() - Opens a new session with the specified trusted
