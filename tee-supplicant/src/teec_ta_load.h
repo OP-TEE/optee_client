@@ -36,15 +36,15 @@
  * filesystem and return it back to the caller in the parameter ta.
  *
  * @param: destination  The uuid of the TA we are searching for.
- * @param: ta           A pointer which this function will allocate and copy
- *                      the TA from the filesystem to the pointer itself. It is
- *                      the callers responsibility to free the pointer.
+ * @param: ta           A pointer which this function will copy
+ *                      the TA from the filesystem to if *@ta_size i large
+ *                      enough.
  * @param: ta_size      The size of the TA found on file system. It will be 0
  *                      if no TA was not found.
  *
  * @return              0 if TA was found, otherwise -1.
  */
 int TEECI_LoadSecureModule(const char *name,
-			   const TEEC_UUID *destination, void **ta,
+			   const TEEC_UUID *destination, void *ta,
 			   size_t *ta_size);
 #endif

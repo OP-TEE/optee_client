@@ -64,14 +64,15 @@ struct tee_rpc_cmd {
  * @return              0 if TA was found, otherwise -1.
  */
 int TEECI_LoadSecureModule(const char* dev_path,
-			   const TEEC_UUID *destination, void **ta,
+			   const TEEC_UUID *destination, void *ta,
 			   size_t *ta_size)
 {
 	char fname[PATH_MAX];
 	FILE *file = NULL;
 	int n;
+	size_t s;
 
-	if (!ta_size || !ta || !destination) {
+	if (!ta_size || !destination) {
 		printf("wrong inparameter to TEECI_LoadSecureModule\n");
 		return TA_BINARY_NOT_FOUND;
 	}
@@ -109,27 +110,29 @@ int TEECI_LoadSecureModule(const char* dev_path,
 		return TA_BINARY_NOT_FOUND;
 	}
 
-	*ta_size = ftell(file);
+	s = ftell(file);
+	if (s > *ta_size || !ta) {
+		/*
+		 * Buffer isn't large enough, return the required size to
+		 * let the caller increase the size of the buffer and try
+		 * again.
+		 */
+		goto out;
+	}
 
 	if (fseek(file, 0, SEEK_SET) != 0) {
 		fclose(file);
 		return TA_BINARY_NOT_FOUND;
 	}
 
-	*ta = malloc(*ta_size);
-	if (*ta == NULL) {
-		printf("OOM: failed allocating ta\n");
-		fclose(file);
-		return TA_BINARY_NOT_FOUND;
-	}
-
-	if (*ta_size != fread(*ta, 1, *ta_size, file)) {
+	if (s != fread(ta, 1, s, file)) {
 		printf("error fread TA file\n");
-		free(*ta);
 		fclose(file);
 		return TA_BINARY_NOT_FOUND;
 	}
 
+out:
+	*ta_size = s;
 	fclose(file);
 	return TA_BINARY_FOUND;
 }

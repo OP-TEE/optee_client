@@ -1,6 +1,8 @@
 /*
  * Copyright (c) 2014, STMicroelectronics International N.V.
  * All rights reserved.
+ * Copyright (c) 2015, Linaro Limited
+ * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -27,10 +29,8 @@
 #ifndef TEE_CLIENT_API_H
 #define TEE_CLIENT_API_H
 
-#ifndef __KERNEL__
 #include <stdint.h>
 #include <stddef.h>
-#endif /* __KERNEL__ */
 
 /*
  * Defines the number of available memory references in an open session or
@@ -121,16 +121,9 @@
  *                  application to the Trusted Application.
  * TEEC_MEM_OUTPUT  The Shared Memory can carry data from the Trusted
  *                  Application to the client application.
- * TEEC_MEM_DMABUF  The Shared Memory is allocated with the dma buf api and
- *                  not necessarily user mapped. The handle will be then the
- *                  fd instead of the buffer
- * TEEC_MEM_KAPI    Shared memory is required from another Linux module.
- *                  Dma buf file descriptor is not created.
  */
 #define TEEC_MEM_INPUT   0x00000001
 #define TEEC_MEM_OUTPUT  0x00000002
-#define TEEC_MEM_DMABUF  0x00010000
-#define TEEC_MEM_KAPI    0x00020000
 
 /**
  * Return values. Type is TEEC_Result
@@ -244,17 +237,10 @@ typedef uint32_t TEEC_Result;
 /**
  * struct TEEC_Context - Represents a connection between a client application
  * and a TEE.
- *
- * Context identifier can be a handle (when opened from user land)
- * or a structure pointer (when opened from kernel land).
- * Identifier is defined as an union to match type sizes on all architectures.
  */
 typedef struct {
-	char devname[256];
-	union {
-		struct tee_context *ctx;
-		int fd;
-	};
+	/* Implementation defined */
+	int fd;
 } TEEC_Context;
 
 /**
@@ -268,14 +254,6 @@ typedef struct {
 	uint16_t timeHiAndVersion;
 	uint8_t clockSeqAndNode[8];
 } TEEC_UUID;
-
-/**
- * In terms of compatible kernel, the data struct shared by client application
- * and TEE driver should be restructrued in "compatible" rules. To keep GP's
- * standard in compatibility mode, the anonymous padding members are filled
- * in the struct definition below.
- */
-
 
 /**
  * struct TEEC_SharedMemory - Memory to transfer data between a client
@@ -294,28 +272,15 @@ typedef struct {
  * is responsible to populate the buffer pointer.
  */
 typedef struct {
-	union {
-		void *buffer;
-		uint64_t padding_ptr;
-	};
-	union {
-		size_t size;
-		uint64_t padding_sz;
-	};
+	void *buffer;
+	size_t size;
 	uint32_t flags;
 	/*
-	 * Implementation-Defined, must match what the kernel driver have
-	 *
-	 * Identifier can store a handle (int) or a structure pointer (void *).
-	 * Define this union to match case where sizeof(int)!=sizeof(void *).
+	 * Implementation-Defined
 	 */
-	uint32_t reserved;
-	union {
-		int fd;
-		void *ptr;
-		uint64_t padding_d;
-	} d;
-	uint64_t registered;
+	int id;
+	size_t alloced_size;
+	void *shadow_buffer;
 } TEEC_SharedMemory;
 
 /**
@@ -331,14 +296,8 @@ typedef struct {
  * operation to be called.
  */
 typedef struct {
-	union {
-		void *buffer;
-		uint64_t padding_ptr;
-	};
-	union {
-		size_t size;
-		uint64_t padding_sz;
-	};
+	void *buffer;
+	size_t size;
 } TEEC_TempMemoryReference;
 
 /**
@@ -357,18 +316,9 @@ typedef struct {
  *
  */
 typedef struct {
-	union {
-		TEEC_SharedMemory *parent;
-		uint64_t padding_ptr;
-	};
-	union {
-		size_t size;
-		uint64_t padding_sz;
-	};
-	union {
-		size_t offset;
-		uint64_t padding_off;
-	};
+	TEEC_SharedMemory *parent;
+	size_t size;
+	size_t offset;
 } TEEC_RegisteredMemoryReference;
 
 /**
@@ -409,14 +359,11 @@ typedef union {
 /**
  * struct TEEC_Session - Represents a connection between a client application
  * and a trusted application.
- *
- * Session identifier can be a handle (when opened from user land) or a
- * structure pointer (when opened from kernel land).
- * Identifier is defined as an union to match type sizes on all architectures.
  */
-typedef union {
-	int fd;
-	struct tee_session *session;
+typedef struct {
+	/* Implementation defined */
+	TEEC_Context *ctx;
+	uint32_t session_id;
 } TEEC_Session;
 
 /**
@@ -438,12 +385,7 @@ typedef struct {
 	uint32_t paramTypes;
 	TEEC_Parameter params[TEEC_CONFIG_PAYLOAD_REF_COUNT];
 	/* Implementation-Defined */
-	union {
-		TEEC_Session *session;
-		uint64_t padding_ptr;
-	};
-	TEEC_SharedMemory memRefs[TEEC_CONFIG_PAYLOAD_REF_COUNT];
-	uint64_t flags;
+	TEEC_Session *session;
 } TEEC_Operation;
 
 /**
@@ -583,25 +525,5 @@ void TEEC_ReleaseSharedMemory(TEEC_SharedMemory *sharedMemory);
  *                  or invoke.
  */
 void TEEC_RequestCancellation(TEEC_Operation *operation);
-
-/**
- * Register a pre-allocated Trusted Application This is mainly intended for
- * OS-FREE contexts or when a filesystem is not available.
- *
- * @param ta   Pointer to the trusted application binary
- * @param size The size of the TA binary
- *
- * @return TEEC_SUCCESS if successful.
- * @return TEEC_Result something failed.
- */
-TEEC_Result TEEC_RegisterTA(const void *ta, const size_t size);
-
-/**
- * Unregister a pre-allocated Trusted Application This is mainly intended for
- * OS-FREE contexts or when a filesystem is not available.
- *
- * @param ta Pointer to the trusted application binary
- */
-void TEEC_UnregisterTA(const void *ta);
 
 #endif
