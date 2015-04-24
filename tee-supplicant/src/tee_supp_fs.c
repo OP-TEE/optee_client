@@ -188,19 +188,28 @@ static int tee_supp_fs_conv_accessflags(int in)
 	return flags;
 }
 
-static size_t tee_supp_fs_create_fname(char *file, char *out)
+static size_t tee_supp_fs_create_fname(char *file, char *out, size_t out_size)
 {
-	strncpy(out, TEE_FS_PATH, sizeof(TEE_FS_PATH) + 1);
-	strncat(out, file, PATH_MAX);
-	return strlen(out);
+	int s;
+
+	if (!file || !out || (out_size <= sizeof(TEE_FS_PATH)))
+		return 0;
+
+	s = snprintf(out, out_size, "%s%s", TEE_FS_PATH, file);
+	if (s < 0 || (size_t)s >= out_size)
+		return 0;
+
+	/* Safe to cast since we have checked that sizes are OK */
+	return (size_t)s;
 }
 
 static int tee_supp_fs_open(struct tee_fs_rpc *fsrpc)
 {
 	char fname[PATH_MAX];
+	char *filename = (char *)(fsrpc + 1);
 	int flags;
 
-	tee_supp_fs_create_fname((char *)(fsrpc + 1), fname);
+	tee_supp_fs_create_fname(filename, fname, sizeof(fname));
 
 	flags = tee_supp_fs_conv_oflags(fsrpc->flags);
 
@@ -241,7 +250,7 @@ static int tee_supp_fs_unlink(struct tee_fs_rpc *fsrpc)
 {
 	char fname[PATH_MAX];
 
-	tee_supp_fs_create_fname((char *)(fsrpc + 1), fname);
+	tee_supp_fs_create_fname((char *)(fsrpc + 1), fname, sizeof(fname));
 
 	return unlink(fname);
 }
@@ -250,10 +259,20 @@ static int tee_supp_fs_rename(struct tee_fs_rpc *fsrpc)
 {
 	char old_fn[PATH_MAX];
 	char new_fn[PATH_MAX];
-	size_t len = strlen((char *)(fsrpc + 1));
+	char *filenames = (char *)(fsrpc + 1);
 
-	tee_supp_fs_create_fname((char *)(fsrpc + 1), old_fn);
-	tee_supp_fs_create_fname(((char *)(fsrpc + 1)) + len + 1, new_fn);
+	/*
+	 * During a rename operation secure world sends the two NULL terminated
+	 * filenames as a single concatenated string, as for example:
+	 *   "old.txt\0new.txt\0"
+	 * Therefore we start by finding the offset to where the new filename
+	 * begins.
+	 */
+	size_t offset_new_fn = strlen(filenames) + 1;
+
+	tee_supp_fs_create_fname(filenames, old_fn, sizeof(old_fn));
+	tee_supp_fs_create_fname(filenames + offset_new_fn, new_fn,
+				 sizeof(new_fn));
 
 	return rename(old_fn, new_fn);
 }
@@ -268,7 +287,7 @@ static int tee_supp_fs_mkdir(struct tee_fs_rpc *fsrpc)
 	char fname[PATH_MAX];
 	mode_t mode;
 
-	tee_supp_fs_create_fname((char *)(fsrpc + 1), fname);
+	tee_supp_fs_create_fname((char *)(fsrpc + 1), fname, sizeof(fname));
 	mode = tee_supp_fs_conv_mkdflags(fsrpc->flags);
 
 	return mkdir(fname, mode);
@@ -280,7 +299,7 @@ static int tee_supp_fs_opendir(struct tee_fs_rpc *fsrpc)
 	DIR *dir;
 	int handle;
 
-	tee_supp_fs_create_fname((char *)(fsrpc + 1), fname);
+	tee_supp_fs_create_fname((char *)(fsrpc + 1), fname, sizeof(fname));
 
 	dir = opendir(fname);
 	if (!dir)
@@ -330,7 +349,7 @@ static int tee_supp_fs_rmdir(struct tee_fs_rpc *fsrpc)
 {
 	char fname[PATH_MAX];
 
-	tee_supp_fs_create_fname((char *)(fsrpc + 1), fname);
+	tee_supp_fs_create_fname((char *)(fsrpc + 1), fname, sizeof(fname));
 
 	return rmdir(fname);
 }
@@ -342,7 +361,7 @@ static int tee_supp_fs_access(struct tee_fs_rpc *fsrpc)
 
 	int res;
 
-	tee_supp_fs_create_fname((char *)(fsrpc + 1), fname);
+	tee_supp_fs_create_fname((char *)(fsrpc + 1), fname, sizeof(fname));
 	flags = tee_supp_fs_conv_accessflags(fsrpc->flags);
 
 	res = access(fname, flags);
