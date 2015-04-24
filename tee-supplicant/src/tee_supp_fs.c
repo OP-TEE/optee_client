@@ -116,7 +116,7 @@ static struct handle_db dir_handle_db =
 		HANDLE_DB_INITIALIZER_WITH_MUTEX(&dir_handle_db_mutex);
 
 /* Function to convert TEE open flags to UNIX IO */
-static int tee_supp_fs_conv_oflags(int in)
+static int tee_fs_conv_oflags(int in)
 {
 	int flags = 0;
 
@@ -142,7 +142,7 @@ static int tee_supp_fs_conv_oflags(int in)
 }
 
 /* Function to convert TEE seek flags to UNIX IO */
-static int tee_supp_fs_conv_whence(int in)
+static int tee_fs_conv_whence(int in)
 {
 	int flags = 0;
 
@@ -159,7 +159,7 @@ static int tee_supp_fs_conv_whence(int in)
 }
 
 /* Function to convert TEE open flags to UNIX IO */
-static mode_t tee_supp_fs_conv_mkdflags(int in)
+static mode_t tee_fs_conv_mkdflags(int in)
 {
 	int flags = 0;
 
@@ -172,7 +172,7 @@ static mode_t tee_supp_fs_conv_mkdflags(int in)
 	return flags;
 }
 
-static int tee_supp_fs_conv_accessflags(int in)
+static int tee_fs_conv_accessflags(int in)
 {
 	int flags = 0;
 
@@ -188,7 +188,8 @@ static int tee_supp_fs_conv_accessflags(int in)
 	return flags;
 }
 
-static size_t tee_supp_fs_create_fname(char *file, char *out, size_t out_size)
+static size_t tee_fs_get_absolute_filename(char *file, char *out,
+					   size_t out_size)
 {
 	int s;
 
@@ -203,59 +204,60 @@ static size_t tee_supp_fs_create_fname(char *file, char *out, size_t out_size)
 	return (size_t)s;
 }
 
-static int tee_supp_fs_open(struct tee_fs_rpc *fsrpc)
+static int tee_fs_open(struct tee_fs_rpc *fsrpc)
 {
-	char fname[PATH_MAX];
+	char abs_filename[PATH_MAX];
 	char *filename = (char *)(fsrpc + 1);
 	int flags;
 
-	tee_supp_fs_create_fname(filename, fname, sizeof(fname));
-
-	flags = tee_supp_fs_conv_oflags(fsrpc->flags);
-
-	fsrpc->fd = open(fname, flags, S_IRUSR | S_IWUSR);
+	tee_fs_get_absolute_filename(filename, abs_filename,
+				     sizeof(abs_filename));
+	flags = tee_fs_conv_oflags(fsrpc->flags);
+	fsrpc->fd = open(abs_filename, flags, S_IRUSR | S_IWUSR);
 
 	return fsrpc->fd;
 }
 
-static int tee_supp_fs_close(struct tee_fs_rpc *fsrpc)
+static int tee_fs_close(struct tee_fs_rpc *fsrpc)
 {
 	return close(fsrpc->fd);
 }
 
-static int tee_supp_fs_read(struct tee_fs_rpc *fsrpc)
+static int tee_fs_read(struct tee_fs_rpc *fsrpc)
 {
 	void *data = (void *)(fsrpc + 1);
 
 	return read(fsrpc->fd, data, fsrpc->len);
 }
 
-static int tee_supp_fs_write(struct tee_fs_rpc *fsrpc)
+static int tee_fs_write(struct tee_fs_rpc *fsrpc)
 {
 	void *data = (void *)(fsrpc + 1);
 
 	return write(fsrpc->fd, data, fsrpc->len);
 }
 
-static int tee_supp_fs_seek(struct tee_fs_rpc *fsrpc)
+static int tee_fs_seek(struct tee_fs_rpc *fsrpc)
 {
-	int wh = tee_supp_fs_conv_whence(fsrpc->flags);
+	int wh = tee_fs_conv_whence(fsrpc->flags);
 
 	fsrpc->res = lseek(fsrpc->fd, fsrpc->arg, wh);
 
 	return fsrpc->res;
 }
 
-static int tee_supp_fs_unlink(struct tee_fs_rpc *fsrpc)
+static int tee_fs_unlink(struct tee_fs_rpc *fsrpc)
 {
-	char fname[PATH_MAX];
+	char abs_filename[PATH_MAX];
+	char *filename = (char *)(fsrpc + 1);
 
-	tee_supp_fs_create_fname((char *)(fsrpc + 1), fname, sizeof(fname));
+	tee_fs_get_absolute_filename(filename, abs_filename,
+				     sizeof(abs_filename));
 
-	return unlink(fname);
+	return unlink(abs_filename);
 }
 
-static int tee_supp_fs_rename(struct tee_fs_rpc *fsrpc)
+static int tee_fs_rename(struct tee_fs_rpc *fsrpc)
 {
 	char old_fn[PATH_MAX];
 	char new_fn[PATH_MAX];
@@ -270,38 +272,40 @@ static int tee_supp_fs_rename(struct tee_fs_rpc *fsrpc)
 	 */
 	size_t offset_new_fn = strlen(filenames) + 1;
 
-	tee_supp_fs_create_fname(filenames, old_fn, sizeof(old_fn));
-	tee_supp_fs_create_fname(filenames + offset_new_fn, new_fn,
-				 sizeof(new_fn));
+	tee_fs_get_absolute_filename(filenames, old_fn, sizeof(old_fn));
+	tee_fs_get_absolute_filename(filenames + offset_new_fn, new_fn,
+				     sizeof(new_fn));
 
 	return rename(old_fn, new_fn);
 }
 
-static int tee_supp_fs_truncate(struct tee_fs_rpc *fsrpc)
+static int tee_fs_truncate(struct tee_fs_rpc *fsrpc)
 {
 	return ftruncate(fsrpc->fd, fsrpc->arg);
 }
 
-static int tee_supp_fs_mkdir(struct tee_fs_rpc *fsrpc)
+static int tee_fs_mkdir(struct tee_fs_rpc *fsrpc)
 {
-	char fname[PATH_MAX];
+	char abs_dirname[PATH_MAX];
+	char *dirname = (char *)(fsrpc + 1);
 	mode_t mode;
 
-	tee_supp_fs_create_fname((char *)(fsrpc + 1), fname, sizeof(fname));
-	mode = tee_supp_fs_conv_mkdflags(fsrpc->flags);
+	tee_fs_get_absolute_filename(dirname, abs_dirname,
+				     sizeof(abs_dirname));
+	mode = tee_fs_conv_mkdflags(fsrpc->flags);
 
-	return mkdir(fname, mode);
+	return mkdir(abs_dirname, mode);
 }
 
-static int tee_supp_fs_opendir(struct tee_fs_rpc *fsrpc)
+static int tee_fs_opendir(struct tee_fs_rpc *fsrpc)
 {
-	char fname[PATH_MAX];
+	char abs_dirname[PATH_MAX];
+	char *dirname = (char *)(fsrpc + 1);
 	DIR *dir;
 	int handle;
 
-	tee_supp_fs_create_fname((char *)(fsrpc + 1), fname, sizeof(fname));
-
-	dir = opendir(fname);
+	tee_fs_get_absolute_filename(dirname, abs_dirname, sizeof(abs_dirname));
+	dir = opendir(abs_dirname);
 	if (!dir)
 		return -1;
 
@@ -312,15 +316,16 @@ static int tee_supp_fs_opendir(struct tee_fs_rpc *fsrpc)
 	return handle;
 }
 
-static int tee_supp_fs_closedir(struct tee_fs_rpc *fsrpc)
+static int tee_fs_closedir(struct tee_fs_rpc *fsrpc)
 {
 	DIR *dir = handle_put(&dir_handle_db, fsrpc->arg);
 
 	return closedir(dir);
 }
 
-static int tee_supp_fs_readdir(struct tee_fs_rpc *fsrpc)
+static int tee_fs_readdir(struct tee_fs_rpc *fsrpc)
 {
+	char *dirname = (char *)(fsrpc + 1);
 	DIR *dir = handle_lookup(&dir_handle_db, fsrpc->arg);
 	struct dirent *dirent;
 	size_t len;
@@ -339,32 +344,33 @@ static int tee_supp_fs_readdir(struct tee_fs_rpc *fsrpc)
 		return -1;
 
 	len++;
-	memcpy((char *)(fsrpc + 1), dirent->d_name, len);
+	memcpy(dirname, dirent->d_name, len);
 	fsrpc->len = len;
 
 	return 0;
 }
 
-static int tee_supp_fs_rmdir(struct tee_fs_rpc *fsrpc)
+static int tee_fs_rmdir(struct tee_fs_rpc *fsrpc)
 {
-	char fname[PATH_MAX];
+	char abs_dirname[PATH_MAX];
+	char *dirname = (char *)(fsrpc + 1);
 
-	tee_supp_fs_create_fname((char *)(fsrpc + 1), fname, sizeof(fname));
+	tee_fs_get_absolute_filename(dirname, abs_dirname, sizeof(abs_dirname));
 
-	return rmdir(fname);
+	return rmdir(abs_dirname);
 }
 
-static int tee_supp_fs_access(struct tee_fs_rpc *fsrpc)
+static int tee_fs_access(struct tee_fs_rpc *fsrpc)
 {
-	char fname[PATH_MAX];
+	char abs_filename[PATH_MAX];
+	char *filename = (char *)(fsrpc + 1);
 	int flags;
-
 	int res;
 
-	tee_supp_fs_create_fname((char *)(fsrpc + 1), fname, sizeof(fname));
-	flags = tee_supp_fs_conv_accessflags(fsrpc->flags);
-
-	res = access(fname, flags);
+	tee_fs_get_absolute_filename(filename, abs_filename,
+				     sizeof(abs_filename));
+	flags = tee_fs_conv_accessflags(fsrpc->flags);
+	res = access(abs_filename, flags);
 
 	return res;
 }
@@ -393,46 +399,46 @@ int tee_supp_fs_process(void *cmd, size_t cmd_size)
 
 	switch (fsrpc->op) {
 	case TEE_FS_OPEN:
-		ret = tee_supp_fs_open(fsrpc);
+		ret = tee_fs_open(fsrpc);
 		break;
 	case TEE_FS_CLOSE:
-		ret = tee_supp_fs_close(fsrpc);
+		ret = tee_fs_close(fsrpc);
 		break;
 	case TEE_FS_READ:
-		ret = tee_supp_fs_read(fsrpc);
+		ret = tee_fs_read(fsrpc);
 		break;
 	case TEE_FS_WRITE:
-		ret = tee_supp_fs_write(fsrpc);
+		ret = tee_fs_write(fsrpc);
 		break;
 	case TEE_FS_SEEK:
-		ret = tee_supp_fs_seek(fsrpc);
+		ret = tee_fs_seek(fsrpc);
 		break;
 	case TEE_FS_UNLINK:
-		ret = tee_supp_fs_unlink(fsrpc);
+		ret = tee_fs_unlink(fsrpc);
 		break;
 	case TEE_FS_RENAME:
-		ret = tee_supp_fs_rename(fsrpc);
+		ret = tee_fs_rename(fsrpc);
 		break;
 	case TEE_FS_TRUNC:
-		ret = tee_supp_fs_truncate(fsrpc);
+		ret = tee_fs_truncate(fsrpc);
 		break;
 	case TEE_FS_MKDIR:
-		ret = tee_supp_fs_mkdir(fsrpc);
+		ret = tee_fs_mkdir(fsrpc);
 		break;
 	case TEE_FS_OPENDIR:
-		ret = tee_supp_fs_opendir(fsrpc);
+		ret = tee_fs_opendir(fsrpc);
 		break;
 	case TEE_FS_CLOSEDIR:
-		ret = tee_supp_fs_closedir(fsrpc);
+		ret = tee_fs_closedir(fsrpc);
 		break;
 	case TEE_FS_READDIR:
-		ret = tee_supp_fs_readdir(fsrpc);
+		ret = tee_fs_readdir(fsrpc);
 		break;
 	case TEE_FS_RMDIR:
-		ret = tee_supp_fs_rmdir(fsrpc);
+		ret = tee_fs_rmdir(fsrpc);
 		break;
 	case TEE_FS_ACCESS:
-		ret = tee_supp_fs_access(fsrpc);
+		ret = tee_fs_access(fsrpc);
 		break;
 	default:
 		break;
