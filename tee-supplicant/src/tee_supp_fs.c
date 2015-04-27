@@ -209,12 +209,13 @@ static int tee_fs_open(struct tee_fs_rpc *fsrpc)
 	char abs_filename[PATH_MAX];
 	char *filename = (char *)(fsrpc + 1);
 	int flags;
+	size_t filesize = tee_fs_get_absolute_filename(filename, abs_filename,
+						       sizeof(abs_filename));
+	if (!filesize)
+		return -1; /* Corresponds to error using open */
 
-	tee_fs_get_absolute_filename(filename, abs_filename,
-				     sizeof(abs_filename));
 	flags = tee_fs_conv_oflags(fsrpc->flags);
 	fsrpc->fd = open(abs_filename, flags, S_IRUSR | S_IWUSR);
-
 	return fsrpc->fd;
 }
 
@@ -250,11 +251,13 @@ static int tee_fs_unlink(struct tee_fs_rpc *fsrpc)
 {
 	char abs_filename[PATH_MAX];
 	char *filename = (char *)(fsrpc + 1);
+	int ret = -1; /* Corresponds to error using unlink */
+	size_t filesize = tee_fs_get_absolute_filename(filename, abs_filename,
+						       sizeof(abs_filename));
+	if (filesize)
+		ret = unlink(abs_filename);
 
-	tee_fs_get_absolute_filename(filename, abs_filename,
-				     sizeof(abs_filename));
-
-	return unlink(abs_filename);
+	return ret;
 }
 
 static int tee_fs_rename(struct tee_fs_rpc *fsrpc)
@@ -262,6 +265,7 @@ static int tee_fs_rename(struct tee_fs_rpc *fsrpc)
 	char old_fn[PATH_MAX];
 	char new_fn[PATH_MAX];
 	char *filenames = (char *)(fsrpc + 1);
+	int ret = -1; /* Corresponds to error value for rename */
 
 	/*
 	 * During a rename operation secure world sends the two NULL terminated
@@ -271,12 +275,18 @@ static int tee_fs_rename(struct tee_fs_rpc *fsrpc)
 	 * begins.
 	 */
 	size_t offset_new_fn = strlen(filenames) + 1;
+	size_t filesize = tee_fs_get_absolute_filename(filenames, old_fn,
+						       sizeof(old_fn));
+	if (!filesize)
+		goto exit;
 
-	tee_fs_get_absolute_filename(filenames, old_fn, sizeof(old_fn));
-	tee_fs_get_absolute_filename(filenames + offset_new_fn, new_fn,
-				     sizeof(new_fn));
+	filesize = tee_fs_get_absolute_filename(filenames + offset_new_fn,
+						new_fn, sizeof(new_fn));
+exit:
+	if (filesize)
+		ret = rename(old_fn, new_fn);
 
-	return rename(old_fn, new_fn);
+	return ret;
 }
 
 static int tee_fs_truncate(struct tee_fs_rpc *fsrpc)
@@ -289,12 +299,16 @@ static int tee_fs_mkdir(struct tee_fs_rpc *fsrpc)
 	char abs_dirname[PATH_MAX];
 	char *dirname = (char *)(fsrpc + 1);
 	mode_t mode;
+	int ret = -1; /* Same as mkir on error */
+	size_t filesize = tee_fs_get_absolute_filename(dirname, abs_dirname,
+						       sizeof(abs_dirname));
 
-	tee_fs_get_absolute_filename(dirname, abs_dirname,
-				     sizeof(abs_dirname));
-	mode = tee_fs_conv_mkdflags(fsrpc->flags);
+	if (filesize) {
+		mode = tee_fs_conv_mkdflags(fsrpc->flags);
+		ret = mkdir(abs_dirname, mode);
+	}
 
-	return mkdir(abs_dirname, mode);
+	return ret;
 }
 
 static int tee_fs_opendir(struct tee_fs_rpc *fsrpc)
@@ -302,17 +316,20 @@ static int tee_fs_opendir(struct tee_fs_rpc *fsrpc)
 	char abs_dirname[PATH_MAX];
 	char *dirname = (char *)(fsrpc + 1);
 	DIR *dir;
-	int handle;
+	int handle = -1;
+	size_t filesize = tee_fs_get_absolute_filename(dirname, abs_dirname,
+						       sizeof(abs_dirname));
+	if (!filesize)
+		goto exit;
 
-	tee_fs_get_absolute_filename(dirname, abs_dirname, sizeof(abs_dirname));
 	dir = opendir(abs_dirname);
 	if (!dir)
-		return -1;
+		goto exit;
 
 	handle = handle_get(&dir_handle_db, dir);
 	if (handle < 0)
 		closedir(dir);
-
+exit:
 	return handle;
 }
 
@@ -354,10 +371,14 @@ static int tee_fs_rmdir(struct tee_fs_rpc *fsrpc)
 {
 	char abs_dirname[PATH_MAX];
 	char *dirname = (char *)(fsrpc + 1);
+	int ret = -1; /* Corresponds to the error value for rmdir */
+	size_t filesize = tee_fs_get_absolute_filename(dirname, abs_dirname,
+						       sizeof(abs_dirname));
 
-	tee_fs_get_absolute_filename(dirname, abs_dirname, sizeof(abs_dirname));
+	if (filesize)
+		ret = rmdir(abs_dirname);
 
-	return rmdir(abs_dirname);
+	return ret;
 }
 
 static int tee_fs_access(struct tee_fs_rpc *fsrpc)
@@ -365,14 +386,15 @@ static int tee_fs_access(struct tee_fs_rpc *fsrpc)
 	char abs_filename[PATH_MAX];
 	char *filename = (char *)(fsrpc + 1);
 	int flags;
-	int res;
+	int ret = -1; /* Corresponds to the error value for access */
+	size_t filesize = tee_fs_get_absolute_filename(filename, abs_filename,
+						       sizeof(abs_filename));
+	if (filesize) {
+		flags = tee_fs_conv_accessflags(fsrpc->flags);
+		ret = access(abs_filename, flags);
+	}
 
-	tee_fs_get_absolute_filename(filename, abs_filename,
-				     sizeof(abs_filename));
-	flags = tee_fs_conv_accessflags(fsrpc->flags);
-	res = access(abs_filename, flags);
-
-	return res;
+	return ret;
 }
 
 int tee_supp_fs_init(void)
