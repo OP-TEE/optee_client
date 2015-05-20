@@ -102,15 +102,7 @@ static void free_all_shared_memory(void)
 	DMSG("<");
 }
 
-static void free_shared_memory(struct share_mem_entry *entry)
-{
-	free_param(&entry->shared_mem);
-
-	TAILQ_REMOVE(&shared_memory_list, entry, link);
-	free(entry);
-}
-
-static void free_shared_memory_with_fd(int fd)
+static void free_shared_memory(int fd)
 {
 	struct share_mem_entry *entry;
 
@@ -123,7 +115,10 @@ static void free_shared_memory_with_fd(int fd)
 		return;
 	}
 
-	free_shared_memory(entry);
+	free_param(&entry->shared_mem);
+
+	TAILQ_REMOVE(&shared_memory_list, entry, link);
+	free(entry);
 }
 
 static TEEC_SharedMemory *add_shared_memory(int fd, size_t size)
@@ -321,22 +316,8 @@ static void load_ta(int fd, struct tee_rpc_invoke *inv)
 
 static void free_ta(struct tee_rpc_invoke *inv)
 {
-	int fd;
-
 	INMSG();
-	/* TODO This parameter should come as a value parameter instead. */
-	fd = (int)(uintptr_t)inv->cmds[0].buffer;
-	free_shared_memory_with_fd(fd);
-	inv->nbr_bf = 0;
-	inv->cmds[0].buffer = NULL;
-	inv->res = TEEC_SUCCESS;
-	OUTMSG();
-}
-
-static void free_ta_with_fd(struct tee_rpc_invoke *inv)
-{
-	INMSG();
-	free_shared_memory_with_fd(inv->cmds[0].fd);
+	free_shared_memory(inv->cmds[0].fd);
 	inv->nbr_bf = 0;
 	inv->res = TEEC_SUCCESS;
 	OUTMSG();
@@ -423,10 +404,6 @@ int main(int argc, char *argv[])
 
 			case TEE_RPC_FREE_TA:
 				free_ta(&request);
-				break;
-
-			case TEE_RPC_FREE_TA_WITH_FD:
-				free_ta_with_fd(&request);
 				break;
 
 			case TEE_RPC_GET_TIME:
