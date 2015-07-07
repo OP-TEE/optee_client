@@ -51,6 +51,7 @@
 #define TEE_FS_READDIR   12
 #define TEE_FS_RMDIR     13
 #define TEE_FS_ACCESS    14
+#define TEE_FS_LINK      15
 
 /*
  * Open flags, defines shared with TEE.
@@ -260,6 +261,35 @@ static int tee_fs_unlink(struct tee_fs_rpc *fsrpc)
 	return ret;
 }
 
+static int tee_fs_link(struct tee_fs_rpc *fsrpc)
+{
+	char old_fn[PATH_MAX];
+	char new_fn[PATH_MAX];
+	char *filenames = (char *)(fsrpc + 1);
+	int ret = -1; /* Corresponds to error value for link */
+
+	/*
+	 * During a link operation secure world sends the two NULL terminated
+	 * filenames as a single concatenated string, as for example:
+	 *   "old.txt\0new.txt\0"
+	 * Therefore we start by finding the offset to where the new filename
+	 * begins.
+	 */
+	size_t offset_new_fn = strlen(filenames) + 1;
+	size_t filesize = tee_fs_get_absolute_filename(filenames, old_fn,
+						       sizeof(old_fn));
+	if (!filesize)
+		goto exit;
+
+	filesize = tee_fs_get_absolute_filename(filenames + offset_new_fn,
+						new_fn, sizeof(new_fn));
+	if (filesize)
+		ret = link(old_fn, new_fn);
+
+exit:
+	return ret;
+}
+
 static int tee_fs_rename(struct tee_fs_rpc *fsrpc)
 {
 	char old_fn[PATH_MAX];
@@ -282,10 +312,10 @@ static int tee_fs_rename(struct tee_fs_rpc *fsrpc)
 
 	filesize = tee_fs_get_absolute_filename(filenames + offset_new_fn,
 						new_fn, sizeof(new_fn));
-exit:
 	if (filesize)
 		ret = rename(old_fn, new_fn);
 
+exit:
 	return ret;
 }
 
@@ -462,6 +492,8 @@ int tee_supp_fs_process(void *cmd, size_t cmd_size)
 	case TEE_FS_ACCESS:
 		ret = tee_fs_access(fsrpc);
 		break;
+	case TEE_FS_LINK:
+		ret = tee_fs_link(fsrpc);
 	default:
 		break;
 	}
