@@ -14,7 +14,7 @@ export VPREFIX
 
 EXPORT_DIR ?= $(O)/export
 
-.PHONY: all build build-libteec install copy_export copy_rootfs \
+.PHONY: all build build-libteec install copy_export \
 	clean cscope clean-cscope \
 	checkpatch-pre-req checkpatch-modified-patch checkpatch-modified-file \
 	checkpatch-last-commit-patch checkpatch-last-commit-file \
@@ -33,7 +33,7 @@ build-tee-supplicant: build-libteec
 
 build: build-libteec build-tee-supplicant
 
-install: copy_export copy_rootfs
+install: copy_export
 
 clean: clean-libteec clean-tee-supplicant clean-cscope
 
@@ -116,20 +116,6 @@ checkpatch-all-files: checkpatch-pre-req
 	${VPREFIX}${CHECKPATCH} $(CHECKPATCH_FILE_ARGS) $(shell git ls-files)
 
 distclean: clean
-
-ifdef ROOTFS_DIR
-copy_rootfs: build
-	cp ${O}/libteec/libteec.so* ${ROOTFS_DIR}/usr/lib
-	cp ${O}/tee-supplicant/tee-supplicant ${ROOTFS_DIR}/usr/bin
-clean_rootfs:
-	rm -f ${ROOTFS_DIR}/usr/lib/libteec.so*
-	rm -f ${ROOTFS_DIR}/usr/bin/tee-supplicant
-else
-copy_rootfs:
-	@echo Rootfs copy cannot be done because ROOTFS_DIR is not defined
-clean_rootfs:
-	@echo Rootfs clean cannot be done because ROOTFS_DIR is not defined
-endif
 
 copy_export: build
 	mkdir -p ${EXPORT_DIR}/lib ${EXPORT_DIR}/include ${EXPORT_DIR}/bin
