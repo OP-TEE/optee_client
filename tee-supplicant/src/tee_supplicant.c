@@ -59,16 +59,21 @@ char devname1[TEEC_MAX_DEVNAME_SIZE];
 char devname2[TEEC_MAX_DEVNAME_SIZE];
 
 struct tee_rpc_cmd {
-	void *buffer;
+	union {
+		void	*buffer;
+		uint64_t padding_buf;
+	};
 	uint32_t size;
 	uint32_t type;
 	int fd;
+	int reserved;
 };
 
 struct tee_rpc_invoke {
 	uint32_t cmd;
 	uint32_t res;
 	uint32_t nbr_bf;
+	uint32_t reserved;
 	struct tee_rpc_cmd cmds[TEE_RPC_BUFFER_NUMBER];
 };
 
@@ -133,6 +138,7 @@ static TEEC_SharedMemory *add_shared_memory(int fd, size_t size)
 
 	shared_mem = &entry->shared_mem;
 
+	memset((void *)&shm, 0, sizeof(shm));
 	shm.buffer = NULL;
 	shm.size   = size;
 	shm.registered = 0;
@@ -175,6 +181,8 @@ static int get_param(int fd, struct tee_rpc_invoke *inv, const uint32_t idx,
 	if (idx >= inv->nbr_bf)
 		return -1;
 
+	memset((void *)&shm, 0, sizeof(shm));
+
 	shm.buffer = inv->cmds[idx].buffer;
 	shm.size   = inv->cmds[idx].size;
 	shm.registered = 0;
@@ -191,7 +199,7 @@ static int get_param(int fd, struct tee_rpc_invoke *inv, const uint32_t idx,
 	shared_mem->flags = shm.flags;
 	shared_mem->d.fd = shm.fd_shm;
 
-	DMSG("size %zu fd_shm %d", shared_mem->size, shared_mem->d.fd);
+	DMSG("size %u fd_shm %d", (int)shared_mem->size, shared_mem->d.fd);
 
 	shared_mem->buffer = mmap(NULL, shared_mem->size,
 				     PROT_READ | PROT_WRITE, MAP_SHARED,
@@ -243,11 +251,11 @@ static TEEC_SharedMemory *alloc_param(int fd, struct tee_rpc_invoke *inv,
 /* Release parameter recieved from get_param or alloc_param */
 static void free_param(TEEC_SharedMemory *shared_mem)
 {
-	INMSG("%p %zu (%p)", shared_mem->buffer,
-	      shared_mem->size, shared_mem);
+	INMSG("%p %u (%p)", shared_mem->buffer,
+	      (int)shared_mem->size, shared_mem);
 	if (munmap(shared_mem->buffer, shared_mem->size) != 0)
-		EMSG("munmap(%p, %zu) failed - Error = %s",
-		     shared_mem->buffer, shared_mem->size,
+		EMSG("munmap(%p, %u) failed - Error = %s",
+		     shared_mem->buffer, (int)shared_mem->size,
 		     strerror(errno));
 	close(shared_mem->d.fd);
 	OUTMSG();

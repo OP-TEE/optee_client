@@ -76,6 +76,8 @@ static void teec_mutex_unlock(pthread_mutex_t *mu)
 
 static void teec_resetTeeCmd(struct tee_cmd_io *cmd)
 {
+	memset((void *)cmd, 0, sizeof(struct tee_cmd_io));
+
 	cmd->fd_sess	= -1;
 	cmd->cmd	= 0;
 	cmd->uuid	= NULL;
@@ -121,6 +123,8 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 	if (context->fd == -1)
 		return TEEC_ERROR_ITEM_NOT_FOUND;
 
+	pthread_mutex_init(&mutex, NULL);
+
 	OUTMSG("");
 	return TEEC_SUCCESS;
 }
@@ -142,6 +146,7 @@ void TEEC_FinalizeContext(TEEC_Context *context)
 TEEC_Result TEEC_AllocateSharedMemory(TEEC_Context *context,
 				      TEEC_SharedMemory *shared_memory)
 {
+	struct tee_shm_io shm;
 	size_t size;
 	uint32_t flags;
 
@@ -154,12 +159,23 @@ TEEC_Result TEEC_AllocateSharedMemory(TEEC_Context *context,
 	shared_memory->size = size;
 	shared_memory->flags = flags;
 
-	if (ioctl(context->fd, TEE_ALLOC_SHM_IOC, shared_memory) != 0) {
+	memset((void *)&shm, 0, sizeof(shm));
+	shm.buffer = NULL;
+	shm.size   = size;
+	shm.registered = 0;
+	shm.fd_shm = 0;
+	shm.flags = TEEC_MEM_INPUT | TEEC_MEM_OUTPUT;
+	if (ioctl(context->fd, TEE_ALLOC_SHM_IOC, &shm) != 0) {
 		EMSG("Ioctl(TEE_ALLOC_SHM_IOC) failed! (%s)\n",
 		     strerror(errno));
 		return TEEC_ERROR_OUT_OF_MEMORY;
 	}
-	DMSG("fd %d size %zd flags %08x", shared_memory->d.fd, shared_memory->size, shared_memory->flags);
+
+	DMSG("fd %d size %d flags %08x", shared_memory->d.fd,
+		(int)shared_memory->size, shared_memory->flags);
+
+	shared_memory->size = size;
+	shared_memory->d.fd = shm.fd_shm;
 
 	/*
 	 * Map memory to current user space process.
