@@ -55,6 +55,6 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/public \
 		$(LOCAL_PATH)/tee-supplicant/src
 
 LOCAL_SHARED_LIBRARIES := libteec
-LOCAL_MODULE := tee_supplicant
+LOCAL_MODULE := tee-supplicant
 LOCAL_MODULE_TAGS := optional
 include $(BUILD_EXECUTABLE)
