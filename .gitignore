@@ -5,3 +5,5 @@ Debug
 *.swp
 .cproject
 .project
+/libs
+/obj
