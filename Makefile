@@ -25,11 +25,11 @@ all: build install
 
 build-libteec:
 	@echo "Building libteec.so"
-	@$(MAKE) --directory=libteec --no-print-directory
+	@$(MAKE) --directory=libteec --no-print-directory --no-builtin-variables
 
 build-tee-supplicant: build-libteec
 	@echo "Building tee-supplicant"
-	$(MAKE) --directory=tee-supplicant  --no-print-directory
+	$(MAKE) --directory=tee-supplicant  --no-print-directory --no-builtin-variables
 
 build: build-libteec build-tee-supplicant
 
