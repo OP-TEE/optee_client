@@ -47,6 +47,7 @@
 #include <tee_supp_fs.h>
 #include <teec.h>
 #include <pthread.h>
+#include <rpmb.h>
 
 #define TEE_RPC_BUFFER_NUMBER 5
 
@@ -389,6 +390,30 @@ static void get_ree_time(int fd, struct tee_rpc_invoke *inv)
 	OUTMSG();
 }
 
+static void process_rpmb(int fd, struct tee_rpc_invoke *inv)
+{
+	TEEC_SharedMemory req, rsp;
+
+	INMSG();
+	if (get_param(fd, inv, 0, &req)) {
+		inv->res = TEEC_ERROR_BAD_PARAMETERS;
+		goto out;
+	}
+	if (get_param(fd, inv, 1, &rsp)) {
+		inv->res = TEEC_ERROR_BAD_PARAMETERS;
+		goto free_req;
+	}
+
+	inv->res = rpmb_process_request(req.buffer, req.size, rsp.buffer,
+					rsp.size);
+
+	free_param(&rsp);
+free_req:
+	free_param(&req);
+out:
+	OUTMSG();
+}
+
 int main(int argc, char *argv[])
 {
 	int fd;
@@ -447,6 +472,11 @@ int main(int argc, char *argv[])
 			case TEE_RPC_FS:
 				process_fs(fd, &request);
 				break;
+
+			case TEE_RPC_RPMB_CMD:
+				process_rpmb(fd, &request);
+				break;
+
 			default:
 				EMSG("Cmd [0x%" PRIx32 "] not supported",
 				     request.cmd);
