@@ -46,6 +46,7 @@
 #include <teec_ta_load.h>
 #include <tee_supp_fs.h>
 #include <teec.h>
+#include <pthread.h>
 
 #define TEE_RPC_BUFFER_NUMBER 5
 
@@ -93,17 +94,34 @@ struct share_mem_entry {
 static TAILQ_HEAD(, share_mem_entry) shared_memory_list =
 	TAILQ_HEAD_INITIALIZER(shared_memory_list);
 
+/* Mutex when allocatng /freeing shared memory */
+static pthread_mutex_t mutex_shm = PTHREAD_MUTEX_INITIALIZER;
+
+static void mutex_lock(void)
+{
+	pthread_mutex_lock(&mutex_shm);
+}
+
+static void mutex_unlock(void)
+{
+	pthread_mutex_unlock(&mutex_shm);
+}
+
 static void free_all_shared_memory(void)
 {
 	struct share_mem_entry *entry;
 
 	DMSG(">");
+
+	mutex_lock();
 	while (!TAILQ_EMPTY(&shared_memory_list)) {
 		entry = TAILQ_FIRST(&shared_memory_list);
 		TAILQ_REMOVE(&shared_memory_list, entry, link);
 		free_param(&entry->shared_mem);
 		free(entry);
 	}
+	mutex_unlock();
+
 	DMSG("<");
 }
 
@@ -111,18 +129,22 @@ static void free_shared_memory(int fd)
 {
 	struct share_mem_entry *entry;
 
+	mutex_lock();
 	TAILQ_FOREACH(entry, &shared_memory_list, link)
 		if (entry->shared_mem.d.fd == fd)
 			break;
 
 	if (!entry) {
 		EMSG("Cannot find fd=%d\n", fd);
+		mutex_unlock();
 		return;
 	}
 
 	free_param(&entry->shared_mem);
 
 	TAILQ_REMOVE(&shared_memory_list, entry, link);
+	mutex_unlock();
+
 	free(entry);
 }
 
@@ -164,7 +186,10 @@ static TEEC_SharedMemory *add_shared_memory(int fd, size_t size)
 		goto out;
 	}
 
+	mutex_lock();
 	TAILQ_INSERT_TAIL(&shared_memory_list, entry, link);
+	mutex_unlock();
+
 out:
 	if (!shared_mem)
 		free(entry);
