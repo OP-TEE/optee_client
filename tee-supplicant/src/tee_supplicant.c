@@ -167,7 +167,7 @@ static TEEC_SharedMemory *add_shared_memory(int fd, size_t size)
 	shm.fd_shm = 0;
 	shm.flags = TEEC_MEM_INPUT | TEEC_MEM_OUTPUT;
 	if (ioctl(fd, TEE_ALLOC_SHM_IOC, &shm) != 0) {
-		EMSG("Ioctl(TEE_ALLOC_SHM_IOC) failed! (%s)", strerror(errno));
+		EMSG("ioctl(TEE_ALLOC_SHM_IOC) failed! (%s)", strerror(errno));
 		shared_mem = NULL;
 		goto out;
 	}
@@ -215,7 +215,8 @@ static int get_param(int fd, struct tee_rpc_invoke *inv, const uint32_t idx,
 	shm.flags = TEEC_MEM_INPUT | TEEC_MEM_OUTPUT;
 
 	if (ioctl(fd, TEE_GET_FD_FOR_RPC_SHM_IOC, &shm) != 0) {
-		EMSG("Ioctl(TEE_ALLOC_SHM_IOC) failed! (%s)", strerror(errno));
+		EMSG("ioctl(TEE_GET_FD_FOR_RPC_SHM_IOC) failed! (%s)",
+		     strerror(errno));
 		return -1;
 	}
 

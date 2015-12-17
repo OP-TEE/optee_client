@@ -166,7 +166,7 @@ TEEC_Result TEEC_AllocateSharedMemory(TEEC_Context *context,
 	shm.fd_shm = 0;
 	shm.flags = TEEC_MEM_INPUT | TEEC_MEM_OUTPUT;
 	if (ioctl(context->fd, TEE_ALLOC_SHM_IOC, &shm) != 0) {
-		EMSG("Ioctl(TEE_ALLOC_SHM_IOC) failed! (%s)\n",
+		EMSG("ioctl(TEE_ALLOC_SHM_IOC) failed! (%s)\n",
 		     strerror(errno));
 		return TEEC_ERROR_OUT_OF_MEMORY;
 	}
@@ -294,7 +294,7 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *context,
 
 	errno = 0;
 	if (ioctl(context->fd, TEE_OPEN_SESSION_IOC, &cmd) != 0) {
-		EMSG("Ioctl(TEE_OPEN_SESSION_IOC) failed! (%s) err %08x ori %08x\n",
+		EMSG("ioctl(TEE_OPEN_SESSION_IOC) failed! (%s) err %08x ori %08x\n",
 		     strerror(errno), cmd.err, cmd.origin);
 		if (cmd.origin)
 			origin = cmd.origin;
@@ -390,7 +390,7 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session,
 	cmd.op = operation;
 
 	if (ioctl(session->fd, TEE_INVOKE_COMMAND_IOC, &cmd) != 0)
-		EMSG("Ioctl(TEE_INVOKE_COMMAND_IOC) failed! (%s)\n",
+		EMSG("ioctl(TEE_INVOKE_COMMAND_IOC) failed! (%s)\n",
 		     strerror(errno));
 
 	if (operation != NULL) {
@@ -432,6 +432,6 @@ void TEEC_RequestCancellation(TEEC_Operation *operation)
 	cmd.op = operation;
 
 	if (ioctl(session->fd, TEE_REQUEST_CANCELLATION_IOC, &cmd) != 0)
-		EMSG("Ioctl(TEE_REQUEST_CANCELLATION_IOC) failed! (%s)\n",
+		EMSG("ioctl(TEE_REQUEST_CANCELLATION_IOC) failed! (%s)\n",
 		     strerror(errno));
 }
