@@ -358,6 +358,59 @@ static void free_ta(struct tee_rpc_invoke *inv)
 	OUTMSG();
 }
 
+static void load_ta2(int fd, struct tee_rpc_invoke *inv)
+{
+	void *ta = NULL;
+	int ta_found;
+	size_t size = 0;
+	struct tee_rpc_ta *cmd;
+	TEEC_SharedMemory shared_mem;
+
+	INMSG();
+
+	if (inv->nbr_bf < 2) {
+		inv->res = TEEC_ERROR_BAD_PARAMETERS;
+		OUTMSG();
+		return;
+	}
+
+	if (get_param(fd, inv, 0, &shared_mem)) {
+		inv->res = TEEC_ERROR_BAD_PARAMETERS;
+		OUTMSG();
+		return;
+	}
+	cmd = (struct tee_rpc_ta *)shared_mem.buffer;
+
+	ta_found = TEECI_LoadSecureModule(devname1, &cmd->uuid, &ta, &size);
+	if (ta_found != TA_BINARY_FOUND)
+		ta_found = TEECI_LoadSecureModule(devname2, &cmd->uuid, &ta,
+						  &size);
+
+	if (ta_found == TA_BINARY_FOUND) {
+		TEEC_SharedMemory ta_shm;;
+
+		if (size <= inv->cmds[1].size) {
+			if (get_param(fd, inv, 1, &ta_shm)) {
+				inv->res = TEEC_ERROR_BAD_PARAMETERS;
+				goto out;
+			}
+			memcpy(ta_shm.buffer, ta, size);
+			free_param(&ta_shm);
+		}
+		inv->cmds[1].size = size;
+		inv->res = TEEC_SUCCESS;
+	} else {
+		EMSG("  TA not found");
+		inv->res = TEEC_ERROR_ITEM_NOT_FOUND;
+	}
+out:
+	free(ta);
+	free_param(&shared_mem);
+	OUTMSG();
+}
+
+
+
 static void get_ree_time(int fd, struct tee_rpc_invoke *inv)
 {
 	struct TEE_Time {
@@ -475,6 +528,10 @@ int main(int argc, char *argv[])
 
 			case TEE_RPC_RPMB_CMD:
 				process_rpmb(fd, &request);
+				break;
+
+			case TEE_RPC_LOAD_TA2:
+				load_ta2(fd, &request);
 				break;
 
 			default:
