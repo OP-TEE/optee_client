@@ -36,9 +36,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <stdbool.h>
 
 #ifdef RPMB_EMU
 #include <stdarg.h>
+#include "hmac_sha2.h"
+#else
+#include <errno.h>
 #endif
 
 /*
@@ -82,6 +86,8 @@ struct rpmb_data_frame {
 	uint16_t block_count;
 	uint16_t op_result;
 #define RPMB_RESULT_OK				0x00
+#define RPMB_RESULT_GENERAL_FAILURE		0x01
+#define RPMB_RESULT_AUTH_FAILURE		0x02
 #define RPMB_RESULT_ADDRESS_FAILURE		0x04
 	uint16_t msg_type;
 #define RPMB_MSG_TYPE_REQ_AUTH_KEY_PROGRAM		0x0001
@@ -165,6 +171,7 @@ struct rpmb_emu {
 	uint8_t buf[EMU_RPMB_SIZE_BYTES];
 	size_t size;
 	uint8_t key[32];
+	bool key_set;
 	uint8_t nonce[16];
 	uint32_t write_counter;
 	struct {
@@ -191,21 +198,87 @@ static struct rpmb_emu *mem_for_fd(int fd)
 	return &rpmb_emu;
 }
 
-#ifdef RPMB_EMU_DUMP_DATA
-static void dump_data(size_t blknum, uint8_t *ptr)
+#if (DEBUGLEVEL >= TRACE_FLOW)
+static void dump_blocks(size_t startblk, size_t numblk, uint8_t *ptr,
+			bool to_mmc)
 {
 	char msg[100];
+	size_t i;
 
-	snprintf(msg, sizeof(msg), "MMC block %zu", blknum);
-	dump_buffer(msg, ptr, 256);
+	for (i = 0; i < numblk; i++) {
+		snprintf(msg, sizeof(msg), "%s MMC block %zu",
+			 to_mmc ? "Write" : "Read", startblk + i);
+		dump_buffer(msg, ptr, 256);
+		ptr += 256;
+	}
 }
 #else
-static void dump_data(size_t blknum, uint8_t *ptr)
+static void dump_blocks(size_t startblk, size_t numblk, uint8_t *ptr,
+			bool to_mmc)
 {
-	(void)blknum;
+	(void)startblk;
+	(void)numblk;
 	(void)ptr;
+	(void)to_mmc;
 }
 #endif
+
+#define CUC(x) ((const unsigned char *)(x))
+static void hmac_update_frm(hmac_sha256_ctx *ctx, struct rpmb_data_frame *frm)
+{
+	hmac_sha256_update(ctx, CUC(frm->data), 256);
+	hmac_sha256_update(ctx, CUC(frm->nonce), 16);
+	hmac_sha256_update(ctx, CUC(&frm->write_counter), 4);
+	hmac_sha256_update(ctx, CUC(&frm->address), 2);
+	hmac_sha256_update(ctx, CUC(&frm->block_count), 2);
+	hmac_sha256_update(ctx, CUC(&frm->op_result), 2);
+	hmac_sha256_update(ctx, CUC(&frm->msg_type), 2);
+}
+
+static bool is_hmac_valid(struct rpmb_emu *mem, struct rpmb_data_frame *frm,
+		   size_t nfrm)
+{
+	hmac_sha256_ctx ctx;
+	uint8_t mac[32];
+	size_t i;
+
+	if (!mem->key_set) {
+		EMSG("Cannot check MAC (key not set)");
+		return false;
+	}
+
+	hmac_sha256_init(&ctx, mem->key, sizeof(mem->key));
+	for (i = 0; i < nfrm; i++, frm++)
+		hmac_update_frm(&ctx, frm);
+	frm--;
+	hmac_sha256_final(&ctx, mac, 32);
+
+	if (memcmp(mac, frm->key_mac, 32)) {
+		EMSG("Invalid MAC");
+		return false;
+	}
+	return true;
+}
+
+static uint16_t compute_hmac(struct rpmb_emu *mem, struct rpmb_data_frame *frm,
+			     size_t nfrm)
+{
+	hmac_sha256_ctx ctx;
+	size_t i;
+
+	if (!mem->key_set) {
+		EMSG("Cannot compute MAC (key not set)");
+		return RPMB_RESULT_GENERAL_FAILURE;
+	}
+
+	hmac_sha256_init(&ctx, mem->key, sizeof(mem->key));
+	for (i = 0; i < nfrm; i++, frm++)
+		hmac_update_frm(&ctx, frm);
+	frm--;
+	hmac_sha256_final(&ctx, frm->key_mac, 32);
+
+	return RPMB_RESULT_OK;
+}
 
 static uint16_t ioctl_emu_mem_transfer(struct rpmb_emu *mem,
 				       struct rpmb_data_frame *frm,
@@ -220,6 +293,9 @@ static uint16_t ioctl_emu_mem_transfer(struct rpmb_emu *mem,
 		EMSG("Transfer bounds exceeed emulated memory");
 		return RPMB_RESULT_ADDRESS_FAILURE;
 	}
+	if (to_mmc && !is_hmac_valid(mem, frm, nfrm))
+		return RPMB_RESULT_AUTH_FAILURE;
+
 	DMSG("Transferring %zu 256-byte data block%s %s MMC (block offset=%zu)",
 	     nfrm, (nfrm > 1) ? "s" : "", to_mmc ? "to" : "from", start / 256);
 	for (i = 0; i < nfrm; i++) {
@@ -236,29 +312,58 @@ static uint16_t ioctl_emu_mem_transfer(struct rpmb_emu *mem,
 				htons(RPMB_MSG_TYPE_RESP_AUTH_DATA_READ);
 			frm[i].address = htons(mem->last_op.address);
 			frm[i].block_count = nfrm;
-
+			memcpy(frm[i].nonce, mem->nonce, 16);
 		}
-		dump_data(start / 256, memptr);
 		frm[i].op_result = RPMB_RESULT_OK;
 	}
+	dump_blocks(mem->last_op.address, nfrm, mem->buf + start, to_mmc);
+
+	if (!to_mmc)
+		compute_hmac(mem, frm, nfrm);
 
 	return RPMB_RESULT_OK;
+}
+
+static void ioctl_emu_get_write_result(struct rpmb_emu *mem,
+				       struct rpmb_data_frame *frm)
+{
+	frm->msg_type =	htons(RPMB_MSG_TYPE_RESP_AUTH_DATA_WRITE);
+	frm->op_result = mem->last_op.op_result;
+	frm->address = htons(mem->last_op.address);
+	frm->write_counter = htonl(mem->write_counter);
+	compute_hmac(mem, frm, 1);
 }
 
 static uint16_t ioctl_emu_setkey(struct rpmb_emu *mem,
 				 struct rpmb_data_frame *frm)
 {
-	DMSG("Setting key");
+	if (mem->key_set) {
+		EMSG("Key already set");
+		return RPMB_RESULT_GENERAL_FAILURE;
+	}
+	dump_buffer("Setting key", frm->key_mac, 32);
 	memcpy(mem->key, frm->key_mac, 32);
+	mem->key_set = true;
+
 	return RPMB_RESULT_OK;
 }
 
-static uint16_t ioctl_emu_read_ctr(struct rpmb_emu *mem,
-				   struct rpmb_data_frame *frm)
+static void ioctl_emu_get_keyprog_result(struct rpmb_emu *mem,
+					 struct rpmb_data_frame *frm)
+{
+	frm->msg_type =
+		htons(RPMB_MSG_TYPE_RESP_AUTH_KEY_PROGRAM);
+	frm->op_result = mem->last_op.op_result;
+}
+
+static void ioctl_emu_read_ctr(struct rpmb_emu *mem,
+			       struct rpmb_data_frame *frm)
 {
 	DMSG("Reading counter");
+	frm->msg_type = htons(RPMB_MSG_TYPE_RESP_WRITE_COUNTER_VAL_READ);
 	frm->write_counter = htonl(mem->write_counter);
-	return RPMB_RESULT_OK;
+	memcpy(frm->nonce, mem->nonce, 16);
+	frm->op_result = compute_hmac(mem, frm, 1);
 }
 
 static void ioctl_emu_set_cid(uint8_t *cid)
@@ -315,9 +420,6 @@ static int ioctl_emu(int fd, unsigned long request, ...)
 	cmd = va_arg(ap, struct mmc_ioc_cmd *);
 	va_end(ap);
 
-	frm = (struct rpmb_data_frame *)(uintptr_t)cmd->data_ptr;
-	msg_type = ntohs(frm->msg_type);
-
 	switch (cmd->opcode) {
 	case MMC_SEND_CID:
 		ioctl_emu_set_cid((uint8_t *)(uintptr_t)cmd->data_ptr);
@@ -328,15 +430,16 @@ static int ioctl_emu(int fd, unsigned long request, ...)
 		break;
 
 	case MMC_WRITE_MULTIPLE_BLOCK:
+		frm = (struct rpmb_data_frame *)(uintptr_t)cmd->data_ptr;
+		msg_type = ntohs(frm->msg_type);
+
 		switch (msg_type) {
 		case RPMB_MSG_TYPE_REQ_AUTH_KEY_PROGRAM:
-			/* Write key */
 			mem->last_op.msg_type = msg_type;
 			mem->last_op.op_result = ioctl_emu_setkey(mem, frm);
 			break;
 
 		case RPMB_MSG_TYPE_REQ_AUTH_DATA_WRITE:
-			/* Write data */
 			mem->last_op.msg_type = msg_type;
 			mem->last_op.address = ntohs(frm->address);
 			mem->last_op.op_result =
@@ -356,35 +459,24 @@ static int ioctl_emu(int fd, unsigned long request, ...)
 		break;
 
 	case MMC_READ_MULTIPLE_BLOCK:
+		frm = (struct rpmb_data_frame *)(uintptr_t)cmd->data_ptr;
+		msg_type = ntohs(frm->msg_type);
+
 		switch (mem->last_op.msg_type) {
 		case RPMB_MSG_TYPE_REQ_AUTH_KEY_PROGRAM:
-			frm->msg_type =
-				htons(RPMB_MSG_TYPE_RESP_AUTH_KEY_PROGRAM);
-			frm->op_result = mem->last_op.op_result;
+			ioctl_emu_get_keyprog_result(mem, frm);
 			break;
 
 		case RPMB_MSG_TYPE_REQ_AUTH_DATA_WRITE:
-			frm->msg_type =
-				htons(RPMB_MSG_TYPE_RESP_AUTH_DATA_WRITE);
-			frm->op_result = mem->last_op.op_result;
-			frm->address = htons(mem->last_op.address);
-			frm->write_counter = htonl(mem->write_counter);
+			ioctl_emu_get_write_result(mem, frm);
 			break;
 
 		case RPMB_MSG_TYPE_REQ_WRITE_COUNTER_VAL_READ:
-			/* Read counter */
-			frm->msg_type =
-			  htons(RPMB_MSG_TYPE_RESP_WRITE_COUNTER_VAL_READ);
-			frm->op_result = ioctl_emu_read_ctr(mem, frm);
-			frm->write_counter = htonl(mem->write_counter);
-			memcpy(frm->nonce, mem->nonce, 16);
+			ioctl_emu_read_ctr(mem, frm);
 			break;
 
 		case RPMB_MSG_TYPE_REQ_AUTH_DATA_READ:
-			/* Read data */
-			DMSG("cmd->blocks = %d", cmd->blocks);
 			ioctl_emu_mem_transfer(mem, frm, cmd->blocks, 0);
-			memcpy(frm[cmd->blocks-1].nonce, mem->nonce, 16);
 			break;
 
 		default:
