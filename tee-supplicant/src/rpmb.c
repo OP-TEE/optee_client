@@ -37,6 +37,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #ifdef RPMB_EMU
 #include <stdarg.h>
@@ -110,7 +112,6 @@ struct rpmb_data_frame {
 
 /* mmc_ioc_cmd.opcode */
 #define MMC_SEND_EXT_CSD		 8
-#define MMC_SEND_CID			10
 #define MMC_READ_MULTIPLE_BLOCK		18
 #define MMC_WRITE_MULTIPLE_BLOCK	25
 
@@ -121,7 +122,6 @@ struct rpmb_data_frame {
 #define MMC_RSP_OPCODE	(1 << 4)	/* Response contains opcode */
 
 #define MMC_RSP_R1      (MMC_RSP_PRESENT|MMC_RSP_CRC|MMC_RSP_OPCODE)
-#define MMC_RSP_R2      (MMC_RSP_PRESENT|MMC_RSP_136|MMC_RSP_CRC)
 
 #define MMC_CMD_ADTC	(1 << 5)	/* Addressed data transfer command */
 
@@ -130,7 +130,14 @@ struct rpmb_data_frame {
 
 #ifndef RPMB_EMU
 
-#define IOCTL(fd, request, ...) ioctl((fd), (request), ##__VA_ARGS__)
+#define IOCTL(fd, request, ...)					   \
+	({							   \
+		int ret;					   \
+		ret = ioctl((fd), (request), ##__VA_ARGS__);	   \
+		if (ret < 0)					   \
+			EMSG("ioctl ret=%d errno=%d", ret, errno); \
+		ret;						   \
+	})
 
 /* Open and/or return file descriptor to RPMB partition of device dev_id */
 static int mmc_rpmb_fd(uint16_t dev_id)
@@ -153,6 +160,58 @@ static int mmc_rpmb_fd(uint16_t dev_id)
 		return -1;
 	}
 	return fd;
+}
+
+/* Open eMMC device dev_id */
+static int mmc_fd(uint16_t dev_id)
+{
+	int fd;
+	char path[17];
+
+	snprintf(path, sizeof(path), "/dev/mmcblk%u", dev_id);
+	fd = open(path, O_RDONLY);
+	if (fd < 0)
+		EMSG("Could not open %s (%s)", path, strerror(errno));
+
+	return fd;
+}
+
+static void close_mmc_fd(int fd)
+{
+	close(fd);
+}
+
+/* Device Identification (CID) register is 16 bytes. It is read from sysfs. */
+static uint32_t read_cid(uint16_t dev_id, uint8_t *cid)
+{
+	TEEC_Result res;
+	char path[48];
+	char hex[3] = { 0, };
+	int st;
+	int fd;
+	int i;
+
+	snprintf(path, sizeof(path),
+		 "/sys/class/mmc_host/mmc%u/mmc%u:0001/cid", dev_id, dev_id);
+	fd = open(path, O_RDONLY);
+	if (fd < 0) {
+		EMSG("Could not open %s (%s)", path, strerror(errno));
+		return TEEC_ERROR_ITEM_NOT_FOUND;
+	}
+
+	for (i = 0; i < 16; i++) {
+		st = read(fd, hex, 2);
+		if (st < 0) {
+			EMSG("Read CID error (%s)", strerror(errno));
+			res = TEEC_ERROR_NO_DATA;
+			goto err;
+		}
+		cid[i] = (uint8_t)strtol(hex, NULL, 16);
+	}
+	res = TEEC_SUCCESS;
+err:
+	close(fd);
+	return res;
 }
 
 #else /* RPMB_EMU */
@@ -366,7 +425,7 @@ static void ioctl_emu_read_ctr(struct rpmb_emu *mem,
 	frm->op_result = compute_hmac(mem, frm, 1);
 }
 
-static void ioctl_emu_set_cid(uint8_t *cid)
+static uint32_t read_cid(uint16_t dev_id, uint8_t *cid)
 {
 	/* Taken from an actual eMMC chip */
 	static const uint8_t test_cid[] = {
@@ -391,7 +450,10 @@ static void ioctl_emu_set_cid(uint8_t *cid)
 		0x15
 	};
 
+	(void)dev_id;
 	memcpy(cid, test_cid, sizeof(test_cid));
+
+	return TEEC_SUCCESS;
 }
 
 static void ioctl_emu_set_ext_csd(uint8_t *ext_csd)
@@ -421,10 +483,6 @@ static int ioctl_emu(int fd, unsigned long request, ...)
 	va_end(ap);
 
 	switch (cmd->opcode) {
-	case MMC_SEND_CID:
-		ioctl_emu_set_cid((uint8_t *)(uintptr_t)cmd->data_ptr);
-		break;
-
 	case MMC_SEND_EXT_CSD:
 		ioctl_emu_set_ext_csd((uint8_t *)(uintptr_t)cmd->data_ptr);
 		break;
@@ -501,27 +559,19 @@ static int mmc_rpmb_fd(uint16_t dev_id)
 	return 0;
 }
 
-#endif /* RPMB_EMU */
-
-/* Device Identification (CID) register is 16 bytes */
-static uint32_t read_cid(int fd, uint8_t *cid)
+static int mmc_fd(uint16_t dev_id)
 {
-	int st;
-	struct mmc_ioc_cmd cmd;
+	(void)dev_id;
 
-	memset(&cmd, 0, sizeof(cmd));
-	cmd.blksz = 16;
-	cmd.blocks = 1;
-	cmd.flags = MMC_RSP_R2;
-	cmd.opcode = MMC_SEND_CID;
-	mmc_ioc_cmd_set_data(cmd, cid);
-
-	st = IOCTL(fd, MMC_IOC_CMD, &cmd);
-	if (st < 0)
-		return TEEC_ERROR_GENERIC;
-
-	return TEEC_SUCCESS;
+	return 0;
 }
+
+static void close_mmc_fd(int fd)
+{
+	(void)fd;
+}
+
+#endif /* RPMB_EMU */
 
 /*
  * Extended CSD Register is 512 bytes and defines device properties
@@ -583,9 +633,19 @@ static uint32_t rpmb_data_req(int fd, struct rpmb_data_frame *req_frm,
 
 		/* Send write request frame(s) */
 		cmd.write_flag |= MMC_CMD23_ARG_REL_WR;
+		/*
+		 * Black magic: tested on a HiKey board with a HardKernel eMMC
+		 * module. When postsleep values are zero, the kernel logs
+		 * random errors: "mmc_blk_ioctl_cmd: Card Status=0x00000E00"
+		 * and ioctl() fails.
+		 */
+		cmd.postsleep_min_us = 20000;
+		cmd.postsleep_max_us = 50000;
 		st = IOCTL(fd, MMC_IOC_CMD, &cmd);
 		if (st < 0)
 			return TEEC_ERROR_GENERIC;
+		cmd.postsleep_min_us = 0;
+		cmd.postsleep_max_us = 0;
 
 		/* Send result request frame */
 		memset(rsp_frm, 0, 1);
@@ -641,17 +701,31 @@ static uint32_t rpmb_data_req(int fd, struct rpmb_data_frame *req_frm,
 	return TEEC_SUCCESS;
 }
 
-static uint32_t rpmb_get_dev_info(int fd, struct rpmb_dev_info *info)
+static uint32_t rpmb_get_dev_info(uint16_t dev_id, struct rpmb_dev_info *info)
 {
+	int fd;
+	uint32_t res;
 	uint8_t ext_csd[512];
 
-	read_cid(fd, info->cid);
-	read_ext_csd(fd, ext_csd);
+	res = read_cid(dev_id, info->cid);
+	if (res != TEEC_SUCCESS)
+		return res;
+
+	fd = mmc_fd(dev_id);
+	if (fd < 0)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	res = read_ext_csd(fd, ext_csd);
+	if (res != TEEC_SUCCESS)
+		goto err;
+
 	info->rel_wr_sec_c = ext_csd[222];
 	info->rpmb_size_mult = ext_csd[168];
 	info->ret_code = RPMB_CMD_GET_DEV_INFO_RET_OK;
 
-	return TEEC_SUCCESS;
+err:
+	close_mmc_fd(fd);
+	return res;
 }
 
 /*
@@ -670,15 +744,15 @@ uint32_t rpmb_process_request(void *req, size_t req_size, void *rsp,
 	if (req_size < sizeof(*sreq))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	fd = mmc_rpmb_fd(sreq->dev_id);
-	if (fd < 0)
-		return TEEC_ERROR_BAD_PARAMETERS;
-
 	switch (sreq->cmd) {
 	case RPMB_CMD_DATA_REQ:
 		req_nfrm = (req_size - sizeof(struct rpmb_req)) / 512;
 		rsp_nfrm = rsp_size / 512;
-		res = rpmb_data_req(fd, RPMB_REQ_DATA(req), req_nfrm, rsp, rsp_nfrm);
+		fd = mmc_rpmb_fd(sreq->dev_id);
+		if (fd < 0)
+			return TEEC_ERROR_BAD_PARAMETERS;
+		res = rpmb_data_req(fd, RPMB_REQ_DATA(req), req_nfrm, rsp,
+				    rsp_nfrm);
 		break;
 
 	case RPMB_CMD_GET_DEV_INFO:
@@ -687,7 +761,8 @@ uint32_t rpmb_process_request(void *req, size_t req_size, void *rsp,
 			EMSG("Invalid req/rsp size");
 			return TEEC_ERROR_BAD_PARAMETERS;
 		}
-		res = rpmb_get_dev_info(fd, (struct rpmb_dev_info *)rsp);
+		res = rpmb_get_dev_info(sreq->dev_id,
+					(struct rpmb_dev_info *)rsp);
 		break;
 
 	default:
