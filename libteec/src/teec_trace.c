@@ -100,16 +100,11 @@ int _dprintf(const char *function, int flen, int line, int level,
 		func = function;
 #endif
 
-#ifdef ANDROID_BUILD
-		/* TOD(emi): What is the syscall eq for Android  ? */
-		int thread_id = pthread_self();
-#else
 		/*
 		 * pthread_self returns the POSIX tid which is different from
 		 * the kernel id
 		 */
 		int thread_id = syscall(SYS_gettid);	/* perf issue ? */
-#endif
 
 		snprintf(prefixed, MAX_PRINT_SIZE,
 			 "%s [%d] %s:%s:%d: %s",

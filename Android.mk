@@ -13,7 +13,6 @@ include $(LOCAL_PATH)/flags.mk
 # Build libteec.so - TEE (Trusted Execution Environment) shared library        #
 ################################################################################
 include $(CLEAR_VARS)
-LOCAL_CFLAGS += -DANDROID_BUILD
 LOCAL_CFLAGS += $(CFLAGS)
 
 ifeq ($(CFG_TEE_CLIENT_LOG_FILE), true)
@@ -38,7 +37,6 @@ include $(BUILD_SHARED_LIBRARY)
 # Build tee supplicant                                                         #
 ################################################################################
 include $(CLEAR_VARS)
-LOCAL_CFLAGS += -DANDROID_BUILD
 LOCAL_CFLAGS += $(CFLAGS)
 
 LOCAL_CFLAGS += -DDEBUGLEVEL_$(CFG_TEE_SUPP_LOG_LEVEL)
