@@ -22,11 +22,11 @@ endif
 LOCAL_CFLAGS += -DDEBUGLEVEL_$(CFG_TEE_CLIENT_LOG_LEVEL)
 LOCAL_CFLAGS += -DBINARY_PREFIX=\"TEEC\"
 
-LOCAL_SRC_FILES += libteec/src/tee_client_api.c
-LOCAL_SRC_FILES += libteec/src/teec_trace.c
+LOCAL_SRC_FILES = libteec/src/tee_client_api.c\
+                  libteec/src/teec_trace.c
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/public \
-		$(LOCAL_PATH)/libteec/include \
+                    $(LOCAL_PATH)/libteec/include \
 
 LOCAL_PRELINK_MODULE := false
 LOCAL_MODULE := libteec
@@ -39,18 +39,18 @@ include $(BUILD_SHARED_LIBRARY)
 include $(CLEAR_VARS)
 LOCAL_CFLAGS += $(CFLAGS)
 
-LOCAL_CFLAGS += -DDEBUGLEVEL_$(CFG_TEE_SUPP_LOG_LEVEL)
-LOCAL_CFLAGS += -DBINARY_PREFIX=\"TEES\"
-LOCAL_CFLAGS += -DTEEC_LOAD_PATH=\"$(CFG_TEE_CLIENT_LOAD_PATH)\"
+LOCAL_CFLAGS += -DDEBUGLEVEL_$(CFG_TEE_SUPP_LOG_LEVEL) \
+                -DBINARY_PREFIX=\"TEES\" \
+                -DTEEC_LOAD_PATH=\"$(CFG_TEE_CLIENT_LOAD_PATH)\" \
 
-LOCAL_SRC_FILES += tee-supplicant/src/handle.c
-LOCAL_SRC_FILES += tee-supplicant/src/tee_supp_fs.c
-LOCAL_SRC_FILES	+= tee-supplicant/src/tee_supplicant.c
-LOCAL_SRC_FILES	+= tee-supplicant/src/teec_ta_load.c
+LOCAL_SRC_FILES += tee-supplicant/src/handle.c \
+                   tee-supplicant/src/tee_supp_fs.c \
+                   tee-supplicant/src/tee_supplicant.c \
+                   tee-supplicant/src/teec_ta_load.c
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/public \
-		$(LOCAL_PATH)/libteec/include \
-		$(LOCAL_PATH)/tee-supplicant/src
+    $(LOCAL_PATH)/libteec/include \
+    $(LOCAL_PATH)/tee-supplicant/src
 
 LOCAL_SHARED_LIBRARIES := libteec
 LOCAL_MODULE := tee-supplicant
