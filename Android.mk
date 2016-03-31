@@ -31,6 +31,9 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/public \
 LOCAL_PRELINK_MODULE := false
 LOCAL_MODULE := libteec
 LOCAL_MODULE_TAGS := optional
+
+LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/public
+
 include $(BUILD_SHARED_LIBRARY)
 
 ################################################################################
