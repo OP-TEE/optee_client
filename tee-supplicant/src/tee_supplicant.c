@@ -329,10 +329,10 @@ static int get_dev_fd(void)
 	return -1;
 }
 
-static void usage(void)
+static int usage(void)
 {
 	fprintf(stderr, "usage: tee-supplicant [<device-name>]");
-	exit(1);
+	return EXIT_FAILURE;
 }
 
 static void process_rpmb(union tee_rpc_invoke *inv)
@@ -363,7 +363,7 @@ int main(int argc, char *argv[])
 	int ret;
 
 	if (argc > 2)
-		usage();
+		return usage();
 	if (argc == 2) {
 		fd = open_dev(argv[1]);
 		if (fd < 0) {
