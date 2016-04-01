@@ -176,7 +176,9 @@ static void load_ta(union tee_rpc_invoke *request)
 	size_t size = 0;
 	TEEC_UUID uuid;
 	struct tee_ioctl_param_value *val_cmd;
-	TEEC_SharedMemory shm_ta = { 0 };
+	TEEC_SharedMemory shm_ta;
+
+	memset(&shm_ta, 0, sizeof(shm_ta));
 
 	if (request->recv.num_params != 2 || get_value(request, 0, &val_cmd) ||
 	    get_param(request, 1, &shm_ta)) {
@@ -201,10 +203,12 @@ static void load_ta(union tee_rpc_invoke *request)
 
 static void process_alloc(int fd, union tee_rpc_invoke *request)
 {
-	struct tee_ioctl_shm_alloc_data data = { 0 };
+	struct tee_ioctl_shm_alloc_data data;
 	struct tee_ioctl_param_value *val;
 	struct tee_shm *shm;
 	int shm_fd;
+
+	memset(&data, 0, sizeof(data));
 
 	if (request->recv.num_params != 1 || get_value(request, 0, &val)) {
 		request->send.ret = TEEC_ERROR_BAD_PARAMETERS;

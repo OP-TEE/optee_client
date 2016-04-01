@@ -102,8 +102,9 @@ err:
 static int teec_shm_alloc(int fd, size_t size, int *id)
 {
 	int shm_fd;
-	struct tee_ioctl_shm_alloc_data data = { 0 };
+	struct tee_ioctl_shm_alloc_data data;
 
+	memset(&data, 0, sizeof(data));
 	data.size = size;
 	shm_fd = ioctl(fd, TEE_IOC_SHM_ALLOC, &data);
 	if (shm_fd < 0)
