@@ -47,8 +47,33 @@ folder.
 	$ git clone https://github.com/OP-TEE/optee_client.git
 
 ### Build
-	$ cd $HOME/devel/optee_client
-	$ make
+During a transition period it will be possible to build using the plain old
+makefiles, but it will also be possible to build using CMake. To build using
+the old makefiles, simply run:
+```bash
+$ cd $HOME/devel/optee_client
+$ make
+```
+
+If you prefer using CMake instead, then create a build folder where you run
+cmake, like this for example:
+```bash
+$ cd $HOME/devel/optee_client
+$ make build
+$ cd build
+
+# This example uses an Armv7-A / 32bit toolchain, adjust accordingly.
+$ export CC="<your_project_path>/toolchains/aarch32/bin/arm-linux-gnueabihf-gcc"
+
+# cmake here take optional flags, if you for example wants to install files in
+# another location than default, then one can use
+# -DCMAKE_INSTALL_PREFIX=<my-install-path> as an argument to cmake.
+$ cmake ..
+$ make
+
+# Optional
+$ make install
+```
 
 For a 64-bit build:
 
