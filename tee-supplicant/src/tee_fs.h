@@ -26,10 +26,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <stdint.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 /*
  * Structure for file related RPC calls
@@ -37,7 +37,7 @@
  * @op     The operation like open, close, read, write etc
  * @flags  Flags to the operation shared with secure world
  * @arg    Argument to operation
- * @fd     NW file descriptor
+ * @fd     Normal World file descriptor
  * @len    Length of buffer at the end of this struct
  * @res    Result of the operation
  */
@@ -68,6 +68,8 @@ struct tee_fs_rpc {
 #define TEE_FS_RMDIR     13
 #define TEE_FS_ACCESS    14
 #define TEE_FS_LINK      15
+#define TEE_FS_BEGIN     16 /* SQL FS: begin transaction */
+#define TEE_FS_END       17 /* SQL FS: end transaction */
 
 /*
  * Open flags, defines shared with TEE.

@@ -14,6 +14,10 @@ EXPORT_DIR ?= $(O)/export
 
 CFG_SQL_FS ?= n
 
+ifeq ($(CFG_SQL_FS),y)
+BUILD-LIBSQLFS = build-libsqlfs
+endif
+
 .PHONY: all build build-libteec install copy_export \
 	clean cscope clean-cscope \
 	checkpatch-pre-req checkpatch-modified-patch checkpatch-modified-file \
@@ -27,7 +31,7 @@ build-libteec:
 	@echo "Building libteec.so"
 	@$(MAKE) --directory=libteec --no-print-directory --no-builtin-variables
 
-build-tee-supplicant: build-libteec
+build-tee-supplicant: build-libteec $(BUILD-LIBSQLFS)
 	@echo "Building tee-supplicant"
 	$(MAKE) --directory=tee-supplicant  --no-print-directory --no-builtin-variables
 
@@ -120,10 +124,12 @@ distclean: clean
 copy_export: build
 	mkdir -p ${EXPORT_DIR}/lib ${EXPORT_DIR}/include ${EXPORT_DIR}/bin
 	cp ${O}/libteec/libteec.so* ${EXPORT_DIR}/lib
+	if [ "$(BUILD-LIBSQLFS)" ]; then cp ${O}/libsqlfs/libsqlfs.so* ${EXPORT_DIR}/lib; fi
 	cp ${O}/tee-supplicant/tee-supplicant ${EXPORT_DIR}/bin
 	cp public/*.h ${EXPORT_DIR}/include
 
 ifeq ($(CFG_SQL_FS),y)
+
 .PHONY: build-libsqlite3 build-libsqlfs
 
 build: build-libsqlite3 build-libsqlfs

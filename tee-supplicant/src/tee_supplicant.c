@@ -52,6 +52,7 @@
 #include <linux/tee.h>
 
 #include <rpmb.h>
+#include <sql_fs.h>
 #define RPC_NUM_PARAMS	2
 
 #define RPC_BUF_SIZE	(sizeof(struct tee_iocl_supp_send_arg) + \
@@ -62,6 +63,7 @@
 #define RPC_CMD_FS		2
 #define RPC_CMD_SHM_ALLOC	6
 #define RPC_CMD_SHM_FREE	7
+#define RPC_CMD_SQL_FS		8
 
 union tee_rpc_invoke {
 	uint64_t buf[RPC_BUF_SIZE / sizeof(uint64_t)];
@@ -166,8 +168,30 @@ static void process_fs(union tee_rpc_invoke *request)
 		return;
 	}
 
-	tee_supp_fs_process(shm.buffer, shm.size);
-	request->send.ret = TEEC_SUCCESS;;
+	if (tee_supp_fs_process(shm.buffer, shm.size) < 0) {
+		request->send.ret = TEEC_ERROR_BAD_PARAMETERS;
+		return;
+	}
+
+	request->send.ret = TEEC_SUCCESS;
+}
+
+
+static void process_sql_fs(union tee_rpc_invoke *request)
+{
+	TEEC_SharedMemory shm;
+
+	if (request->recv.num_params != 1 || get_param(request, 0, &shm)) {
+		request->send.ret = TEEC_ERROR_BAD_PARAMETERS;
+		return;
+	}
+
+	if (sql_fs_process(shm.buffer, shm.size) < 0) {
+		request->send.ret = TEEC_ERROR_BAD_PARAMETERS;
+		return;
+	}
+
+	request->send.ret = TEEC_SUCCESS;
 }
 
 static void load_ta(union tee_rpc_invoke *request)
@@ -387,6 +411,11 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
+	if (sql_fs_init() != 0) {
+		EMSG("sql_fs_init() failed ");
+		exit(EXIT_FAILURE);
+	}
+
 	/* major failure on read kills supplicant, malformed data will not */
 	do {
 		DMSG("looping");
@@ -400,6 +429,9 @@ int main(int argc, char *argv[])
 				break;
 			case RPC_CMD_FS:
 				process_fs(&request);
+				break;
+			case RPC_CMD_SQL_FS:
+				process_sql_fs(&request);
 				break;
 			case RPC_CMD_RPMB:
 				process_rpmb(&request);
