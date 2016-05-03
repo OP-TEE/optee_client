@@ -124,11 +124,11 @@ copy_export: build
 	cp public/*.h ${EXPORT_DIR}/include
 
 ifeq ($(CFG_SQL_FS),y)
-.PHONY: build-libsqlite3
+.PHONY: build-libsqlite3 build-libsqlfs
 
-build: build-libsqlite3
+build: build-libsqlite3 build-libsqlfs
 
-clean: clean-libsqlite3
+clean: clean-libsqlite3 clean-libsqlfs
 
 build-libsqlite3:
 	@echo "Building in libsqlite3"
@@ -136,5 +136,12 @@ build-libsqlite3:
 
 clean-libsqlite3:
 	@$(MAKE) --directory=libsqlite3 --no-print-directory clean
+
+build-libsqlfs: build-libsqlite3
+	@echo "Building in libsqlfs"
+	@$(MAKE) --directory=libsqlfs --no-print-directory --no-builtin-variables
+
+clean-libsqlfs:
+	@$(MAKE) --directory=libsqlfs --no-print-directory clean
 
 endif
