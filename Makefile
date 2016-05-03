@@ -12,6 +12,8 @@ export VPREFIX
 
 EXPORT_DIR ?= $(O)/export
 
+CFG_SQL_FS ?= n
+
 .PHONY: all build build-libteec install copy_export \
 	clean cscope clean-cscope \
 	checkpatch-pre-req checkpatch-modified-patch checkpatch-modified-file \
@@ -120,3 +122,19 @@ copy_export: build
 	cp ${O}/libteec/libteec.so* ${EXPORT_DIR}/lib
 	cp ${O}/tee-supplicant/tee-supplicant ${EXPORT_DIR}/bin
 	cp public/*.h ${EXPORT_DIR}/include
+
+ifeq ($(CFG_SQL_FS),y)
+.PHONY: build-libsqlite3
+
+build: build-libsqlite3
+
+clean: clean-libsqlite3
+
+build-libsqlite3:
+	@echo "Building in libsqlite3"
+	@$(MAKE) --directory=libsqlite3 --no-print-directory --no-builtin-variables
+
+clean-libsqlite3:
+	@$(MAKE) --directory=libsqlite3 --no-print-directory clean
+
+endif

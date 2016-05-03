@@ -4,6 +4,7 @@
 
 CROSS_COMPILE   ?= arm-linux-gnueabihf-
 CC              ?= $(CROSS_COMPILE)gcc
+AR		?= $(CROSS_COMPILE)ar
 
 CFLAGS          := -Wall -Wbad-function-cast -Wcast-align \
 		   -Werror-implicit-function-declaration -Wextra \
