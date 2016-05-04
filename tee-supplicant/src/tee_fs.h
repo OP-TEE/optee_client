@@ -78,6 +78,7 @@ struct tee_fs_rpc {
 #define TEE_FS_O_CREAT  0x8
 #define TEE_FS_O_EXCL   0x10
 #define TEE_FS_O_APPEND 0x20
+#define TEE_FS_O_TRUNC  0x40
 
 /*
  * Seek flags, defines shared with TEE.
@@ -91,6 +92,7 @@ struct tee_fs_rpc {
  */
 #define TEE_FS_S_IWUSR 0x1
 #define TEE_FS_S_IRUSR 0x2
+#define TEE_FS_S_IXUSR 0x4
 
 /*
  * Access flags, X_OK not supported, defines shared with TEE.
@@ -122,6 +124,9 @@ static int tee_fs_conv_oflags(int in)
 	if (in & TEE_FS_O_APPEND)
 		flags |= O_APPEND;
 
+	if (in & TEE_FS_O_TRUNC)
+		flags |= O_TRUNC;
+
 	return flags;
 }
 
@@ -152,6 +157,9 @@ static mode_t tee_fs_conv_mkdflags(int in)
 
 	if (in & TEE_FS_S_IRUSR)
 		flags |= S_IRUSR;
+
+	if (in & TEE_FS_S_IXUSR)
+		flags |= S_IXUSR;
 
 	return flags;
 }
