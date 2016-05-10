@@ -27,7 +27,7 @@
 #ifndef SQL_FS_H
 #define SQL_FS_H
 
-#ifdef WITH_SQLFS
+#ifdef CFG_SQL_FS
 
 int sql_fs_init(void);
 int sql_fs_process(void *cmd, size_t cmd_size);
