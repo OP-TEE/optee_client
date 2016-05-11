@@ -40,6 +40,7 @@
 #include <sys/time.h>
 #include <sys/mman.h>
 #include <sys/ioctl.h>
+#include <syslog.h> // FIXME: Android
 #include <unistd.h>
 
 #include <teec_trace.h>
@@ -62,6 +63,7 @@
 #define RPC_CMD_FS		2
 #define RPC_CMD_SHM_ALLOC	6
 #define RPC_CMD_SHM_FREE	7
+#define RPC_CMD_LOG		8
 
 union tee_rpc_invoke {
 	uint64_t buf[RPC_BUF_SIZE / sizeof(uint64_t)];
@@ -288,7 +290,18 @@ bad:
 	request->send.ret = TEEC_ERROR_BAD_PARAMETERS;
 }
 
+static void process_log(union tee_rpc_invoke *request)
+{
+	TEEC_SharedMemory shm;
 
+	if (request->recv.num_params != 1 || get_param(request, 0, &shm)) {
+		request->send.ret = TEEC_ERROR_BAD_PARAMETERS;
+		return;
+	}
+
+	syslog(LOG_USER | LOG_INFO, "%s", (char *)shm.buffer);
+	request->send.ret = TEEC_SUCCESS;
+}
 
 /* How many device sequence numbers will be tried before giving up */
 #define MAX_DEV_SEQ	10
@@ -409,6 +422,9 @@ int main(int argc, char *argv[])
 				break;
 			case RPC_CMD_SHM_FREE:
 				process_free(&request);
+				break;
+			case RPC_CMD_LOG:
+				process_log(&request);
 				break;
 			default:
 				EMSG("Cmd [0x%" PRIx32 "] not supported",
