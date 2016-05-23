@@ -40,7 +40,12 @@
 #include <sys/time.h>
 #include <sys/mman.h>
 #include <sys/ioctl.h>
-#include <syslog.h> // FIXME: Android
+#ifdef __ANDROID__
+#define LOG_TAG "tee_supplicant"
+#include <log/log.h>
+#else
+#include <syslog.h>
+#endif
 #include <unistd.h>
 
 #include <teec_trace.h>
@@ -298,8 +303,11 @@ static void process_log(union tee_rpc_invoke *request)
 		request->send.ret = TEEC_ERROR_BAD_PARAMETERS;
 		return;
 	}
-
+#ifdef __ANDROID__
+	ALOGI("%s", (char *) shm.buffer);
+#else
 	syslog(LOG_USER | LOG_INFO, "%s", (char *)shm.buffer);
+#endif
 	request->send.ret = TEEC_SUCCESS;
 }
 

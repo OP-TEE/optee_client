@@ -20,7 +20,8 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/../public \
     $(LOCAL_PATH)/../libteec/include \
     $(LOCAL_PATH)/src
 
-LOCAL_SHARED_LIBRARIES := libteec
+LOCAL_SHARED_LIBRARIES := libteec \
+                          libcutils
 LOCAL_MODULE := tee-supplicant
 LOCAL_MODULE_TAGS := optional
 include $(BUILD_EXECUTABLE)
