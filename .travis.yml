@@ -16,3 +16,4 @@ script:
   - make clean all
   - CFG_TEE_CLIENT_LOG_LEVEL=0 make clean all
   - CFG_TEE_CLIENT_LOG_LEVEL=5 make clean all
+  - CFG_SQL_FS=y make clean all
