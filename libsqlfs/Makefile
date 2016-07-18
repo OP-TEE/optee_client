@@ -47,7 +47,7 @@ libsqlfs: $(SQLFS_LIBRARY)
 	$(VPREFIX)ln -sf $(OUT_DIR)/$(LIB_MAJOR) $(OUT_DIR)/$(LIB_NAME)
 
 $(SQLFS_LIBRARY): $(SQLFS_OBJS)
-	@echo "  LD      $@"
+	@echo "  LINK    $@"
 	$(VPREFIX)$(CC) -shared -Wl,-soname,$(LIB_MAJ_MIN) $(SQLFS_LFLAGS) -o $@ $+ $(SQLFS_LIBS)
 	@echo ""
 

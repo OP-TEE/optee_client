@@ -36,7 +36,7 @@ libteec: $(TEEC_LIBRARY)
 	$(VPREFIX)ln -sf $(OUT_DIR)/$(LIB_MAJOR) $(OUT_DIR)/$(LIB_NAME)
 
 $(TEEC_LIBRARY): $(TEEC_OBJS)
-	@echo "  LD      $@"
+	@echo "  LINK    $@"
 	$(VPREFIX)$(CC) -shared -Wl,-soname,$(LIB_MAJ_MIN) $(TEEC_LFLAGS) -o $@ $+
 	@echo ""
 

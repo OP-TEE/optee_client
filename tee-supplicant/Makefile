@@ -63,7 +63,7 @@ TEES_LDFLAGS	+= -lpthread
 tee-supplicant: $(TEES_FILE)
 
 $(TEES_FILE): $(TEES_OBJS)
-	@echo "  LD      $@"
+	@echo "  LINK    $@"
 	$(VPREFIX)$(CC) -o $@ $+ $(TEES_LDFLAGS)
 	@echo ""
 
