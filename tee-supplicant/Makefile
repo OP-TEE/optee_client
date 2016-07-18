@@ -58,6 +58,8 @@ TEES_CFLAGS	+= -Wno-strict-prototypes -Wno-implicit-function-declaration \
 TEES_LDFLAGS	+= -L$(OUT_DIR)/../libsqlfs -l:libsqlfs.so -ldl
 endif
 
+TEES_LDFLAGS	+= -lpthread
+
 tee-supplicant: $(TEES_FILE)
 
 $(TEES_FILE): $(TEES_OBJS)
