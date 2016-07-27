@@ -45,7 +45,6 @@
 #include <linux/tee.h>
 
 #include <teec_trace.h>
-#include <err.h>
 
 /* How many device sequence numbers will be tried before giving up */
 #define TEEC_MAX_DEV_SEQ	10
@@ -433,6 +432,16 @@ static void teec_free_temp_refs(TEEC_Operation *operation,
 	}
 }
 
+static TEEC_Result ioctl_errno_to_res(int err)
+{
+	switch (err) {
+	case ENOMEM:
+		return TEEC_ERROR_OUT_OF_MEMORY;
+	default:
+		return TEEC_ERROR_GENERIC;
+	}
+}
+
 TEEC_Result TEEC_OpenSession(TEEC_Context *ctx, TEEC_Session *session,
 			const TEEC_UUID *destination,
 			uint32_t connection_method, const void *connection_data,
@@ -448,6 +457,7 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *ctx, TEEC_Session *session,
 	TEEC_Result res;
 	uint32_t eorig;
 	TEEC_SharedMemory shm[TEEC_CONFIG_PAYLOAD_REF_COUNT];
+	int rc;
 
 	(void)&connection_data;
 
@@ -480,10 +490,11 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *ctx, TEEC_Session *session,
 		goto out_free_temp_refs;
 	}
 
-	if (ioctl(ctx->fd, TEE_IOC_OPEN_SESSION, &buf_data)) {
+	rc = ioctl(ctx->fd, TEE_IOC_OPEN_SESSION, &buf_data);
+	if (rc) {
 		EMSG("TEE_IOC_OPEN_SESSION failed");
 		eorig = TEEC_ORIGIN_COMMS;
-		res = TEEC_ERROR_BAD_STATE;
+		res = ioctl_errno_to_res(errno);
 		goto out_free_temp_refs;
 	}
 	res = arg->ret;
@@ -527,6 +538,7 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t cmd_id,
 	TEEC_Result res;
 	uint32_t eorig;
 	TEEC_SharedMemory shm[TEEC_CONFIG_PAYLOAD_REF_COUNT];
+	int rc;
 
 	if (!session) {
 		eorig = TEEC_ORIGIN_API;
@@ -556,10 +568,11 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t cmd_id,
 		goto out_free_temp_refs;
 	}
 
-	if (ioctl(session->ctx->fd, TEE_IOC_INVOKE, &buf_data)) {
+	rc = ioctl(session->ctx->fd, TEE_IOC_INVOKE, &buf_data);
+	if (rc) {
 		EMSG("TEE_IOC_INVOKE failed");
 		eorig = TEEC_ORIGIN_COMMS;
-		res = TEEC_ERROR_BAD_STATE;
+		res = ioctl_errno_to_res(errno);
 		goto out_free_temp_refs;
 	}
 
