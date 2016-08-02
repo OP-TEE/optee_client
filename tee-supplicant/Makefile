@@ -1,4 +1,5 @@
 include ../flags.mk
+include ../config.mk
 
 OUT_DIR		?= ${CURDIR}/../$(O)/tee-supplicant
 
@@ -35,6 +36,9 @@ TEES_CFLAGS	:= $(addprefix -I, $(TEES_INCLUDES)) $(CFLAGS) \
 		   -DBINARY_PREFIX=\"TEES\"
 ifeq ($(RPMB_EMU),1)
 TEES_CFLAGS	+= -DRPMB_EMU=1
+endif
+ifeq ($(CFG_TA_TEST_PATH),1)
+TEES_CFLAGS	+= -DCFG_TA_TEST_PATH=1
 endif
 TEES_FILE	:= $(OUT_DIR)/$(PACKAGE_NAME)
 TEES_LDFLAGS    := -L$(OUT_DIR)/../libteec -lteec

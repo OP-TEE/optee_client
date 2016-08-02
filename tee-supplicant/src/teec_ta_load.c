@@ -39,6 +39,22 @@
 #define TEEC_LOAD_PATH "/lib"
 #endif
 
+/*
+ * Attempt to first load TAs from a writable directory.  This is
+ * intended for testing (xtest 1008, load_corrupt_ta specifically),
+ * and should not be enabled in a production system, as it would
+ * greatly facilitate loading rogue TA code.
+ */
+#ifdef CFG_TA_TEST_PATH
+# ifndef TEEC_TEST_LOAD_PATH
+#  ifdef __ANDROID__
+#   define TEEC_TEST_LOAD_PATH "/data/tmp"
+#  else
+#   define TEEC_TEST_LOAD_PATH "/tmp"
+#  endif
+# endif
+#endif
+
 #ifndef PATH_MAX
 #define PATH_MAX 255
 #endif
@@ -63,9 +79,10 @@ struct tee_rpc_cmd {
  *
  * @return              0 if TA was found, otherwise -1.
  */
-int TEECI_LoadSecureModule(const char* dev_path,
-			   const TEEC_UUID *destination, void *ta,
-			   size_t *ta_size)
+static int try_load_secure_module(const char* prefix,
+				  const char* dev_path,
+				  const TEEC_UUID *destination, void *ta,
+				  size_t *ta_size)
 {
 	char fname[PATH_MAX];
 	FILE *file = NULL;
@@ -79,7 +96,7 @@ int TEECI_LoadSecureModule(const char* dev_path,
 
 	n = snprintf(fname, PATH_MAX,
 		     "%s/%s/%08x-%04x-%04x-%02x%02x%02x%02x%02x%02x%02x%02x.ta",
-		     TEEC_LOAD_PATH, dev_path,
+		     prefix, dev_path,
 		     destination->timeLow,
 		     destination->timeMid,
 		     destination->timeHiAndVersion,
@@ -135,4 +152,21 @@ out:
 	*ta_size = s;
 	fclose(file);
 	return TA_BINARY_FOUND;
+}
+
+int TEECI_LoadSecureModule(const char* dev_path,
+			   const TEEC_UUID *destination, void *ta,
+			   size_t *ta_size)
+{
+#ifdef TEEC_TEST_LOAD_PATH
+	int res;
+
+	res = try_load_secure_module(TEEC_TEST_LOAD_PATH,
+				     dev_path, destination, ta, ta_size);
+	if (res != TA_BINARY_NOT_FOUND)
+		return res;
+#endif
+
+	return try_load_secure_module(TEEC_LOAD_PATH,
+				      dev_path, destination, ta, ta_size);
 }

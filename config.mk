@@ -32,6 +32,12 @@ CFG_TEE_SUPP_LOG_FILE ?= \"/data/teesupp.log\"
 # The location of the client library file.
 CFG_TEE_CLIENT_LOAD_PATH ?= /system/lib
 
+# CFG_TA_TEST_PATH
+# Enable the tee test path.  When enabled, the supplicant will try
+# loading from a debug path before the regular path.  This allows test
+# such as 1008.5 that test loading of corrupt TAs.
+CFG_TA_TEST_PATH ?= 1
+
 # Default out dir.
 # Must be a relative path with respect to the op-tee-client root directory
 O               ?= out

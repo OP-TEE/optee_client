@@ -10,6 +10,10 @@ LOCAL_CFLAGS += -DDEBUGLEVEL_$(CFG_TEE_SUPP_LOG_LEVEL) \
                 -DBINARY_PREFIX=\"TEES\" \
                 -DTEEC_LOAD_PATH=\"$(CFG_TEE_CLIENT_LOAD_PATH)\" \
 
+ifeq ($(CFG_TA_TEST_PATH),1)
+LOCAL_CFLAGS += -DCFG_TA_TEST_PATH=1
+endif
+
 LOCAL_SRC_FILES += src/handle.c \
                    src/tee_supp_fs.c \
                    src/tee_supplicant.c \
