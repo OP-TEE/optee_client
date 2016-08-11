@@ -467,13 +467,6 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *ctx, TEEC_Session *session,
 		goto out;
 	}
 
-	if (connection_method != TEEC_LOGIN_PUBLIC) {
-		eorig = TEEC_ORIGIN_API;
-		res = TEEC_ERROR_NOT_SUPPORTED;
-		goto out;
-	}
-
-
 	buf_data.buf_ptr = (uintptr_t)buf;
 	buf_data.buf_len = sizeof(buf);
 
@@ -482,7 +475,7 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *ctx, TEEC_Session *session,
 	params = (struct tee_ioctl_param *)(arg + 1);
 
 	memcpy(arg->uuid, destination, sizeof(TEEC_UUID));
-	arg->clnt_login = TEEC_LOGIN_PUBLIC;
+	arg->clnt_login = connection_method;
 
 	res = teec_pre_process_operation(ctx, operation, params, shm);
 	if (res != TEEC_SUCCESS) {
