@@ -51,7 +51,7 @@ downloading and unpacking the compiler. Then export the PATH to the bin folder.
 To be able to see the full command when building you could build using following
 flag:
 
-`$ make BUILD_VERBOSE=1`
+`$ make V=1`
 
 ## Coding standards
 In this project we are trying to adhere to the same coding convention as used in
