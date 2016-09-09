@@ -26,34 +26,36 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <stdint.h>
 #include <inttypes.h>
+#include <rpmb.h>
+#include <sql_fs.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/mman.h>
 #include <sys/ioctl.h>
-#include <unistd.h>
-
-#include <teec_trace.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <tee_client_api.h>
 #include <teec_ta_load.h>
 #include <tee_supp_fs.h>
+#include <teec_trace.h>
+#include <tee_supplicant.h>
+#include <unistd.h>
 
 #ifndef __aligned
 #define __aligned(x) __attribute__((__aligned__(x)))
 #endif
 #include <linux/tee.h>
 
-#include <rpmb.h>
-#include <sql_fs.h>
-#define RPC_NUM_PARAMS	2
+#define RPC_NUM_PARAMS	3
 
 #define RPC_BUF_SIZE	(sizeof(struct tee_iocl_supp_send_arg) + \
 			 RPC_NUM_PARAMS * sizeof(struct tee_ioctl_param))
@@ -105,6 +107,16 @@ static int get_value(union tee_rpc_invoke *request, const uint32_t idx,
 	}
 }
 
+static struct tee_shm *find_tshm(int id)
+{
+	struct tee_shm *tshm;
+
+	tshm = shm_head;
+	while (tshm && tshm->id != id)
+		tshm = tshm->next;
+	return tshm;
+}
+
 /* Get parameter allocated by secure world */
 static int get_param(union tee_rpc_invoke *request, const uint32_t idx,
 		     TEEC_SharedMemory *shm)
@@ -127,9 +139,7 @@ static int get_param(union tee_rpc_invoke *request, const uint32_t idx,
 
 	memset(shm, 0, sizeof(*shm));
 
-	tshm = shm_head;
-	while (tshm && tshm->id != params[idx].u.memref.shm_id)
-		tshm = tshm->next;
+	tshm = find_tshm(params[idx].u.memref.shm_id);
 	if (!tshm) {
 		/*
 		 * It doesn't make sense to query required size of an
@@ -161,37 +171,12 @@ static int get_param(union tee_rpc_invoke *request, const uint32_t idx,
 
 static void process_fs(union tee_rpc_invoke *request)
 {
-	TEEC_SharedMemory shm;
-
-	if (request->recv.num_params != 1 || get_param(request, 0, &shm)) {
-		request->send.ret = TEEC_ERROR_BAD_PARAMETERS;
-		return;
-	}
-
-	if (tee_supp_fs_process(shm.buffer, shm.size) < 0) {
-		request->send.ret = TEEC_ERROR_BAD_PARAMETERS;
-		return;
-	}
-
-	request->send.ret = TEEC_SUCCESS;
+	request->send.ret = tee_supp_fs_process(&request->recv);
 }
-
 
 static void process_sql_fs(union tee_rpc_invoke *request)
 {
-	TEEC_SharedMemory shm;
-
-	if (request->recv.num_params != 1 || get_param(request, 0, &shm)) {
-		request->send.ret = TEEC_ERROR_BAD_PARAMETERS;
-		return;
-	}
-
-	if (sql_fs_process(shm.buffer, shm.size) < 0) {
-		request->send.ret = TEEC_ERROR_BAD_PARAMETERS;
-		return;
-	}
-
-	request->send.ret = TEEC_SUCCESS;
+	request->send.ret = sql_fs_process(&request->recv);
 }
 
 static void load_ta(union tee_rpc_invoke *request)
@@ -484,4 +469,51 @@ static int write_response(int fd, union tee_rpc_invoke *request)
 		return -1;
 	}
 	return 0;
+}
+
+bool tee_supp_param_is_memref(struct tee_ioctl_param *param)
+{
+	switch (param->attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) {
+	case TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INPUT:
+	case TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_OUTPUT:
+	case TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INOUT:
+		return true;
+	default:
+		return false;
+	}
+}
+
+bool tee_supp_param_is_value(struct tee_ioctl_param *param)
+{
+	switch (param->attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) {
+	case TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT:
+	case TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_OUTPUT:
+	case TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INOUT:
+		return true;
+	default:
+		return false;
+	}
+}
+
+void *tee_supp_param_to_va(struct tee_ioctl_param *param)
+{
+	struct tee_shm *tshm;
+	size_t end_offs;
+
+	if (!tee_supp_param_is_memref(param))
+		return NULL;
+
+	end_offs = param->u.memref.size + param->u.memref.shm_offs;
+	if (end_offs < param->u.memref.size ||
+	    end_offs < param->u.memref.shm_offs)
+		return NULL;
+
+	tshm = find_tshm(param->u.memref.shm_id);
+	if (!tshm)
+		return NULL;
+
+	if (end_offs > tshm->size)
+		return NULL;
+
+	return (uint8_t *)tshm->p + param->u.memref.shm_offs;
 }

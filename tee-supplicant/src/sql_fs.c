@@ -28,6 +28,8 @@
 #include <assert.h>
 #include <errno.h>
 #include <handle.h>
+#include <libgen.h>
+#include <optee_msg_fs.h>
 #include <sql_fs.h>
 #include <sqlfs.h>
 #include <sqlfs_internal.h>
@@ -35,9 +37,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/queue.h>
-#include <tee_fs.h>
-
 #include <teec_trace.h>
+#include <tee_fs.h>
+#include <tee_supplicant.h>
+
+
+#ifndef __aligned
+#define __aligned(x) __attribute__((__aligned__(x)))
+#endif
+#include <linux/tee.h>
 
 /*
  * File handles
@@ -450,74 +458,503 @@ int sql_fs_init(void)
  * used for convenience (debugging). The caller (OP-TEE) should not depend on
  * these exact values as they obviously depend on the Operating System.
  */
-int sql_fs_process(void *cmd, size_t cmd_size)
+static TEEC_Result sql_fs_process_primitive(void *cmd, size_t cmd_size)
 {
 	struct tee_fs_rpc *fsrpc = cmd;
-	int st;
 
 	if (cmd_size < sizeof(struct tee_fs_rpc))
-		return -1;
+		return TEEC_ERROR_BAD_PARAMETERS;
 
 	if (!cmd)
-		return -1;
+		return TEEC_ERROR_BAD_PARAMETERS;
 
 	switch (fsrpc->op) {
 	case TEE_FS_OPEN:
-		st = sql_fs_open(fsrpc);
+		fsrpc->res = sql_fs_open(fsrpc);
 		break;
 	case TEE_FS_CLOSE:
-		st = sql_fs_close(fsrpc);
+		fsrpc->res = sql_fs_close(fsrpc);
 		break;
 	case TEE_FS_READ:
-		st = sql_fs_read(fsrpc);
+		fsrpc->res = sql_fs_read(fsrpc);
 		break;
 	case TEE_FS_WRITE:
-		st = sql_fs_write(fsrpc);
+		fsrpc->res = sql_fs_write(fsrpc);
 		break;
 	case TEE_FS_SEEK:
-		st = sql_fs_seek(fsrpc);
+		fsrpc->res = sql_fs_seek(fsrpc);
 		break;
 	case TEE_FS_UNLINK:
-		st = sql_fs_unlink(fsrpc);
+		fsrpc->res = sql_fs_unlink(fsrpc);
 		break;
 	case TEE_FS_RENAME:
-		st = sql_fs_rename(fsrpc);
+		fsrpc->res = sql_fs_rename(fsrpc);
 		break;
 	case TEE_FS_TRUNC:
-		st = sql_fs_truncate(fsrpc);
+		fsrpc->res = sql_fs_truncate(fsrpc);
 		break;
 	case TEE_FS_MKDIR:
-		st = sql_fs_mkdir(fsrpc);
+		fsrpc->res = sql_fs_mkdir(fsrpc);
 		break;
 	case TEE_FS_OPENDIR:
-		st = sql_fs_opendir(fsrpc);
+		fsrpc->res = sql_fs_opendir(fsrpc);
 		break;
 	case TEE_FS_CLOSEDIR:
-		st = sql_fs_closedir(fsrpc);
+		fsrpc->res = sql_fs_closedir(fsrpc);
 		break;
 	case TEE_FS_READDIR:
-		st = sql_fs_readdir(fsrpc);
+		fsrpc->res = sql_fs_readdir(fsrpc);
 		break;
 	case TEE_FS_RMDIR:
-		st = sql_fs_rmdir(fsrpc);
+		fsrpc->res = sql_fs_rmdir(fsrpc);
 		break;
 	case TEE_FS_ACCESS:
-		st = sql_fs_access(fsrpc);
+		fsrpc->res = sql_fs_access(fsrpc);
 		break;
 	case TEE_FS_LINK:
-		st = -ENOTSUP;
+		fsrpc->res = -ENOTSUP;
 		break;
 	case TEE_FS_BEGIN:
-		st = sql_fs_begin();
+		fsrpc->res = sql_fs_begin();
 		break;
 	case TEE_FS_END:
-		st = sql_fs_end(fsrpc);
+		fsrpc->res = sql_fs_end(fsrpc);
 		break;
 	default:
 		EMSG("Unexpected SQL FS operation: %d", fsrpc->op);
-		return -1;
+		return TEEC_ERROR_NOT_SUPPORTED;
 	}
 
-	fsrpc->res = st;
-	return 0;
+	return TEEC_SUCCESS;
+}
+
+static TEEC_Result sql_fs_new_open(size_t num_params,
+				  struct tee_ioctl_param *params)
+{
+	struct file_state *fs;
+	char *fname;
+	int rc;
+
+	if (num_params != 3 ||
+	    (params[0].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT ||
+	    (params[1].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INPUT ||
+	    (params[2].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_OUTPUT)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	fname = tee_supp_param_to_va(params + 1);
+	if (!fname)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	fs = new_file(fname);
+	if (!fs)
+		return TEEC_ERROR_OUT_OF_MEMORY;
+
+	fs->fi.flags = O_RDWR;
+	rc = sqlfs_proc_open(db, fname, &fs->fi);
+	if (rc < 0) {
+		put_file(fs);
+		return TEEC_ERROR_ITEM_NOT_FOUND;
+	}
+
+	params[2].u.value.a = fs->fd;
+	return TEEC_SUCCESS;
+}
+
+static TEEC_Result sql_fs_new_create(size_t num_params,
+				     struct tee_ioctl_param *params)
+{
+	struct file_state *fs;
+	char *fname;
+	int rc;
+
+	if (num_params != 3 ||
+	    (params[0].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT ||
+	    (params[1].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INPUT ||
+	    (params[2].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_OUTPUT)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	fname = tee_supp_param_to_va(params + 1);
+	if (!fname)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	fs = new_file(fname);
+	if (!fs)
+		return TEEC_ERROR_OUT_OF_MEMORY;
+
+	fs->fi.flags = O_RDWR | O_CREAT | O_TRUNC;
+	rc = sqlfs_proc_open(db, fname, &fs->fi);
+	if (rc < 0) {
+		put_file(fs);
+		return TEEC_ERROR_ITEM_NOT_FOUND;
+	}
+
+	params[2].u.value.a = fs->fd;
+	return TEEC_SUCCESS;
+}
+
+static TEEC_Result sql_fs_new_close(size_t num_params,
+				    struct tee_ioctl_param *params)
+{
+	struct file_state *fs;
+
+	if (num_params != 1 ||
+	    (params[0].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	fs = handle_lookup(&fd_db, params[0].u.value.b);
+	if (!fs)
+		return TEEC_ERROR_GENERIC;
+
+	put_file(fs);
+
+	return TEEC_SUCCESS;
+}
+
+static TEEC_Result sql_fs_new_read(size_t num_params,
+				   struct tee_ioctl_param *params)
+{
+	struct file_state *fs;
+	void *buf;
+	size_t len;
+	off_t offs;
+	int rc;
+
+	if (num_params != 2 ||
+	    (params[0].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT ||
+	    (params[1].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_OUTPUT)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	fs = handle_lookup(&fd_db, params[0].u.value.b);
+	if (!fs)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	offs = params[0].u.value.c;
+
+	buf = tee_supp_param_to_va(params + 1);
+	if (!buf)
+		return TEEC_ERROR_BAD_PARAMETERS;
+	len = params[1].u.memref.size;
+
+	rc = sqlfs_proc_read(db, fs->path, buf, len, offs, &fs->fi);
+	if (rc < 0)
+		return TEEC_ERROR_GENERIC;
+
+	params[1].u.memref.size = rc;
+	return TEEC_SUCCESS;
+}
+
+static TEEC_Result sql_fs_new_write(size_t num_params,
+				    struct tee_ioctl_param *params)
+{
+	struct file_state *fs;
+	void *buf;
+	size_t len;
+	off_t offs;
+	int rc;
+
+	if (num_params != 2 ||
+	    (params[0].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT ||
+	    (params[1].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INPUT)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	fs = handle_lookup(&fd_db, params[0].u.value.b);
+	if (!fs)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	offs = params[0].u.value.c;
+
+	buf = tee_supp_param_to_va(params + 1);
+	if (!buf)
+		return TEEC_ERROR_BAD_PARAMETERS;
+	len = params[1].u.memref.size;
+
+	rc = sqlfs_proc_write(db, fs->path, buf, len, offs, &fs->fi);
+	if (rc != (int)len)
+		return TEEC_ERROR_GENERIC;
+	return TEEC_SUCCESS;
+}
+
+static TEEC_Result sql_fs_new_truncate(size_t num_params,
+				       struct tee_ioctl_param *params)
+{
+	struct file_state *fs;
+	size_t len;
+
+	if (num_params != 1 ||
+	    (params[0].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	fs = handle_lookup(&fd_db, params[0].u.value.b);
+	if (!fs)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	len = params[0].u.value.c;
+
+	if (sqlfs_proc_truncate(db, fs->path, len))
+		return TEEC_ERROR_GENERIC;
+
+	return TEEC_SUCCESS;
+}
+
+static void remove_dirname(const char *fname)
+{
+	char *dir = strdup(fname);
+	char *d;
+
+	if (!dir)
+		return;
+
+	d = dirname(dir);
+	sqlfs_proc_rmdir(db, d);
+	free(dir);
+}
+
+static TEEC_Result sql_fs_new_remove(size_t num_params,
+				     struct tee_ioctl_param *params)
+{
+	char *fname;
+	int rc;
+
+	if (num_params != 2 ||
+	    (params[0].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT ||
+	    (params[1].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INPUT)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	fname = tee_supp_param_to_va(params + 1);
+	if (!fname)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	rc = sqlfs_proc_unlink(db, fname);
+	if (rc) {
+		if (rc == -ENOENT)
+			return TEEC_ERROR_ITEM_NOT_FOUND;
+		return TEEC_ERROR_GENERIC;
+	}
+	remove_dirname(fname);
+
+	return TEEC_SUCCESS;
+}
+
+static TEEC_Result sql_fs_new_rename(size_t num_params,
+				     struct tee_ioctl_param *params)
+{
+	char *old_fname;
+	char *new_fname;
+	bool overwrite;
+	int rc;
+
+	if (num_params != 3 ||
+	    (params[0].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT ||
+	    (params[1].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INPUT ||
+	    (params[2].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INPUT)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	overwrite = !!params[0].u.value.b;
+
+	old_fname = tee_supp_param_to_va(params + 1);
+	if (!old_fname)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	new_fname = tee_supp_param_to_va(params + 2);
+	if (!new_fname)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	if (!overwrite) {
+		struct stat st;
+
+		if (!sqlfs_proc_getattr(db, new_fname, &st))
+			return TEEC_ERROR_ACCESS_CONFLICT;
+	}
+
+	rc = sqlfs_proc_rename(db, old_fname, new_fname);
+	if (rc) {
+		if (rc == -EIO)
+			return TEEC_ERROR_ITEM_NOT_FOUND;
+		return TEEC_ERROR_GENERIC;
+	}
+	return TEEC_SUCCESS;
+}
+
+static TEEC_Result sql_fs_new_opendir(size_t num_params,
+				     struct tee_ioctl_param *params)
+{
+	char *fname;
+	struct dir_state *ds;
+
+	if (num_params != 3 ||
+	    (params[0].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT ||
+	    (params[1].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INPUT ||
+	    (params[2].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_OUTPUT)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	fname = tee_supp_param_to_va(params + 1);
+	if (!fname)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	ds = new_dir();
+	if (!ds)
+		return TEEC_ERROR_OUT_OF_MEMORY;
+
+	if (sqlfs_proc_readdir(db, fname, ds, fill_dir, 0, NULL)) {
+		put_dir(ds);
+		return TEEC_ERROR_ITEM_NOT_FOUND;
+	}
+
+	params[2].u.value.a = ds->handle;
+
+	return TEEC_SUCCESS;
+}
+
+static TEEC_Result sql_fs_new_closedir(size_t num_params,
+				      struct tee_ioctl_param *params)
+{
+	struct dir_state *ds;
+
+	if (num_params != 1 ||
+	    (params[0].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	ds = handle_lookup(&dir_db, params[0].u.value.b);
+	if (!ds)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	put_dir(ds);
+
+	return TEEC_SUCCESS;
+}
+
+static TEEC_Result sql_fs_new_readdir(size_t num_params,
+				      struct tee_ioctl_param *params)
+{
+	struct dir_state *ds;
+	struct dir_entry *de;
+	char *buf;
+	size_t len;
+	size_t fname_len;
+
+	if (num_params != 2 ||
+	    (params[0].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT ||
+	    (params[1].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_OUTPUT)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+
+	buf = tee_supp_param_to_va(params + 1);
+	if (!buf)
+		return TEEC_ERROR_BAD_PARAMETERS;
+	len = params[1].u.memref.size;
+
+	ds = handle_lookup(&dir_db, params[0].u.value.b);
+	if (!ds)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	de = TAILQ_FIRST(&ds->dir_entries);
+	if (!de)
+		return TEEC_ERROR_ITEM_NOT_FOUND;
+
+	fname_len = strlen(de->name) + 1;
+	params[1].u.memref.size = fname_len;
+	if (fname_len > len)
+		return TEEC_ERROR_SHORT_BUFFER;
+
+	memcpy(buf, de->name, fname_len);
+	TAILQ_REMOVE(&ds->dir_entries, de, link);
+	free(de);
+
+	return TEEC_SUCCESS;
+}
+
+static TEEC_Result sql_fs_new_begin_transaction(size_t num_params,
+						struct tee_ioctl_param *params)
+{
+	if (num_params != 1 ||
+	    (params[0].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	if (sqlfs_begin_transaction(db))
+		return TEEC_SUCCESS;
+	return TEEC_ERROR_GENERIC;
+}
+
+static TEEC_Result sql_fs_new_end_transaction(size_t num_params,
+					      struct tee_ioctl_param *params)
+{
+	if (num_params != 1 ||
+	    (params[0].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	if (sqlfs_complete_transaction(db, !params[0].u.value.b))
+		return TEEC_SUCCESS;
+	return TEEC_ERROR_GENERIC;
+}
+
+TEEC_Result sql_fs_process(struct tee_iocl_supp_recv_arg *recv)
+{
+	struct tee_ioctl_param *param = (void *)(recv + 1);
+
+	if (recv->num_params == 1 && tee_supp_param_is_memref(param)) {
+		void *va = tee_supp_param_to_va(param);
+
+		if (!va)
+			return TEEC_ERROR_BAD_PARAMETERS;
+		return sql_fs_process_primitive(va, param->u.memref.size);
+	}
+
+	if (!tee_supp_param_is_value(param))
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	switch (param->u.value.a) {
+	case OPTEE_MRF_OPEN:
+		return sql_fs_new_open(recv->num_params, param);
+	case OPTEE_MRF_CREATE:
+		return sql_fs_new_create(recv->num_params, param);
+	case OPTEE_MRF_CLOSE:
+		return sql_fs_new_close(recv->num_params, param);
+	case OPTEE_MRF_READ:
+		return sql_fs_new_read(recv->num_params, param);
+	case OPTEE_MRF_WRITE:
+		return sql_fs_new_write(recv->num_params, param);
+	case OPTEE_MRF_TRUNCATE:
+		return sql_fs_new_truncate(recv->num_params, param);
+	case OPTEE_MRF_REMOVE:
+		return sql_fs_new_remove(recv->num_params, param);
+	case OPTEE_MRF_RENAME:
+		return sql_fs_new_rename(recv->num_params, param);
+	case OPTEE_MRF_OPENDIR:
+		return sql_fs_new_opendir(recv->num_params, param);
+	case OPTEE_MRF_CLOSEDIR:
+		return sql_fs_new_closedir(recv->num_params, param);
+	case OPTEE_MRF_READDIR:
+		return sql_fs_new_readdir(recv->num_params, param);
+	case OPTEE_MRF_BEGIN_TRANSACTION:
+		return sql_fs_new_begin_transaction(recv->num_params, param);
+	case OPTEE_MRF_END_TRANSACTION:
+		return sql_fs_new_end_transaction(recv->num_params, param);
+	default:
+		return TEEC_ERROR_BAD_PARAMETERS;
+	}
 }

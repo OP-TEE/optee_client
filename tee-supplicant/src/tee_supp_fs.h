@@ -27,10 +27,11 @@
 #ifndef TEE_SUPP_FS_H
 #define TEE_SUPP_FS_H
 
-#include <stddef.h>
+#include <tee_client_api.h>
 
 int tee_supp_fs_init(void);
 
-int tee_supp_fs_process(void *cmd, size_t cmd_size);
+struct tee_iocl_supp_recv_arg;
+TEEC_Result tee_supp_fs_process(struct tee_iocl_supp_recv_arg *recv);
 
 #endif

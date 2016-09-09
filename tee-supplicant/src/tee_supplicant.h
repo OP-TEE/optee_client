@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2016, Linaro Limited
+ * Copyright (c) 2014, STMicroelectronics International N.V.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,32 +25,15 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef SQL_FS_H
-#define SQL_FS_H
+#ifndef TEE_SUPPLICANT_H
+#define TEE_SUPPLICANT_H
 
-#include <tee_client_api.h>
+#include <stdbool.h>
 
-struct tee_iocl_supp_recv_arg;
+struct tee_ioctl_param;
 
-#ifdef CFG_SQL_FS
+bool tee_supp_param_is_memref(struct tee_ioctl_param *param);
+bool tee_supp_param_is_value(struct tee_ioctl_param *param);
+void *tee_supp_param_to_va(struct tee_ioctl_param *param);
 
-int sql_fs_init(void);
-TEEC_Result sql_fs_process(struct tee_iocl_supp_recv_arg *recv);
-
-#else
-
-static inline int sql_fs_init(void)
-{
-	return 0;
-}
-
-static inline TEEC_Result sql_fs_process(struct tee_iocl_supp_recv_arg *recv)
-{
-	(void)recv;
-
-	return TEEC_ERROR_NOT_SUPPORTED;
-}
-
-#endif
-
-#endif
+#endif /*TEE_SUPPLICANT_H*/

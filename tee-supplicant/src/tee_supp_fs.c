@@ -24,16 +24,28 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <fcntl.h>
-#include <stdio.h>
-#include <sys/stat.h>
-#include <stdint.h>
+#include <assert.h>
 #include <dirent.h>
-#include <unistd.h>
-#include <string.h>
-#include <tee_supp_fs.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <handle.h>
+#include <libgen.h>
+#include <optee_msg_fs.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <teec_trace.h>
 #include <tee_fs.h>
+#include <tee_supp_fs.h>
+#include <tee_supplicant.h>
+#include <unistd.h>
+
+#ifndef __aligned
+#define __aligned(x) __attribute__((__aligned__(x)))
+#endif
+#include <linux/tee.h>
 
 /* Path to all secure storage files. */
 #define TEE_FS_SUBPATH "/data"
@@ -187,10 +199,10 @@ static int tee_fs_truncate(struct tee_fs_rpc *fsrpc)
 static int tee_fs_mkdir(struct tee_fs_rpc *fsrpc)
 {
 	char abs_dirname[PATH_MAX];
-	char *dirname = (char *)(fsrpc + 1);
+	char *dname = (char *)(fsrpc + 1);
 	mode_t mode;
 	int ret = -1; /* Same as mkir on error */
-	size_t filesize = tee_fs_get_absolute_filename(dirname, abs_dirname,
+	size_t filesize = tee_fs_get_absolute_filename(dname, abs_dirname,
 						       sizeof(abs_dirname));
 
 	if (filesize) {
@@ -204,10 +216,10 @@ static int tee_fs_mkdir(struct tee_fs_rpc *fsrpc)
 static int tee_fs_opendir(struct tee_fs_rpc *fsrpc)
 {
 	char abs_dirname[PATH_MAX];
-	char *dirname = (char *)(fsrpc + 1);
+	char *dname = (char *)(fsrpc + 1);
 	DIR *dir;
 	int handle = -1;
-	size_t filesize = tee_fs_get_absolute_filename(dirname, abs_dirname,
+	size_t filesize = tee_fs_get_absolute_filename(dname, abs_dirname,
 						       sizeof(abs_dirname));
 	if (!filesize)
 		goto exit;
@@ -232,7 +244,7 @@ static int tee_fs_closedir(struct tee_fs_rpc *fsrpc)
 
 static int tee_fs_readdir(struct tee_fs_rpc *fsrpc)
 {
-	char *dirname = (char *)(fsrpc + 1);
+	char *dname = (char *)(fsrpc + 1);
 	DIR *dir = handle_lookup(&dir_handle_db, fsrpc->arg);
 	struct dirent *dirent;
 	size_t len;
@@ -251,7 +263,7 @@ static int tee_fs_readdir(struct tee_fs_rpc *fsrpc)
 		return -1;
 
 	len++;
-	memcpy(dirname, dirent->d_name, len);
+	memcpy(dname, dirent->d_name, len);
 	fsrpc->len = len;
 
 	return 0;
@@ -260,9 +272,9 @@ static int tee_fs_readdir(struct tee_fs_rpc *fsrpc)
 static int tee_fs_rmdir(struct tee_fs_rpc *fsrpc)
 {
 	char abs_dirname[PATH_MAX];
-	char *dirname = (char *)(fsrpc + 1);
+	char *dname = (char *)(fsrpc + 1);
 	int ret = -1; /* Corresponds to the error value for rmdir */
-	size_t filesize = tee_fs_get_absolute_filename(dirname, abs_dirname,
+	size_t filesize = tee_fs_get_absolute_filename(dname, abs_dirname,
 						       sizeof(abs_dirname));
 
 	if (filesize)
@@ -298,67 +310,549 @@ int tee_supp_fs_init(void)
 	return 0;
 }
 
-int tee_supp_fs_process(void *cmd, size_t cmd_size)
+static TEEC_Result tee_supp_fs_process_primitive(void *cmd, size_t cmd_size)
 {
 	struct tee_fs_rpc *fsrpc = cmd;
-	int ret = -1;
 
 	if (cmd_size < sizeof(struct tee_fs_rpc))
-		return ret;
+		return TEEC_ERROR_BAD_PARAMETERS;
 
-	if (cmd == NULL)
-		return ret;
+	if (!cmd)
+		return TEEC_ERROR_BAD_PARAMETERS;
 
 	switch (fsrpc->op) {
 	case TEE_FS_OPEN:
-		ret = tee_fs_open(fsrpc);
+		fsrpc->res = tee_fs_open(fsrpc);
 		break;
 	case TEE_FS_CLOSE:
-		ret = tee_fs_close(fsrpc);
+		fsrpc->res = tee_fs_close(fsrpc);
 		break;
 	case TEE_FS_READ:
-		ret = tee_fs_read(fsrpc);
+		fsrpc->res = tee_fs_read(fsrpc);
 		break;
 	case TEE_FS_WRITE:
-		ret = tee_fs_write(fsrpc);
+		fsrpc->res = tee_fs_write(fsrpc);
 		break;
 	case TEE_FS_SEEK:
-		ret = tee_fs_seek(fsrpc);
+		fsrpc->res = tee_fs_seek(fsrpc);
 		break;
 	case TEE_FS_UNLINK:
-		ret = tee_fs_unlink(fsrpc);
+		fsrpc->res = tee_fs_unlink(fsrpc);
 		break;
 	case TEE_FS_RENAME:
-		ret = tee_fs_rename(fsrpc);
+		fsrpc->res = tee_fs_rename(fsrpc);
 		break;
 	case TEE_FS_TRUNC:
-		ret = tee_fs_truncate(fsrpc);
+		fsrpc->res = tee_fs_truncate(fsrpc);
 		break;
 	case TEE_FS_MKDIR:
-		ret = tee_fs_mkdir(fsrpc);
+		fsrpc->res = tee_fs_mkdir(fsrpc);
 		break;
 	case TEE_FS_OPENDIR:
-		ret = tee_fs_opendir(fsrpc);
+		fsrpc->res = tee_fs_opendir(fsrpc);
 		break;
 	case TEE_FS_CLOSEDIR:
-		ret = tee_fs_closedir(fsrpc);
+		fsrpc->res = tee_fs_closedir(fsrpc);
 		break;
 	case TEE_FS_READDIR:
-		ret = tee_fs_readdir(fsrpc);
+		fsrpc->res = tee_fs_readdir(fsrpc);
 		break;
 	case TEE_FS_RMDIR:
-		ret = tee_fs_rmdir(fsrpc);
+		fsrpc->res = tee_fs_rmdir(fsrpc);
 		break;
 	case TEE_FS_ACCESS:
-		ret = tee_fs_access(fsrpc);
+		fsrpc->res = tee_fs_access(fsrpc);
 		break;
 	case TEE_FS_LINK:
-		ret = tee_fs_link(fsrpc);
-	default:
+		fsrpc->res = tee_fs_link(fsrpc);
 		break;
+	default:
+		EMSG("Unexpected REE FS operation: %d", fsrpc->op);
+		return TEEC_ERROR_NOT_SUPPORTED;
 	}
 
-	fsrpc->res = ret;
+	return TEEC_SUCCESS;
+}
 
-	return ret;
+static int open_wrapper(const char *fname, int flags)
+{
+	int fd;
+
+	while (true) {
+		fd = open(fname, flags);
+		if (fd >= 0 || errno != EINTR)
+			return fd;
+	}
+}
+
+static TEEC_Result ree_fs_new_open(size_t num_params,
+				   struct tee_ioctl_param *params)
+{
+	char abs_filename[PATH_MAX];
+	char *fname;
+	int fd;
+
+	if (num_params != 3 ||
+	    (params[0].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT ||
+	    (params[1].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INPUT ||
+	    (params[2].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_OUTPUT)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	fname = tee_supp_param_to_va(params + 1);
+	if (!fname)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	if (!tee_fs_get_absolute_filename(fname, abs_filename,
+					  sizeof(abs_filename)))
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	fd = open_wrapper(abs_filename, O_RDWR);
+	if (fd < 0)
+		return TEEC_ERROR_ITEM_NOT_FOUND;
+
+	params[2].u.value.a = fd;
+	return TEEC_SUCCESS;
+}
+
+static TEEC_Result ree_fs_new_create(size_t num_params,
+				     struct tee_ioctl_param *params)
+{
+	char abs_filename[PATH_MAX];
+	char abs_dir[PATH_MAX];
+	char *fname;
+	char *d;
+	int fd;
+	const int flags = O_RDWR | O_CREAT | O_TRUNC;
+
+	if (num_params != 3 ||
+	    (params[0].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT ||
+	    (params[1].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INPUT ||
+	    (params[2].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_OUTPUT)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	fname = tee_supp_param_to_va(params + 1);
+	if (!fname)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	if (!tee_fs_get_absolute_filename(fname, abs_filename,
+					  sizeof(abs_filename)))
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	fd = open_wrapper(abs_filename, flags);
+	if (fd >= 0)
+		goto out;
+	if (errno != ENOENT)
+		return TEEC_ERROR_GENERIC;
+
+	/* Directory for file missing, try make to it */
+	strncpy(abs_dir, abs_filename, sizeof(abs_dir));
+	abs_dir[sizeof(abs_dir) - 1] = '\0';
+	d = dirname(abs_dir);
+	if (!mkdir(d, S_IRUSR | S_IWUSR | S_IXUSR)) {
+		fd = open_wrapper(abs_filename, flags);
+		if (fd >= 0)
+			goto out;
+		/*
+		 * The directory was made but the file could still not be
+		 * created.
+		 */
+		rmdir(d);
+		return TEEC_ERROR_GENERIC;
+	}
+	if (errno != ENOENT)
+		return TEEC_ERROR_GENERIC;
+
+	/* Parent directory for file missing, try to make it */
+	d = dirname(d);
+	if (mkdir(d, S_IRUSR | S_IWUSR | S_IXUSR))
+		return TEEC_ERROR_GENERIC;
+
+	/* Try to make directory for file again */
+	strncpy(abs_dir, abs_filename, sizeof(abs_dir));
+	abs_dir[sizeof(abs_dir) - 1] = '\0';
+	d = dirname(abs_dir);
+	if (mkdir(d, S_IRUSR | S_IWUSR | S_IXUSR)) {
+		d = dirname(d);
+		rmdir(d);
+		return TEEC_ERROR_GENERIC;
+	}
+
+	fd = open_wrapper(abs_filename, flags);
+	if (fd < 0) {
+		rmdir(d);
+		d = dirname(d);
+		rmdir(d);
+		return TEEC_ERROR_GENERIC;
+	}
+
+out:
+	params[2].u.value.a = fd;
+	return TEEC_SUCCESS;
+}
+
+static TEEC_Result ree_fs_new_close(size_t num_params,
+				    struct tee_ioctl_param *params)
+{
+	int fd;
+
+	if (num_params != 1 ||
+	    (params[0].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	fd = params[0].u.value.b;
+	while (close(fd)) {
+		if (errno != EINTR)
+			return TEEC_ERROR_GENERIC;
+	}
+	return TEEC_SUCCESS;
+}
+
+static TEEC_Result ree_fs_new_read(size_t num_params,
+				   struct tee_ioctl_param *params)
+{
+	uint8_t *buf;
+	size_t len;
+	off_t offs;
+	int fd;
+	ssize_t r;
+	size_t s;
+
+	if (num_params != 2 ||
+	    (params[0].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT ||
+	    (params[1].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_OUTPUT)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	fd = params[0].u.value.b;
+	offs = params[0].u.value.c;
+
+	buf = tee_supp_param_to_va(params + 1);
+	if (!buf)
+		return TEEC_ERROR_BAD_PARAMETERS;
+	len = params[1].u.memref.size;
+
+	s = 0;
+	r = -1;
+	while (r && len) {
+		r = pread(fd, buf, len, offs);
+		if (r < 0) {
+			if (errno == EINTR)
+				continue;
+			return TEEC_ERROR_GENERIC;
+		}
+		assert((size_t)r <= len);
+		buf += r;
+		len -= r;
+		offs += r;
+		s += r;
+	}
+
+	params[1].u.memref.size = s;
+	return TEEC_SUCCESS;
+}
+
+static TEEC_Result ree_fs_new_write(size_t num_params,
+				    struct tee_ioctl_param *params)
+{
+	uint8_t *buf;
+	size_t len;
+	off_t offs;
+	int fd;
+	ssize_t r;
+
+	if (num_params != 2 ||
+	    (params[0].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT ||
+	    (params[1].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INPUT)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	fd = params[0].u.value.b;
+	offs = params[0].u.value.c;
+
+	buf = tee_supp_param_to_va(params + 1);
+	if (!buf)
+		return TEEC_ERROR_BAD_PARAMETERS;
+	len = params[1].u.memref.size;
+
+	while (len) {
+		r = pwrite(fd, buf, len, offs);
+		if (r < 0) {
+			if (errno == EINTR)
+				continue;
+			return TEEC_ERROR_GENERIC;
+		}
+		assert((size_t)r <= len);
+		buf += r;
+		len -= r;
+		offs += r;
+	}
+
+	return TEEC_SUCCESS;
+}
+
+static TEEC_Result ree_fs_new_truncate(size_t num_params,
+				       struct tee_ioctl_param *params)
+{
+	size_t len;
+	int fd;
+
+	if (num_params != 1 ||
+	    (params[0].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	fd = params[0].u.value.b;
+	len = params[0].u.value.c;
+
+	while (ftruncate(fd, len)) {
+		if (errno != EINTR)
+			return TEEC_ERROR_GENERIC;
+	}
+
+	return TEEC_SUCCESS;
+}
+
+static TEEC_Result ree_fs_new_remove(size_t num_params,
+				     struct tee_ioctl_param *params)
+{
+	char abs_filename[PATH_MAX];
+	char *fname;
+	char *d;
+
+	if (num_params != 2 ||
+	    (params[0].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT ||
+	    (params[1].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INPUT)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	fname = tee_supp_param_to_va(params + 1);
+	if (!fname)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	if (!tee_fs_get_absolute_filename(fname, abs_filename,
+					  sizeof(abs_filename)))
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	if (unlink(abs_filename)) {
+		if (errno == ENOENT)
+			return TEEC_ERROR_ITEM_NOT_FOUND;
+		return TEEC_ERROR_GENERIC;
+	}
+
+	/* If a file is removed, maybe the directory can be removed to? */
+	d = dirname(abs_filename);
+	if (!rmdir(d)) {
+		/*
+		 * If the directory was removed, maybe the parent directory
+		 * can be removed too?
+		 */
+		d = dirname(d);
+		rmdir(d);
+	}
+
+	return TEEC_SUCCESS;
+}
+
+static TEEC_Result ree_fs_new_rename(size_t num_params,
+				     struct tee_ioctl_param *params)
+{
+	char old_abs_filename[PATH_MAX];
+	char new_abs_filename[PATH_MAX];
+	char *old_fname;
+	char *new_fname;
+	bool overwrite;
+
+	if (num_params != 3 ||
+	    (params[0].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT ||
+	    (params[1].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INPUT ||
+	    (params[2].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INPUT)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	overwrite = !!params[0].u.value.b;
+
+	old_fname = tee_supp_param_to_va(params + 1);
+	if (!old_fname)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	new_fname = tee_supp_param_to_va(params + 2);
+	if (!new_fname)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	if (!tee_fs_get_absolute_filename(old_fname, old_abs_filename,
+					  sizeof(old_abs_filename)))
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	if (!tee_fs_get_absolute_filename(new_fname, new_abs_filename,
+					  sizeof(new_abs_filename)))
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	if (!overwrite) {
+		struct stat st;
+
+		if (!stat(new_abs_filename, &st))
+			return TEEC_ERROR_ACCESS_CONFLICT;
+	}
+	if (rename(old_abs_filename, new_abs_filename)) {
+		if (errno == ENOENT)
+			return TEEC_ERROR_ITEM_NOT_FOUND;
+	}
+	return TEEC_SUCCESS;
+}
+
+static TEEC_Result ree_fs_new_opendir(size_t num_params,
+				      struct tee_ioctl_param *params)
+{
+	char abs_filename[PATH_MAX];
+	char *fname;
+	DIR *dir;
+	int handle;
+
+	if (num_params != 3 ||
+	    (params[0].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT ||
+	    (params[1].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INPUT ||
+	    (params[2].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_OUTPUT)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	fname = tee_supp_param_to_va(params + 1);
+	if (!fname)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	if (!tee_fs_get_absolute_filename(fname, abs_filename,
+					  sizeof(abs_filename)))
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	dir = opendir(abs_filename);
+	if (!dir)
+		return TEEC_ERROR_ITEM_NOT_FOUND;
+
+	handle = handle_get(&dir_handle_db, dir);
+	if (handle < 0) {
+		closedir(dir);
+		return TEEC_ERROR_OUT_OF_MEMORY;
+	}
+
+	params[2].u.value.a = handle;
+	return TEEC_SUCCESS;
+}
+
+static TEEC_Result ree_fs_new_closedir(size_t num_params,
+				       struct tee_ioctl_param *params)
+{
+	DIR *dir;
+
+	if (num_params != 1 ||
+	    (params[0].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	dir = handle_put(&dir_handle_db, params[0].u.value.b);
+	if (!dir)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	closedir(dir);
+
+	return TEEC_SUCCESS;
+}
+
+static TEEC_Result ree_fs_new_readdir(size_t num_params,
+				      struct tee_ioctl_param *params)
+{
+	DIR *dir;
+	struct dirent *dirent;
+	char *buf;
+	size_t len;
+	size_t fname_len;
+
+	if (num_params != 2 ||
+	    (params[0].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT ||
+	    (params[1].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
+			TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_OUTPUT)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+
+	buf = tee_supp_param_to_va(params + 1);
+	if (!buf)
+		return TEEC_ERROR_BAD_PARAMETERS;
+	len = params[1].u.memref.size;
+
+	dir = handle_lookup(&dir_handle_db, params[0].u.value.b);
+	if (!dir)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	while (true) {
+		dirent = readdir(dir);
+		if (!dirent)
+			return TEEC_ERROR_ITEM_NOT_FOUND;
+		if (dirent->d_name[0] != '.')
+			break;
+	}
+
+	fname_len = strlen(dirent->d_name) + 1;
+	params[1].u.memref.size = fname_len;
+	if (fname_len > len)
+		return TEEC_ERROR_SHORT_BUFFER;
+
+	memcpy(buf, dirent->d_name, fname_len);
+
+	return TEEC_SUCCESS;
+}
+
+TEEC_Result tee_supp_fs_process(struct tee_iocl_supp_recv_arg *recv)
+{
+	struct tee_ioctl_param *param = (void *)(recv + 1);
+
+	if (recv->num_params == 1 && tee_supp_param_is_memref(param)) {
+		void *va = tee_supp_param_to_va(param);
+
+		if (!va)
+			return TEEC_ERROR_BAD_PARAMETERS;
+		return tee_supp_fs_process_primitive(va, param->u.memref.size);
+	}
+
+	if (!tee_supp_param_is_value(param))
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	switch (param->u.value.a) {
+	case OPTEE_MRF_OPEN:
+		return ree_fs_new_open(recv->num_params, param);
+	case OPTEE_MRF_CREATE:
+		return ree_fs_new_create(recv->num_params, param);
+	case OPTEE_MRF_CLOSE:
+		return ree_fs_new_close(recv->num_params, param);
+	case OPTEE_MRF_READ:
+		return ree_fs_new_read(recv->num_params, param);
+	case OPTEE_MRF_WRITE:
+		return ree_fs_new_write(recv->num_params, param);
+	case OPTEE_MRF_TRUNCATE:
+		return ree_fs_new_truncate(recv->num_params, param);
+	case OPTEE_MRF_REMOVE:
+		return ree_fs_new_remove(recv->num_params, param);
+	case OPTEE_MRF_RENAME:
+		return ree_fs_new_rename(recv->num_params, param);
+	case OPTEE_MRF_OPENDIR:
+		return ree_fs_new_opendir(recv->num_params, param);
+	case OPTEE_MRF_CLOSEDIR:
+		return ree_fs_new_closedir(recv->num_params, param);
+	case OPTEE_MRF_READDIR:
+		return ree_fs_new_readdir(recv->num_params, param);
+	default:
+		return TEEC_ERROR_BAD_PARAMETERS;
+	}
 }
