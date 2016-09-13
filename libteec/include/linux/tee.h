@@ -144,6 +144,7 @@ struct tee_ioctl_buf_data {
  * These defines shared memory reference parameters (struct
  * tee_ioctl_param_memref)
  */
+#define TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_SECURE	4
 #define TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INPUT	5
 #define TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_OUTPUT	6
 #define TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INOUT	7	/* input and output */

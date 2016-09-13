@@ -214,6 +214,10 @@ static TEEC_Result teec_pre_process_partial(uint32_t param_type,
 	TEEC_SharedMemory *shm;
 
 	switch (param_type) {
+	case TEEC_MEMREF_SECURE:
+		req_shm_flags = TEEC_MEM_SECURE;
+		param->attr = TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_SECURE;
+		break;
 	case TEEC_MEMREF_PARTIAL_INPUT:
 		req_shm_flags = TEEC_MEM_INPUT;
 		param->attr = TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INPUT;
@@ -297,6 +301,7 @@ static TEEC_Result teec_pre_process_operation(TEEC_Context *ctx,
 			if (res != TEEC_SUCCESS)
 				return res;
 			break;
+		case TEEC_MEMREF_SECURE:
 		case TEEC_MEMREF_PARTIAL_INPUT:
 		case TEEC_MEMREF_PARTIAL_OUTPUT:
 		case TEEC_MEMREF_PARTIAL_INOUT:
@@ -351,7 +356,8 @@ static void teec_post_process_partial(uint32_t param_type,
 			TEEC_RegisteredMemoryReference *memref,
 			struct tee_ioctl_param *param)
 {
-	if (param_type != TEEC_MEMREF_PARTIAL_INPUT) {
+	if ((param_type == TEEC_MEMREF_PARTIAL_OUTPUT) ||
+	    (param_type == TEEC_MEMREF_PARTIAL_INOUT)) {
 		TEEC_SharedMemory *shm = memref->parent;
 
 		/*
@@ -363,9 +369,10 @@ static void teec_post_process_partial(uint32_t param_type,
 			memcpy((char *)shm->buffer + memref->offset,
 			       (char *)shm->shadow_buffer + memref->offset,
 			       param->u.memref.size);
-
-		memref->size = param->u.memref.size;
 	}
+
+	if (param_type != TEEC_MEMREF_PARTIAL_INPUT)
+		memref->size = param->u.memref.size;
 }
 
 static void teec_post_process_operation(TEEC_Operation *operation,
@@ -400,6 +407,7 @@ static void teec_post_process_operation(TEEC_Operation *operation,
 			teec_post_process_whole(&operation->params[n].memref,
 						params + n);
 			break;
+		case TEEC_MEMREF_SECURE:
 		case TEEC_MEMREF_PARTIAL_INPUT:
 		case TEEC_MEMREF_PARTIAL_OUTPUT:
 		case TEEC_MEMREF_PARTIAL_INOUT:
