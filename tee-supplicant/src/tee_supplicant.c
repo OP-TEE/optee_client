@@ -30,6 +30,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <gprof.h>
 #include <inttypes.h>
 #include <rpmb.h>
 #include <sql_fs.h>
@@ -66,6 +67,7 @@
 #define RPC_CMD_SHM_ALLOC	6
 #define RPC_CMD_SHM_FREE	7
 #define RPC_CMD_SQL_FS		8
+#define RPC_CMD_GPROF		9
 
 union tee_rpc_invoke {
 	uint64_t buf[RPC_BUF_SIZE / sizeof(uint64_t)];
@@ -377,6 +379,11 @@ out:
 	OUTMSG();
 }
 
+static void process_gprof(union tee_rpc_invoke *request)
+{
+	request->send.ret = gprof_process(&request->recv);
+}
+
 int main(int argc, char *argv[])
 {
 	int fd;
@@ -434,6 +441,9 @@ int main(int argc, char *argv[])
 				break;
 			case RPC_CMD_SHM_FREE:
 				process_free(&request);
+				break;
+			case RPC_CMD_GPROF:
+				process_gprof(&request);
 				break;
 			default:
 				EMSG("Cmd [0x%" PRIx32 "] not supported",

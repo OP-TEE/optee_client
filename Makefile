@@ -17,6 +17,7 @@ LIBDIR ?= /lib
 INCLUDEDIR ?= /include
 
 CFG_SQL_FS ?= n
+CFG_TA_GPROF_SUPPORT ?= n
 
 ifeq ($(CFG_SQL_FS),y)
 BUILD-LIBSQLFS = build-libsqlfs

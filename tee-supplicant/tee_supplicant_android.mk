@@ -35,6 +35,11 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/../libsqlfs/include \
 LOCAL_SHARED_LIBRARIES += libsqlfs
 endif
 
+ifeq ($(CFG_TA_GPROF_SUPPORT),y)
+LOCAL_SRC_FILES += src/gprof.c
+LOCAL_CFLAGS += -DCFG_TA_GPROF_SUPPORT
+endif
+
 LOCAL_MODULE := tee-supplicant
 LOCAL_MODULE_TAGS := optional
 include $(BUILD_EXECUTABLE)
