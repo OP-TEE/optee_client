@@ -35,6 +35,7 @@ extern "C" {
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
 #include <limits.h>
 
 /*
@@ -253,6 +254,7 @@ typedef uint32_t TEEC_Result;
 typedef struct {
 	/* Implementation defined */
 	int fd;
+	bool reg_mem;
 } TEEC_Context;
 
 /**
@@ -294,6 +296,7 @@ typedef struct {
 	size_t alloced_size;
 	void *shadow_buffer;
 	int registered_fd;
+	bool buffer_allocated;
 } TEEC_SharedMemory;
 
 /**
