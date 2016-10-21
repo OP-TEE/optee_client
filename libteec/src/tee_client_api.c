@@ -29,8 +29,8 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <pthread.h>
-#include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
@@ -63,7 +63,8 @@ static void teec_mutex_unlock(pthread_mutex_t *mu)
 	pthread_mutex_unlock(mu);
 }
 
-static int teec_open_dev(const char *devname, const char *capabilities)
+static int teec_open_dev(const char *devname, const char *capabilities,
+			 uint32_t *gen_caps)
 {
 	struct tee_ioctl_version_data vers;
 	int fd;
@@ -93,6 +94,7 @@ static int teec_open_dev(const char *devname, const char *capabilities)
 		}
 	}
 
+	*gen_caps = vers.gen_caps;
 	return fd;
 err:
 	close(fd);
@@ -113,6 +115,21 @@ static int teec_shm_alloc(int fd, size_t size, int *id)
 	return shm_fd;
 }
 
+static int teec_shm_register(int fd, void *buf, size_t size, int *id)
+{
+	int shm_fd;
+	struct tee_ioctl_shm_register_data data;
+
+	memset(&data, 0, sizeof(data));
+	data.addr = (uintptr_t)buf;
+	data.length = size;
+	shm_fd = ioctl(fd, TEE_IOC_SHM_REGISTER, &data);
+	if (shm_fd < 0)
+		return -1;
+	*id = data.id;
+	return shm_fd;
+}
+
 TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *ctx)
 {
 	char devname[PATH_MAX];
@@ -123,10 +140,13 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *ctx)
 		return TEEC_ERROR_BAD_PARAMETERS;
 
 	for (n = 0; n < TEEC_MAX_DEV_SEQ; n++) {
+		uint32_t gen_caps;
+
 		snprintf(devname, sizeof(devname), "/dev/tee%zu", n);
-		fd = teec_open_dev(devname, name);
+		fd = teec_open_dev(devname, name, &gen_caps);
 		if (fd >= 0) {
 			ctx->fd = fd;
+			ctx->reg_mem = gen_caps & TEE_GEN_CAP_REG_MEM;
 			return TEEC_SUCCESS;
 		}
 	}
@@ -635,20 +655,29 @@ TEEC_Result TEEC_RegisterSharedMemory(TEEC_Context *ctx, TEEC_SharedMemory *shm)
 	s = shm->size;
 	if (!s)
 		s = 8;
+	if (ctx->reg_mem) {
+		fd = teec_shm_register(ctx->fd, shm->buffer, s, &shm->id);
+		if (fd < 0)
+			return TEEC_ERROR_OUT_OF_MEMORY;
+		shm->registered_fd = fd;
+		shm->shadow_buffer = NULL;
+	} else {
+		fd = teec_shm_alloc(ctx->fd, s, &shm->id);
+		if (fd < 0)
+			return TEEC_ERROR_OUT_OF_MEMORY;
 
-	fd = teec_shm_alloc(ctx->fd, s, &shm->id);
-	if (fd < 0)
-		return TEEC_ERROR_OUT_OF_MEMORY;
-
-	shm->shadow_buffer = mmap(NULL, s, PROT_READ | PROT_WRITE, MAP_SHARED,
-				  fd, 0);
-	close(fd);
-	if (shm->shadow_buffer == (void *)MAP_FAILED) {
-		shm->id = -1;
-		return TEEC_ERROR_OUT_OF_MEMORY;
+		shm->shadow_buffer = mmap(NULL, s, PROT_READ | PROT_WRITE,
+					  MAP_SHARED, fd, 0);
+		close(fd);
+		if (shm->shadow_buffer == (void *)MAP_FAILED) {
+			shm->id = -1;
+			return TEEC_ERROR_OUT_OF_MEMORY;
+		}
+		shm->registered_fd = -1;
 	}
+
 	shm->alloced_size = s;
-	shm->registered_fd = -1;
+	shm->buffer_allocated = false;
 	return TEEC_SUCCESS;
 }
 
@@ -694,19 +723,36 @@ TEEC_Result TEEC_AllocateSharedMemory(TEEC_Context *ctx, TEEC_SharedMemory *shm)
 	if (!s)
 		s = 8;
 
-	fd = teec_shm_alloc(ctx->fd, s, &shm->id);
-	if (fd < 0)
-		return TEEC_ERROR_OUT_OF_MEMORY;
+	if (ctx->reg_mem) {
+		shm->buffer = malloc(s);
+		if (!shm->buffer)
+			return TEEC_ERROR_OUT_OF_MEMORY;
 
-	shm->buffer = mmap(NULL, s, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-	close(fd);
-	if (shm->buffer == (void *)MAP_FAILED) {
-		shm->id = -1;
-		return TEEC_ERROR_OUT_OF_MEMORY;
+		fd = teec_shm_register(ctx->fd, shm->buffer, s, &shm->id);
+		if (fd < 0) {
+			free(shm->buffer);
+			shm->buffer = NULL;
+			return TEEC_ERROR_OUT_OF_MEMORY;
+		}
+		shm->registered_fd = fd;
+	} else {
+		fd = teec_shm_alloc(ctx->fd, s, &shm->id);
+		if (fd < 0)
+			return TEEC_ERROR_OUT_OF_MEMORY;
+
+		shm->buffer = mmap(NULL, s, PROT_READ | PROT_WRITE,
+				   MAP_SHARED, fd, 0);
+		close(fd);
+		if (shm->buffer == (void *)MAP_FAILED) {
+			shm->id = -1;
+			return TEEC_ERROR_OUT_OF_MEMORY;
+		}
+		shm->registered_fd = -1;
 	}
+
 	shm->shadow_buffer = NULL;
 	shm->alloced_size = s;
-	shm->registered_fd = -1;
+	shm->buffer_allocated = true;
 	return TEEC_SUCCESS;
 }
 
@@ -717,13 +763,19 @@ void TEEC_ReleaseSharedMemory(TEEC_SharedMemory *shm)
 
 	if (shm->shadow_buffer)
 		munmap(shm->shadow_buffer, shm->alloced_size);
-	else if (shm->buffer)
-		munmap(shm->buffer, shm->alloced_size);
-	else if (shm->registered_fd >= 0)
+	else if (shm->buffer) {
+		if (shm->registered_fd >= 0) {
+			if (shm->buffer_allocated)
+				free(shm->buffer);
+			close(shm->registered_fd);
+		} else
+			munmap(shm->buffer, shm->alloced_size);
+	} else if (shm->registered_fd >= 0)
 		close(shm->registered_fd);
 
 	shm->id = -1;
 	shm->shadow_buffer = NULL;
 	shm->buffer = NULL;
 	shm->registered_fd = -1;
+	shm->buffer_allocated = false;
 }
