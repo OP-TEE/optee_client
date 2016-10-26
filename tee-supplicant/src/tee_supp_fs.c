@@ -30,7 +30,7 @@
 #include <fcntl.h>
 #include <handle.h>
 #include <libgen.h>
-#include <optee_msg_fs.h>
+#include <optee_msg_supplicant.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>

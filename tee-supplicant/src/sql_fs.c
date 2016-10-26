@@ -29,7 +29,7 @@
 #include <errno.h>
 #include <handle.h>
 #include <libgen.h>
-#include <optee_msg_fs.h>
+#include <optee_msg_supplicant.h>
 #include <sql_fs.h>
 #include <sqlfs.h>
 #include <sqlfs_internal.h>
