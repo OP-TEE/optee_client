@@ -1,6 +1,5 @@
 include ../flags.mk
 
-O ?= out
 OUT_DIR	?= $(O)/libsqlite3
 
 .PHONY: all libsqlite3 clean

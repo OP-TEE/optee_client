@@ -5,7 +5,6 @@
 
 include ../flags.mk
 
-O ?= out
 OUT_DIR	?= $(O)/libsqlfs
 
 .PHONY: all libsqlfs clean
