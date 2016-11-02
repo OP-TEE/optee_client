@@ -1,6 +1,6 @@
 include ../flags.mk
 
-OUT_DIR		?= ${CURDIR}/../$(O)/libteec
+OUT_DIR		?= $(O)/libteec
 
 .PHONY: all libteec clean
 

@@ -1,7 +1,7 @@
 include ../flags.mk
 include ../config.mk
 
-OUT_DIR		?= ${CURDIR}/../$(O)/tee-supplicant
+OUT_DIR		?= $(O)/tee-supplicant
 
 # Emulate RPMB ioctl's
 RPMB_EMU	:= 1
