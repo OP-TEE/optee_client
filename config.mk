@@ -39,7 +39,6 @@ CFG_TEE_CLIENT_LOAD_PATH ?= /system/lib
 CFG_TA_TEST_PATH ?= 1
 
 # Default out dir.
-# Must be a relative path with respect to the op-tee-client root directory
 O               ?= $(CURDIR)/out
 export O
 
