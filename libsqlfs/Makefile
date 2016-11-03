@@ -5,8 +5,11 @@
 
 include ../flags.mk
 
-OUT_DIR	?= $(O)/libsqlfs
-
+ifeq ($(shell dirname $(O)), .)
+OUT_DIR	?= $(CURDIR)/../$(O)/libsqlfs-out
+else
+OUT_DIR	?= $(O)/libsqlfs-out
+endif
 .PHONY: all libsqlfs clean
 
 all: libsqlfs
@@ -38,7 +41,7 @@ SQLFS_CFLAGS := $(addprefix -I, $(SQLFS_INCLUDES)) \
 	-Wno-missing-format-attribute
 
 SQLFS_LFLAGS := -lpthread
-SQLFS_LIBS := $(O)/libsqlite3/libsqlite3.a
+SQLFS_LIBS := $(shell dirname $(OUT_DIR))/libsqlite3-out/libsqlite3.a
 SQLFS_LIBRARY := $(OUT_DIR)/$(LIB_MAJ_MIN)
 
 libsqlfs: $(SQLFS_LIBRARY)

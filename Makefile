@@ -10,7 +10,11 @@ VPREFIX := @
 endif
 export VPREFIX
 
+ifeq ($(shell dirname $(O)), .)
+EXPORT_DIR ?= $(CURDIR)/$(O)/export
+else
 EXPORT_DIR ?= $(O)/export
+endif
 
 CFG_SQL_FS ?= n
 
@@ -123,9 +127,9 @@ distclean: clean
 
 copy_export: build
 	mkdir -p ${EXPORT_DIR}/lib ${EXPORT_DIR}/include ${EXPORT_DIR}/bin
-	cp ${O}/libteec/libteec.so* ${EXPORT_DIR}/lib
-	if [ "$(BUILD-LIBSQLFS)" ]; then cp ${O}/libsqlfs/libsqlfs.so* ${EXPORT_DIR}/lib; fi
-	cp ${O}/tee-supplicant/tee-supplicant ${EXPORT_DIR}/bin
+	cp ${shell dirname $(EXPORT_DIR)}/libteec-out/libteec.so* ${EXPORT_DIR}/lib
+	if [ "$(BUILD-LIBSQLFS)" ]; then cp ${shell dirname $(EXPORT_DIR)}/libsqlfs-out/libsqlfs.so* ${EXPORT_DIR}/lib; fi
+	cp ${shell dirname $(EXPORT_DIR)}/tee-supplicant-out/tee-supplicant ${EXPORT_DIR}/bin
 	cp public/*.h ${EXPORT_DIR}/include
 
 ifeq ($(CFG_SQL_FS),y)

@@ -1,7 +1,11 @@
 include ../flags.mk
 include ../config.mk
 
-OUT_DIR		?= $(O)/tee-supplicant
+ifeq ($(shell dirname $(O)), .)
+OUT_DIR		?= $(CURDIR)/../$(O)/tee-supplicant-out
+else
+OUT_DIR		?= $(O)/tee-supplicant-out
+endif
 
 # Emulate RPMB ioctl's
 RPMB_EMU	:= 1
@@ -46,7 +50,7 @@ ifeq ($(CFG_TA_TEST_PATH),1)
 TEES_CFLAGS	+= -DCFG_TA_TEST_PATH=1
 endif
 TEES_FILE	:= $(OUT_DIR)/$(PACKAGE_NAME)
-TEES_LDFLAGS    := -L$(OUT_DIR)/../libteec -lteec
+TEES_LDFLAGS    := -L$(OUT_DIR)/../libteec-out -lteec
 
 ifeq ($(CFG_SQL_FS),y)
 TEES_CFLAGS	+= -DCFG_SQL_FS
@@ -55,7 +59,7 @@ TEES_CFLAGS	+= -Wno-strict-prototypes -Wno-implicit-function-declaration \
 # Note: explicitly requesting a shared library (.so) here, because statically
 # linking a LGPL library has licensing implications. Make sure you review
 # and comply with libsqlfs/COPYING section 6 before doing so.
-TEES_LDFLAGS	+= -L$(OUT_DIR)/../libsqlfs -l:libsqlfs.so -ldl
+TEES_LDFLAGS	+= -L$(OUT_DIR)/../libsqlfs-out -l:libsqlfs.so -ldl
 endif
 
 TEES_LDFLAGS	+= -lpthread

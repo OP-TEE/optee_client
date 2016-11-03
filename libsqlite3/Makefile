@@ -1,7 +1,9 @@
 include ../flags.mk
-
-OUT_DIR	?= $(O)/libsqlite3
-
+ifeq ($(shell dirname $(O)), .)
+OUT_DIR	?= $(CURDIR)/../$(O)/libsqlite3-out
+else
+OUT_DIR	?= $(O)/libsqlite3-out
+endif
 .PHONY: all libsqlite3 clean
 
 all: libsqlite3
