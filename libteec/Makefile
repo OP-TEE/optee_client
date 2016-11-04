@@ -1,9 +1,9 @@
 include ../flags.mk
 
 ifeq ($(shell dirname $(O)), .)
-OUT_DIR		?= $(CURDIR)/../$(O)/libteec-out
+OUT_DIR		?= $(CURDIR)/../$(O)/libteec
 else
-OUT_DIR		?= $(O)/libteec-out
+OUT_DIR		?= $(O)/libteec
 endif
 
 .PHONY: all libteec clean
@@ -53,4 +53,5 @@ $(TEEC_OBJ_DIR)/%.o: ${TEEC_SRC_DIR}/%.c
 # Cleaning up configuration
 ################################################################################
 clean:
-	$(RM) $(OUT_DIR)
+	$(RM) $(TEEC_LIBRARY) $(OUT_DIR)/$(LIB_MAJOR) $(OUT_DIR)/$(LIB_NAME) $(TEEC_OBJS)
+	$(Q)-rmdir --ignore-fail-on-non-empty $(OUT_DIR)
