@@ -25,6 +25,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <tee_client_api.h>
+#include <tee_client_api_extensions.h>
 
 #include <sys/types.h>
 #include <sys/ioctl.h>
@@ -630,9 +631,36 @@ TEEC_Result TEEC_RegisterSharedMemory(TEEC_Context *ctx, TEEC_SharedMemory *shm)
 		return TEEC_ERROR_OUT_OF_MEMORY;
 	}
 	shm->alloced_size = s;
+	shm->registered_fd = -1;
 	return TEEC_SUCCESS;
 }
 
+TEEC_Result TEEC_RegisterSharedMemoryFileDescriptor(TEEC_Context *ctx,
+						    TEEC_SharedMemory *shm,
+						    int fd)
+{
+	struct tee_ioctl_shm_register_fd_data data;
+	int rfd;
+
+	if (!ctx || !shm || fd < 0)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	if (!shm->flags || (shm->flags & ~(TEEC_MEM_INPUT | TEEC_MEM_OUTPUT)))
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	memset(&data, 0, sizeof(data));
+	data.fd = fd;
+	rfd = ioctl(ctx->fd, TEE_IOC_SHM_REGISTER_FD, &data);
+	if (rfd < 0)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	shm->buffer = NULL;
+	shm->shadow_buffer = NULL;
+	shm->registered_fd = rfd;
+	shm->id = data.id;
+	shm->size = data.size;
+	return TEEC_SUCCESS;
+}
 
 TEEC_Result TEEC_AllocateSharedMemory(TEEC_Context *ctx, TEEC_SharedMemory *shm)
 {
@@ -661,22 +689,24 @@ TEEC_Result TEEC_AllocateSharedMemory(TEEC_Context *ctx, TEEC_SharedMemory *shm)
 	}
 	shm->shadow_buffer = NULL;
 	shm->alloced_size = s;
+	shm->registered_fd = -1;
 	return TEEC_SUCCESS;
 }
 
 void TEEC_ReleaseSharedMemory(TEEC_SharedMemory *shm)
 {
-	void *buf;
-
 	if (!shm || shm->id == -1)
 		return;
-	if (shm->shadow_buffer)
-		buf = shm->shadow_buffer;
-	else
-		buf = shm->buffer;
-	munmap(buf, shm->alloced_size);
-	shm->id = -1;
 
+	if (shm->shadow_buffer)
+		munmap(shm->shadow_buffer, shm->alloced_size);
+	else if (shm->buffer)
+		munmap(shm->buffer, shm->alloced_size);
+	else if (shm->registered_fd >= 0)
+		close(shm->registered_fd);
+
+	shm->id = -1;
 	shm->shadow_buffer = NULL;
 	shm->buffer = NULL;
+	shm->registered_fd = -1;
 }
