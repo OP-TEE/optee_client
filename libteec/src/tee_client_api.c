@@ -24,8 +24,9 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <tee_client_api.h>
 
+#include <tee_bench.h>
+#include <tee_client_api.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
@@ -49,6 +50,25 @@
 /* How many device sequence numbers will be tried before giving up */
 #define TEEC_MAX_DEV_SEQ	10
 
+
+#if defined(CFG_TEE_BENCHMARK) && defined(CFG_TEE_PRINT_LATENCY_STAT)
+static const char *bench_str_src(uint64_t source)
+{
+	switch (source) {
+	case TEE_BENCH_CORE:
+		return "TEE_OS_CORE";
+	case TEE_BENCH_KMOD:
+		return "TEE_KERN_MOD";
+	case TEE_BENCH_CLIENT:
+		return "TEE_CLIENT";
+	case TEE_BENCH_DUMB_TA:
+		return "TEE_DUMB_TA";
+	default:
+		return "???";
+	}
+}
+#endif
+
 static pthread_mutex_t teec_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void teec_mutex_lock(pthread_mutex_t *mu)
@@ -60,7 +80,6 @@ static void teec_mutex_unlock(pthread_mutex_t *mu)
 {
 	pthread_mutex_unlock(mu);
 }
-
 
 static int teec_open_dev(const char *devname, const char *capabilities)
 {
@@ -539,6 +558,36 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t cmd_id,
 		goto out;
 	}
 
+#ifdef CFG_TEE_BENCHMARK
+	uint32_t allocated = 0;
+
+	TEEC_SharedMemory ringbuf_shm = {
+		.flags = TEEC_MEM_INPUT | TEEC_MEM_OUTPUT,
+		.buffer = NULL,
+		.size = TEE_BENCH_RB_SIZE
+	};
+
+	if (operation) {
+
+		TEEC_Result res_ring = TEEC_AllocateSharedMemory
+				(session->ctx, &ringbuf_shm);
+
+		if (res_ring != TEEC_SUCCESS)
+			goto out;
+
+		allocated = 1;
+		memset(ringbuf_shm.buffer, 0, ringbuf_shm.size);
+
+		tee_add_timestamp(ringbuf_shm.buffer, TEE_BENCH_CLIENT);
+
+		operation->params[TEE_BENCH_DEF_PARAM].memref.parent =
+				&ringbuf_shm;
+		operation->params[TEE_BENCH_DEF_PARAM].memref.offset = 0;
+		operation->params[TEE_BENCH_DEF_PARAM].memref.size =
+				TEE_BENCH_RB_SIZE;
+	}
+#endif
+
 	buf_data.buf_ptr = (uintptr_t)buf;
 	buf_data.buf_len = sizeof(buf);
 
@@ -572,6 +621,25 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t cmd_id,
 	res = arg->ret;
 	eorig = arg->ret_origin;
 	teec_post_process_operation(operation, params, shm);
+
+#ifdef CFG_TEE_BENCHMARK
+	if (!ringbuf_shm.buffer)
+		goto out_free_temp_refs;
+
+	tee_add_timestamp(ringbuf_shm.buffer, TEE_BENCH_CLIENT);
+
+#ifdef CFG_TEE_PRINT_LATENCY_STAT
+	struct tee_ringbuf *ringb = (struct tee_ringbuf *)ringbuf_shm.buffer;
+
+	for (uint32_t ts_i = 0; ts_i < ringb->tm_ind; ts_i++)
+		printf("Cycle count = %"PRIu64"\tSrc = %s\tPC = 0x%"PRIx64"\n",
+				(ringb->stamps[ts_i].cnt),
+				bench_str_src(ringb->stamps[ts_i].src),
+				(ringb->stamps[ts_i].addr));
+#endif /* CFG_TEE_BENCHMARK_STAT */
+	if (allocated)
+		TEEC_ReleaseSharedMemory(&ringbuf_shm);
+#endif
 
 out_free_temp_refs:
 	teec_free_temp_refs(operation, shm);

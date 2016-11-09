@@ -29,7 +29,9 @@ all: build install
 
 build-libteec:
 	@echo "Building libteec.so"
-	@$(MAKE) --directory=libteec --no-print-directory --no-builtin-variables
+	@$(MAKE) --directory=libteec CFG_TEE_BENCHMARK=$(CFG_TEE_BENCHMARK) \
+	CFG_TEE_PRINT_LATENCY_STAT=$(CFG_TEE_PRINT_LATENCY_STAT) \
+	--no-print-directory --no-builtin-variables
 
 build-tee-supplicant: build-libteec $(BUILD-LIBSQLFS)
 	@echo "Building tee-supplicant"
