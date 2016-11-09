@@ -16,7 +16,8 @@ LIB_MAJOR	:= $(LIB_NAME).$(MAJOR_VERSION)
 LIB_MAJ_MIN	:= $(LIB_NAME).$(MAJOR_VERSION).$(MINOR_VERSION)
 
 TEEC_SRCS	:= tee_client_api.c \
-		   teec_trace.c
+			teec_trace.c \
+			teec_benchmark.c
 
 TEEC_SRC_DIR	:= src
 TEEC_OBJ_DIR	:= $(OUT_DIR)
@@ -28,6 +29,10 @@ TEEC_INCLUDES 	:= \
 TEEC_CFLAGS	:= $(addprefix -I, $(TEEC_INCLUDES)) $(CFLAGS) -D_GNU_SOURCE \
 		   -DDEBUGLEVEL_$(CFG_TEE_CLIENT_LOG_LEVEL) \
 		   -DBINARY_PREFIX=\"TEEC\"
+
+ifeq ($(CFG_TEE_BENCHMARK),y)
+TEEC_CFLAGS	+= -DCFG_TEE_BENCHMARK
+endif
 
 TEEC_LFLAGS    := -lpthread
 TEEC_LIBRARY	:= $(OUT_DIR)/$(LIB_MAJ_MIN)

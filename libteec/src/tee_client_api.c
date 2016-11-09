@@ -24,26 +24,27 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <tee_client_api.h>
-#include <tee_client_api_extensions.h>
 
-#include <sys/types.h>
-#include <sys/ioctl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <pthread.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <sys/types.h>
+#include <sys/ioctl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <tee_client_api.h>
+#include <tee_client_api_extensions.h>
 #include <unistd.h>
-#include <errno.h>
 
 #ifndef __aligned
 #define __aligned(x) __attribute__((__aligned__(x)))
 #endif
 #include <linux/tee.h>
+#include <linux/teec_benchmark.h>
 
 #include <teec_trace.h>
 
@@ -61,7 +62,6 @@ static void teec_mutex_unlock(pthread_mutex_t *mu)
 {
 	pthread_mutex_unlock(mu);
 }
-
 
 static int teec_open_dev(const char *devname, const char *capabilities)
 {
@@ -553,6 +553,8 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t cmd_id,
 		goto out;
 	}
 
+	bm_timestamp();
+
 	buf_data.buf_ptr = (uintptr_t)buf;
 	buf_data.buf_len = sizeof(buf);
 
@@ -586,6 +588,8 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t cmd_id,
 	res = arg->ret;
 	eorig = arg->ret_origin;
 	teec_post_process_operation(operation, params, shm);
+
+	bm_timestamp();
 
 out_free_temp_refs:
 	teec_free_temp_refs(operation, shm);
