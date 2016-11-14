@@ -63,9 +63,39 @@ static const char *bench_str_src(uint64_t source)
 		return "TEE_CLIENT";
 	case TEE_BENCH_DUMB_TA:
 		return "TEE_DUMB_TA";
+	case TEE_BENCH_CLIENT_P1:
+		return "TEE_BENCH_CLIENT_P1";
+	case TEE_BENCH_CLIENT_P2:
+		return "TEE_BENCH_CLIENT_P2";
+	case TEE_BENCH_UTEE_P1:
+		return "TEE_BENCH_UTEE_P1";
+	case TEE_BENCH_UTEE_P2:
+		return "TEE_BENCH_UTEE_P2";
 	default:
 		return "???";
 	}
+}
+
+static void print_latency_info(void *ringbuffer)
+{
+	struct tee_ringbuf *ringb = (struct tee_ringbuf *)ringbuffer;
+	uint64_t start = 0;
+
+	printf("Latency information:\n");
+	printf("=====================================");
+	printf("=====================================\n");
+	for (uint32_t ts_i = 0; ts_i < ringb->tm_ind; ts_i++) {
+		if (!ts_i)
+			start = ringb->stamps[ts_i].cnt;
+
+		printf("| CCNT=%14" PRIu64 " | SRC=%-20s | PC=0x%016"
+				PRIx64 " |\n",
+				(ringb->stamps[ts_i].cnt-start),
+				bench_str_src(ringb->stamps[ts_i].src),
+				(ringb->stamps[ts_i].addr));
+	}
+	printf("=====================================");
+	printf("=====================================\n");
 }
 #endif
 
@@ -578,7 +608,7 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t cmd_id,
 		allocated = 1;
 		memset(ringbuf_shm.buffer, 0, ringbuf_shm.size);
 
-		tee_add_timestamp(ringbuf_shm.buffer, TEE_BENCH_CLIENT);
+		tee_add_timestamp(ringbuf_shm.buffer, TEE_BENCH_CLIENT_P1);
 
 		operation->params[TEE_BENCH_DEF_PARAM].memref.parent =
 				&ringbuf_shm;
@@ -626,17 +656,12 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t cmd_id,
 	if (!ringbuf_shm.buffer)
 		goto out_free_temp_refs;
 
-	tee_add_timestamp(ringbuf_shm.buffer, TEE_BENCH_CLIENT);
+	tee_add_timestamp(ringbuf_shm.buffer, TEE_BENCH_CLIENT_P2);
 
 #ifdef CFG_TEE_PRINT_LATENCY_STAT
-	struct tee_ringbuf *ringb = (struct tee_ringbuf *)ringbuf_shm.buffer;
-
-	for (uint32_t ts_i = 0; ts_i < ringb->tm_ind; ts_i++)
-		printf("Cycle count = %"PRIu64"\tSrc = %s\tPC = 0x%"PRIx64"\n",
-				(ringb->stamps[ts_i].cnt),
-				bench_str_src(ringb->stamps[ts_i].src),
-				(ringb->stamps[ts_i].addr));
+	print_latency_info(ringbuf_shm.buffer);
 #endif /* CFG_TEE_BENCHMARK_STAT */
+
 	if (allocated)
 		TEEC_ReleaseSharedMemory(&ringbuf_shm);
 #endif
