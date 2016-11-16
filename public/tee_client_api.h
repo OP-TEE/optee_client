@@ -35,9 +35,15 @@
 /*
  * Defines the number of available memory references in an open session or
  * invoke command operation payload.
+ * If TEE_BENCHMARK feature is enabled, additional
+ * memory reference is added, which is used
+ * for storing profiling data
  */
+#ifdef CFG_TEE_BENCHMARK
+#define TEEC_CONFIG_PAYLOAD_REF_COUNT 5
+#else
 #define TEEC_CONFIG_PAYLOAD_REF_COUNT 4
-
+#endif
 /**
  * Defines the maximum size of a single shared memory block, in bytes, of both
  * API allocated and API registered memory. The size is currently set to
@@ -227,8 +233,14 @@
  * @param p2 The third param type.
  * @param p3 The fourth param type.
  */
+#ifdef CFG_TEE_BENCHMARK
+#define TEEC_PARAM_TYPES(p0, p1, p2, p3) \
+	((p0) | ((p1) << 4) | ((p2) << 8) | ((p3) << 12) | \
+	 ((TEEC_MEMREF_PARTIAL_INOUT) << 16))
+#else
 #define TEEC_PARAM_TYPES(p0, p1, p2, p3) \
 	((p0) | ((p1) << 4) | ((p2) << 8) | ((p3) << 12))
+#endif
 
 /**
  * Get the i_th param type from the paramType.

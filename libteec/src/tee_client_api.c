@@ -24,8 +24,8 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <tee_client_api.h>
 
+#include <tee_client_api.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
@@ -43,6 +43,7 @@
 #define __aligned(x) __attribute__((__aligned__(x)))
 #endif
 #include <linux/tee.h>
+#include <linux/tee_bench_aux.h>
 
 #include <teec_trace.h>
 
@@ -60,7 +61,6 @@ static void teec_mutex_unlock(pthread_mutex_t *mu)
 {
 	pthread_mutex_unlock(mu);
 }
-
 
 static int teec_open_dev(const char *devname, const char *capabilities)
 {
@@ -539,6 +539,40 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t cmd_id,
 		goto out;
 	}
 
+#ifdef CFG_TEE_BENCHMARK
+	uint32_t allocated = 0;
+
+	TEEC_SharedMemory ringbuf_shm = {
+		.flags = TEEC_MEM_INPUT | TEEC_MEM_OUTPUT,
+		.buffer = NULL,
+		.size = TEE_BENCH_RB_SIZE
+	};
+
+	if (operation) {
+		if (!operation->params[TEE_BENCH_DEF_PARAM].memref.parent) {
+
+			TEEC_Result res_ring = TEEC_AllocateSharedMemory
+				(session->ctx, &ringbuf_shm);
+
+			if (res_ring != TEEC_SUCCESS)
+				goto out;
+
+			allocated = 1;
+			memset(ringbuf_shm.buffer, 0, ringbuf_shm.size);
+
+			operation->params[TEE_BENCH_DEF_PARAM].memref.parent =
+				&ringbuf_shm;
+			operation->params[TEE_BENCH_DEF_PARAM].
+					memref.offset = 0;
+			operation->params[TEE_BENCH_DEF_PARAM].memref.size =
+				TEE_BENCH_RB_SIZE;
+		}
+
+		tee_add_timestamp(operation->params[TEE_BENCH_DEF_PARAM].
+				memref.parent->buffer, TEE_BENCH_CLIENT_P1);
+	}
+#endif
+
 	buf_data.buf_ptr = (uintptr_t)buf;
 	buf_data.buf_len = sizeof(buf);
 
@@ -572,6 +606,28 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t cmd_id,
 	res = arg->ret;
 	eorig = arg->ret_origin;
 	teec_post_process_operation(operation, params, shm);
+
+#ifdef CFG_TEE_BENCHMARK
+	if (!operation || !operation->
+			params[TEE_BENCH_DEF_PARAM].memref.parent->buffer)
+		goto out_free_temp_refs;
+
+	tee_add_timestamp(operation->
+			params[TEE_BENCH_DEF_PARAM].memref.parent->buffer,
+			TEE_BENCH_CLIENT_P2);
+
+#ifdef CFG_TEE_PRINT_LATENCY_STAT
+	if (allocated)
+		print_latency_info(operation->
+			params[TEE_BENCH_DEF_PARAM].memref.parent->buffer);
+#endif /* CFG_TEE_BENCHMARK_STAT */
+
+	if (allocated) {
+		TEEC_ReleaseSharedMemory(&ringbuf_shm);
+		memset(&operation->params[TEE_BENCH_DEF_PARAM], 0,
+						sizeof(TEEC_Parameter));
+	}
+#endif
 
 out_free_temp_refs:
 	teec_free_temp_refs(operation, shm);

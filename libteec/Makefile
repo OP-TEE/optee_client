@@ -17,6 +17,10 @@ LIB_MAJ_MIN	:= $(LIB_NAME).$(MAJOR_VERSION).$(MINOR_VERSION)
 TEEC_SRCS	:= tee_client_api.c \
 		   teec_trace.c
 
+ifeq ($(CFG_TEE_BENCHMARK),y)
+TEEC_SRCS	+= tee_bench_aux.c
+endif
+
 TEEC_SRC_DIR	:= src
 TEEC_OBJ_DIR	:= $(OUT_DIR)
 TEEC_OBJS 	:= $(patsubst %.c,$(TEEC_OBJ_DIR)/%.o, $(TEEC_SRCS))
@@ -28,13 +32,20 @@ TEEC_CFLAGS	:= $(addprefix -I, $(TEEC_INCLUDES)) $(CFLAGS) -D_GNU_SOURCE \
 		   -DDEBUGLEVEL_$(CFG_TEE_CLIENT_LOG_LEVEL) \
 		   -DBINARY_PREFIX=\"TEEC\"
 
+ifeq ($(CFG_TEE_BENCHMARK),y)
+TEEC_CFLAGS	+= -DCFG_TEE_BENCHMARK
+endif
+
+ifeq ($(CFG_TEE_PRINT_LATENCY_STAT),y)
+TEEC_CFLAGS += -DCFG_TEE_PRINT_LATENCY_STAT
+endif
+
 TEEC_LFLAGS    := -lpthread
 TEEC_LIBRARY	:= $(OUT_DIR)/$(LIB_MAJ_MIN)
 
 libteec: $(TEEC_LIBRARY)
 	$(VPREFIX)ln -sf $(TEEC_LIBRARY) $(OUT_DIR)/$(LIB_MAJOR)
 	$(VPREFIX)ln -sf $(OUT_DIR)/$(LIB_MAJOR) $(OUT_DIR)/$(LIB_NAME)
-
 $(TEEC_LIBRARY): $(TEEC_OBJS)
 	@echo "  LINK    $@"
 	$(VPREFIX)$(CC) -shared -Wl,-soname,$(LIB_MAJ_MIN) $(TEEC_LFLAGS) -o $@ $+
