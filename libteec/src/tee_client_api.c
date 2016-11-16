@@ -25,7 +25,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <tee_bench.h>
 #include <tee_client_api.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
@@ -44,60 +43,12 @@
 #define __aligned(x) __attribute__((__aligned__(x)))
 #endif
 #include <linux/tee.h>
+#include <linux/tee_bench_aux.h>
 
 #include <teec_trace.h>
 
 /* How many device sequence numbers will be tried before giving up */
 #define TEEC_MAX_DEV_SEQ	10
-
-
-#if defined(CFG_TEE_BENCHMARK) && defined(CFG_TEE_PRINT_LATENCY_STAT)
-static const char *bench_str_src(uint64_t source)
-{
-	switch (source) {
-	case TEE_BENCH_CORE:
-		return "TEE_OS_CORE";
-	case TEE_BENCH_KMOD:
-		return "TEE_KERN_MOD";
-	case TEE_BENCH_CLIENT:
-		return "TEE_CLIENT";
-	case TEE_BENCH_DUMB_TA:
-		return "TEE_DUMB_TA";
-	case TEE_BENCH_CLIENT_P1:
-		return "TEE_BENCH_CLIENT_P1";
-	case TEE_BENCH_CLIENT_P2:
-		return "TEE_BENCH_CLIENT_P2";
-	case TEE_BENCH_UTEE_P1:
-		return "TEE_BENCH_UTEE_P1";
-	case TEE_BENCH_UTEE_P2:
-		return "TEE_BENCH_UTEE_P2";
-	default:
-		return "???";
-	}
-}
-
-static void print_latency_info(void *ringbuffer)
-{
-	struct tee_ringbuf *ringb = (struct tee_ringbuf *)ringbuffer;
-	uint64_t start = 0;
-
-	printf("Latency information:\n");
-	printf("=====================================");
-	printf("=====================================\n");
-	for (uint32_t ts_i = 0; ts_i < ringb->tm_ind; ts_i++) {
-		if (!ts_i)
-			start = ringb->stamps[ts_i].cnt;
-
-		printf("| CCNT=%14" PRIu64 " | SRC=%-20s | PC=0x%016"
-				PRIx64 " |\n",
-				(ringb->stamps[ts_i].cnt-start),
-				bench_str_src(ringb->stamps[ts_i].src),
-				(ringb->stamps[ts_i].addr));
-	}
-	printf("=====================================");
-	printf("=====================================\n");
-}
-#endif
 
 static pthread_mutex_t teec_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -598,23 +549,27 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t cmd_id,
 	};
 
 	if (operation) {
+		if (!operation->params[TEE_BENCH_DEF_PARAM].memref.parent) {
 
-		TEEC_Result res_ring = TEEC_AllocateSharedMemory
+			TEEC_Result res_ring = TEEC_AllocateSharedMemory
 				(session->ctx, &ringbuf_shm);
 
-		if (res_ring != TEEC_SUCCESS)
-			goto out;
+			if (res_ring != TEEC_SUCCESS)
+				goto out;
 
-		allocated = 1;
-		memset(ringbuf_shm.buffer, 0, ringbuf_shm.size);
+			allocated = 1;
+			memset(ringbuf_shm.buffer, 0, ringbuf_shm.size);
 
-		tee_add_timestamp(ringbuf_shm.buffer, TEE_BENCH_CLIENT_P1);
-
-		operation->params[TEE_BENCH_DEF_PARAM].memref.parent =
+			operation->params[TEE_BENCH_DEF_PARAM].memref.parent =
 				&ringbuf_shm;
-		operation->params[TEE_BENCH_DEF_PARAM].memref.offset = 0;
-		operation->params[TEE_BENCH_DEF_PARAM].memref.size =
+			operation->params[TEE_BENCH_DEF_PARAM].
+					memref.offset = 0;
+			operation->params[TEE_BENCH_DEF_PARAM].memref.size =
 				TEE_BENCH_RB_SIZE;
+		}
+
+		tee_add_timestamp(operation->params[TEE_BENCH_DEF_PARAM].
+				memref.parent->buffer, TEE_BENCH_CLIENT_P1);
 	}
 #endif
 
@@ -656,7 +611,9 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t cmd_id,
 	if (!ringbuf_shm.buffer)
 		goto out_free_temp_refs;
 
-	tee_add_timestamp(ringbuf_shm.buffer, TEE_BENCH_CLIENT_P2);
+	tee_add_timestamp(operation->
+			params[TEE_BENCH_DEF_PARAM].memref.parent->buffer,
+			TEE_BENCH_CLIENT_P2);
 
 #ifdef CFG_TEE_PRINT_LATENCY_STAT
 	print_latency_info(ringbuf_shm.buffer);
