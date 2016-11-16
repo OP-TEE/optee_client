@@ -608,7 +608,8 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t cmd_id,
 	teec_post_process_operation(operation, params, shm);
 
 #ifdef CFG_TEE_BENCHMARK
-	if (!ringbuf_shm.buffer)
+	if (!operation || !operation->
+			params[TEE_BENCH_DEF_PARAM].memref.parent->buffer)
 		goto out_free_temp_refs;
 
 	tee_add_timestamp(operation->
@@ -616,11 +617,16 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t cmd_id,
 			TEE_BENCH_CLIENT_P2);
 
 #ifdef CFG_TEE_PRINT_LATENCY_STAT
-	print_latency_info(ringbuf_shm.buffer);
+	if (allocated)
+		print_latency_info(operation->
+			params[TEE_BENCH_DEF_PARAM].memref.parent->buffer);
 #endif /* CFG_TEE_BENCHMARK_STAT */
 
-	if (allocated)
+	if (allocated) {
 		TEEC_ReleaseSharedMemory(&ringbuf_shm);
+		memset(&operation->params[TEE_BENCH_DEF_PARAM], 0,
+						sizeof(TEEC_Parameter));
+	}
 #endif
 
 out_free_temp_refs:

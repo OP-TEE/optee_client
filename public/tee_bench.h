@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Linaro Limited
+ * Copyright (c) 2016, Linaro Limited
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -49,13 +49,10 @@ struct tee_ringbuf {
 	struct tee_time_st stamps[];
 };
 
-/* Global ifdef for CFG_TEE_BENCHMARK */
 #ifdef CFG_TEE_BENCHMARK
-
 /* Reading program counter */
 static inline __attribute__((always_inline)) uintptr_t read_pc(void)
 {
-
 	uintptr_t pc;
 
 	asm volatile("mov %0, r15" : "=r"(pc));
@@ -90,8 +87,8 @@ static inline __attribute__((always_inline)) void tee_add_timestamp
 	ringb->stamps[ts_i].src = source;
 }
 #else /* CFG_TEE_BENCHMARK */
-static inline void tee_add_timestamp
-				(void *ringbuf_raw, uint32_t source)
+static inline void tee_add_timestamp(void *ringbuf_raw,
+				uint32_t source)
 {
 	UNUSED(ringbuf_raw);
 	UNUSED(source);
