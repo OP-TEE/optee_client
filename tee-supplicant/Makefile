@@ -1,7 +1,11 @@
 include ../flags.mk
 include ../config.mk
 
-OUT_DIR		?= ${CURDIR}/../$(O)/tee-supplicant
+ifeq ($(shell dirname $(O)), .)
+OUT_DIR		?= $(CURDIR)/../$(O)/tee-supplicant
+else
+OUT_DIR		?= $(O)/tee-supplicant
+endif
 
 # Emulate RPMB ioctl's
 RPMB_EMU	:= 1
@@ -76,4 +80,5 @@ $(TEES_OBJ_DIR)/%.o: $(TEES_SRC_DIR)/%.c
 # Cleaning up configuration
 ################################################################################
 clean:
-	$(RM) $(OUT_DIR)
+	$(RM) $(TEES_FILE) $(TEES_OBJS)
+	$(Q)-rmdir --ignore-fail-on-non-empty $(OUT_DIR)

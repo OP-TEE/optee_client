@@ -1,8 +1,9 @@
 include ../flags.mk
-
-O ?= out
-OUT_DIR	?= ${CURDIR}/../$(O)/libsqlite3
-
+ifeq ($(shell dirname $(O)), .)
+OUT_DIR	?= $(CURDIR)/../$(O)/libsqlite3
+else
+OUT_DIR	?= $(O)/libsqlite3
+endif
 .PHONY: all libsqlite3 clean
 
 all: libsqlite3
@@ -38,4 +39,5 @@ $(SQLITE3_OBJ_DIR)/%.o: ${SQLITE3_SRC_DIR}/%.c
 # Cleaning up configuration
 ################################################################################
 clean:
-	$(RM) $(OUT_DIR)
+	$(RM) $(SQLITE3_LIBRARY) $(SQLITE3_OBJS)
+	$(Q)-rmdir --ignore-fail-on-non-empty $(OUT_DIR)
