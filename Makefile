@@ -11,6 +11,10 @@ endif
 export VPREFIX
 
 EXPORT_DIR ?= $(O)/export
+DESTDIR ?= $(EXPORT_DIR)
+BINDIR ?= /bin
+LIBDIR ?= /lib
+INCLUDEDIR ?= /include
 
 CFG_SQL_FS ?= n
 
@@ -122,11 +126,11 @@ checkpatch-all-files: checkpatch-pre-req
 distclean: clean
 
 copy_export: build
-	mkdir -p ${EXPORT_DIR}/lib ${EXPORT_DIR}/include ${EXPORT_DIR}/bin
-	cp ${O}/libteec/libteec.so* ${EXPORT_DIR}/lib
-	if [ "$(BUILD-LIBSQLFS)" ]; then cp ${O}/libsqlfs/libsqlfs.so* ${EXPORT_DIR}/lib; fi
-	cp ${O}/tee-supplicant/tee-supplicant ${EXPORT_DIR}/bin
-	cp public/*.h ${EXPORT_DIR}/include
+	mkdir -p $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(INCLUDEDIR)
+	cp ${O}/libteec/libteec.so* $(DESTDIR)$(LIBDIR)
+	if [ "$(BUILD-LIBSQLFS)" ]; then cp ${O}/libsqlfs/libsqlfs.so* $(DESTDIR)$(LIBDIR); fi
+	cp ${O}/tee-supplicant/tee-supplicant $(DESTDIR)$(BINDIR)
+	cp public/*.h $(DESTDIR)$(INCLUDEDIR)
 
 ifeq ($(CFG_SQL_FS),y)
 
