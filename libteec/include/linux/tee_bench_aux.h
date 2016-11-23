@@ -33,6 +33,6 @@
 #include <tee_bench.h>
 
 const char *bench_str_src(uint64_t source);
-void print_latency_info(void *ringbuffer);
+void print_latency_info(void *timebuffer);
 
 #endif /* __TEE_BENCH_AUX_H */

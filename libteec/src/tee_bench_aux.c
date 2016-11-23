@@ -31,44 +31,38 @@ const char *bench_str_src(uint64_t source)
 {
 	switch (source) {
 	case TEE_BENCH_CORE:
-		return "TEE_OS_CORE";
+		return "CORE";
 	case TEE_BENCH_KMOD:
-		return "TEE_KERN_MOD";
+		return "KMOD";
 	case TEE_BENCH_CLIENT:
-		return "TEE_CLIENT";
+		return "CLIENT";
+	case TEE_BENCH_UTEE:
+		return "UTEE";
 	case TEE_BENCH_DUMB_TA:
-		return "TEE_DUMB_TA";
-	case TEE_BENCH_CLIENT_P1:
-		return "TEE_BENCH_CLIENT_P1";
-	case TEE_BENCH_CLIENT_P2:
-		return "TEE_BENCH_CLIENT_P2";
-	case TEE_BENCH_UTEE_P1:
-		return "TEE_BENCH_UTEE_P1";
-	case TEE_BENCH_UTEE_P2:
-		return "TEE_BENCH_UTEE_P2";
+		return "DUMB_TA";
 	default:
 		return "???";
 	}
 }
 
-void print_latency_info(void *ringbuffer)
+void print_latency_info(void *timebuffer)
 {
-	struct tee_ringbuf *ringb = (struct tee_ringbuf *)ringbuffer;
+	struct tee_time_buf *timeb = (struct tee_time_buf *)timebuffer;
 	uint64_t start = 0;
 
 	printf("Latency information:\n");
-	printf("=====================================");
-	printf("=====================================\n");
-	for (uint32_t ts_i = 0; ts_i < ringb->tm_ind; ts_i++) {
+	printf("================================");
+	printf("================================\n");
+	for (uint32_t ts_i = 0; ts_i < timeb->tm_ind; ts_i++) {
 		if (!ts_i)
-			start = ringb->stamps[ts_i].cnt;
+			start = timeb->stamps[ts_i].cnt;
 
-		printf("| CCNT=%14" PRIu64 " | SRC=%-20s | PC=0x%016"
+		printf("| CCNT=%14" PRIu64 " | SRC=%-8s | PC=0x%016"
 				PRIx64 " |\n",
-				(ringb->stamps[ts_i].cnt-start),
-				bench_str_src(ringb->stamps[ts_i].src),
-				(ringb->stamps[ts_i].addr));
+				(timeb->stamps[ts_i].cnt-start),
+				bench_str_src(timeb->stamps[ts_i].src),
+				(timeb->stamps[ts_i].addr));
 	}
-	printf("=====================================");
-	printf("=====================================\n");
+	printf("================================");
+	printf("================================\n");
 }

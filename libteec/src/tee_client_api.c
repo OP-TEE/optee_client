@@ -568,8 +568,7 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t cmd_id,
 				TEE_BENCH_RB_SIZE;
 		}
 
-		tee_add_timestamp(operation->params[TEE_BENCH_DEF_PARAM].
-				memref.parent->buffer, TEE_BENCH_CLIENT_P1);
+		bm_timestamp(operation->params, TEE_BENCH_CLIENT);
 	}
 #endif
 
@@ -612,9 +611,7 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t cmd_id,
 			params[TEE_BENCH_DEF_PARAM].memref.parent->buffer)
 		goto out_free_temp_refs;
 
-	tee_add_timestamp(operation->
-			params[TEE_BENCH_DEF_PARAM].memref.parent->buffer,
-			TEE_BENCH_CLIENT_P2);
+	bm_timestamp(operation->params, TEE_BENCH_CLIENT);
 
 #ifdef CFG_TEE_PRINT_LATENCY_STAT
 	if (allocated)

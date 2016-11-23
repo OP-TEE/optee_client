@@ -16,24 +16,21 @@
 #define TEE_BENCH_H
 
 #include <inttypes.h>
+#include <tee_client_api.h>
 
 #define UNUSED(x) (void)(x)
 
 /* max amount of timestamps */
 #define TEE_BENCH_MAX_STAMPS	10
-#define TEE_BENCH_RB_SIZE (sizeof(struct tee_ringbuf) \
+#define TEE_BENCH_RB_SIZE (sizeof(struct tee_time_buf) \
 		+ sizeof(struct tee_time_st) * TEE_BENCH_MAX_STAMPS)
 #define TEE_BENCH_DEF_PARAM		4
 
 /* OP-TEE susbsystems ids */
 #define TEE_BENCH_CLIENT	0x10000000
-#define TEE_BENCH_CLIENT_P1	0x10000001
-#define TEE_BENCH_CLIENT_P2	0x10000002
 #define TEE_BENCH_KMOD		0x20000000
 #define TEE_BENCH_CORE		0x30000000
 #define TEE_BENCH_UTEE		0x40000000
-#define TEE_BENCH_UTEE_P1	0x40000001
-#define TEE_BENCH_UTEE_P2	0x40000002
 #define TEE_BENCH_DUMB_TA	0xF0000001
 
 /* storing timestamps */
@@ -44,7 +41,7 @@ struct tee_time_st {
 };
 
 /* memory layout for shared memory, where timestamps will be stored */
-struct tee_ringbuf {
+struct tee_time_buf {
 	uint64_t tm_ind;	/* index of the last timestamp in stamps[] */
 	struct tee_time_st stamps[];
 };
@@ -54,8 +51,11 @@ struct tee_ringbuf {
 static inline __attribute__((always_inline)) uintptr_t read_pc(void)
 {
 	uintptr_t pc;
-
+#ifdef __aarch64__
+	asm volatile ("adr %0, ." : "=r" (pc));
+#else
 	asm volatile("mov %0, r15" : "=r"(pc));
+#endif
 	return pc;
 }
 
@@ -63,34 +63,37 @@ static inline __attribute__((always_inline)) uintptr_t read_pc(void)
 static inline uint64_t read_ccounter(void)
 {
 	uint64_t ccounter = 0;
-#if defined(__ARM_ARCH_7A__)
+
 	asm volatile("mrc p15, 0, %0, c9, c13, 0" : "=r"(ccounter));
-#endif /* defined(__ARM_ARCH_7A__) */
 	return ccounter;
 }
 
-/* Adding timestamp to ringbuffer */
-static inline __attribute__((always_inline)) void tee_add_timestamp
-				(void *ringbuf_raw, uint32_t source)
+/* Adding timestamp to buffer */
+static inline __attribute__((always_inline)) void bm_timestamp
+				(TEEC_Parameter
+				 params[TEEC_CONFIG_PAYLOAD_REF_COUNT],
+				 uint32_t source)
 {
-	struct tee_ringbuf *ringb = (struct tee_ringbuf *)ringbuf_raw;
+	struct tee_time_buf *timeb = (struct tee_time_buf *)
+			params[TEE_BENCH_DEF_PARAM].memref.parent->buffer;
 	uint64_t ts_i;
 
-	if (!ringb)
+	if (!timeb)
 		return;
-	if (ringb->tm_ind >= TEE_BENCH_MAX_STAMPS)
-		ringb->tm_ind = 0;
+	if (timeb->tm_ind >= TEE_BENCH_MAX_STAMPS)
+		return;
 
-	ts_i = ringb->tm_ind++;
-	ringb->stamps[ts_i].cnt = read_ccounter();
-	ringb->stamps[ts_i].addr = read_pc();
-	ringb->stamps[ts_i].src = source;
+	ts_i = timeb->tm_ind++;
+	timeb->stamps[ts_i].cnt = read_ccounter();
+	timeb->stamps[ts_i].addr = read_pc();
+	timeb->stamps[ts_i].src = source;
 }
 #else /* CFG_TEE_BENCHMARK */
-static inline void tee_add_timestamp(void *ringbuf_raw,
+static inline void bm_timestamp(TEEC_Parameter
+				params[TEEC_CONFIG_PAYLOAD_REF_COUNT],
 				uint32_t source)
 {
-	UNUSED(ringbuf_raw);
+	UNUSED(params);
 	UNUSED(source);
 }
 
