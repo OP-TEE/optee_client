@@ -51,18 +51,24 @@ void print_latency_info(void *timebuffer)
 	uint64_t start = 0;
 
 	printf("Latency information:\n");
-	printf("===============================");
-	printf("===============================\n");
+	printf("================================");
+	printf("================================\n");
 	for (uint32_t ts_i = 0; ts_i < timeb->tm_ind; ts_i++) {
 		if (!ts_i)
 			start = timeb->stamps[ts_i].cnt;
 
-		printf("| CCNT=%14" PRIu64 " | SRC=%-8s | PC=0x%016"
+		if (timeb->stamps[ts_i].cnt < start)
+			printf("| CCNT=overflow occured | SRC=%-8s | PC=0x%016"
 				PRIx64 " |\n",
-				(timeb->stamps[ts_i].cnt-start),
+				bench_str_src(timeb->stamps[ts_i].src),
+				(timeb->stamps[ts_i].addr));
+		else
+			printf("| CCNT=%16" PRIu64 " | SRC=%-8s | PC=0x%016"
+				PRIx64 " |\n",
+				(timeb->stamps[ts_i].cnt - start),
 				bench_str_src(timeb->stamps[ts_i].src),
 				(timeb->stamps[ts_i].addr));
 	}
-	printf("===============================");
-	printf("===============================\n");
+	printf("================================");
+	printf("================================\n");
 }
