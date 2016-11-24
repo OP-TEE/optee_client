@@ -51,8 +51,8 @@ void print_latency_info(void *timebuffer)
 	uint64_t start = 0;
 
 	printf("Latency information:\n");
-	printf("================================");
-	printf("================================\n");
+	printf("===============================");
+	printf("===============================\n");
 	for (uint32_t ts_i = 0; ts_i < timeb->tm_ind; ts_i++) {
 		if (!ts_i)
 			start = timeb->stamps[ts_i].cnt;
@@ -63,6 +63,6 @@ void print_latency_info(void *timebuffer)
 				bench_str_src(timeb->stamps[ts_i].src),
 				(timeb->stamps[ts_i].addr));
 	}
-	printf("================================");
-	printf("================================\n");
+	printf("===============================");
+	printf("===============================\n");
 }
