@@ -1,7 +1,7 @@
 include ../flags.mk
+include ../config.mk
 
-O ?= out
-OUT_DIR	?= ${CURDIR}/../$(O)/libsqlite3
+OUT_DIR	:= $(OO)/libsqlite3
 
 .PHONY: all libsqlite3 clean
 

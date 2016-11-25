@@ -38,10 +38,12 @@ CFG_TEE_CLIENT_LOAD_PATH ?= /system/lib
 # such as 1008.5 that test loading of corrupt TAs.
 CFG_TA_TEST_PATH ?= 1
 
-# Default out dir.
-# Must be a relative path with respect to the op-tee-client root directory
+# Default output directory.
+# May be absolute, or relative to the optee_client source directory.
 O               ?= out
-export O
+
+# To be used instead of $(O) in sub-directories
+OO := $(if $(filter /%,$(O)),$(O),$(CURDIR)/../$(O))
 
 #########################################################################
 # Private Values                                                        #

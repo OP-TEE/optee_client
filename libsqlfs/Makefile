@@ -4,9 +4,9 @@
 # and/or linking it statically! See COPYING section 6.
 
 include ../flags.mk
+include ../config.mk
 
-O ?= out
-OUT_DIR	?= ${CURDIR}/../$(O)/libsqlfs
+OUT_DIR := $(OO)/libsqlfs
 
 .PHONY: all libsqlfs clean
 
@@ -39,10 +39,11 @@ SQLFS_CFLAGS := $(addprefix -I, $(SQLFS_INCLUDES)) \
 	-Wno-missing-format-attribute
 
 SQLFS_LFLAGS := -lpthread
-SQLFS_LIBS := $(CURDIR)/../$(O)/libsqlite3/libsqlite3.a
+SQLFS_LIBS := $(OUT_DIR)/../libsqlite3/libsqlite3.a
 SQLFS_LIBRARY := $(OUT_DIR)/$(LIB_MAJ_MIN)
 
 libsqlfs: $(SQLFS_LIBRARY)
+	$(VPREFIX)mkdir -p $(OUT_DIR)
 	$(VPREFIX)ln -sf $(SQLFS_LIBRARY) $(OUT_DIR)/$(LIB_MAJOR)
 	$(VPREFIX)ln -sf $(OUT_DIR)/$(LIB_MAJOR) $(OUT_DIR)/$(LIB_NAME)
 
