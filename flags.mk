@@ -22,4 +22,8 @@ ifeq ($(DEBUG), 1)
 CFLAGS          += -DDEBUG -O0 -g
 endif
 
-RM              := rm -rf
+RM              := rm -f
+
+define rmdir
+if [ -d "$(1)" ] ; then rmdir --ignore-fail-on-non-empty $(1) ; fi
+endef

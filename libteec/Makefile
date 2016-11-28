@@ -49,4 +49,5 @@ $(TEEC_OBJ_DIR)/%.o: ${TEEC_SRC_DIR}/%.c
 # Cleaning up configuration
 ################################################################################
 clean:
-	$(RM) $(OUT_DIR)
+	$(RM) $(TEEC_OBJS) $(TEEC_LIBRARY) $(OUT_DIR)/$(LIB_MAJOR) $(OUT_DIR)/$(LIB_NAME)
+	$(call rmdir,$(OUT_DIR))

@@ -76,4 +76,5 @@ $(TEES_OBJ_DIR)/%.o: $(TEES_SRC_DIR)/%.c
 # Cleaning up configuration
 ################################################################################
 clean:
-	$(RM) $(OUT_DIR)
+	$(RM) $(TEES_OBJS) $(TEES_FILE)
+	$(call rmdir,$(OUT_DIR))

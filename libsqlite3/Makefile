@@ -38,4 +38,5 @@ $(SQLITE3_OBJ_DIR)/%.o: ${SQLITE3_SRC_DIR}/%.c
 # Cleaning up configuration
 ################################################################################
 clean:
-	$(RM) $(OUT_DIR)
+	$(RM) $(SQLITE3_OBJS) $(SQLITE3_LIBRARY)
+	$(call rmdir,$(OUT_DIR))

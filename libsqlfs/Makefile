@@ -60,4 +60,5 @@ $(SQLFS_OBJ_DIR)/%.o: ${SQLFS_SRC_DIR}/%.c
 # Cleaning up configuration
 ################################################################################
 clean:
-	$(RM) $(OUT_DIR)
+	$(RM) $(SQLFS_OBJS) $(SQLFS_LIBRARY) $(OUT_DIR)/$(LIB_MAJOR) $(OUT_DIR)/$(LIB_NAME)
+	$(call rmdir,$(OUT_DIR))
