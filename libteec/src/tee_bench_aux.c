@@ -65,7 +65,8 @@ void print_latency_info(void *timebuffer)
 		else
 			printf("| CCNT=%16" PRIu64 " | SRC=%-8s | PC=0x%016"
 				PRIx64 " |\n",
-				(timeb->stamps[ts_i].cnt - start),
+				(timeb->stamps[ts_i].cnt - start) *
+				BENCH_DIVIDER,
 				bench_str_src(timeb->stamps[ts_i].src),
 				(timeb->stamps[ts_i].addr));
 	}

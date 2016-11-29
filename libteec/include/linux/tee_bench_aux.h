@@ -32,6 +32,8 @@
 #include <stdio.h>
 #include <tee_bench.h>
 
+#define BENCH_DIVIDER 64
+
 const char *bench_str_src(uint64_t source);
 void print_latency_info(void *timebuffer);
 
