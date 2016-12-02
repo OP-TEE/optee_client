@@ -28,6 +28,7 @@
 
 #include <fcntl.h>
 #include <stdint.h>
+#include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
