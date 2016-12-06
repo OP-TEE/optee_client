@@ -27,15 +27,18 @@ charge.
 
 ## Get and build the software
 ### Get the compiler
-We will strive to use the latest available compiler from Linaro. Start by
-downloading and unpacking the compiler. Then export the PATH to the bin folder.
+We will strive to use the latest available compiler from Linaro. This
+[file](https://github.com/OP-TEE/build/blob/master/toolchain.mk) refers to a
+list of toolchains we have used and know are working in our setups. Start by
+downloading and unpacking a compiler from it. Then export the PATH to the bin
+folder.
 
 	$ cd $HOME
 	$ mkdir toolchains
 	$ cd toolchains
-	$ wget http://releases.linaro.org/14.05/components/toolchain/binaries/gcc-linaro-arm-linux-gnueabihf-4.9-2014.05_linux.tar.xz
-	$ tar xvf gcc-linaro-arm-linux-gnueabihf-4.9-2014.05_linux.tar.xz
-	$ export PATH=$HOME/toolchains/gcc-linaro-arm-linux-gnueabihf-4.9-2014.05_linux/bin:$PATH
+	$ wget [url/to/gcc_tarball]
+	$ tar xvf [gcc_tarball]
+	$ export PATH=$HOME/toolchains/[gcc_extracted_dir]/bin:$PATH
 
 ### Download the source code
 	$ cd $HOME
@@ -46,6 +49,10 @@ downloading and unpacking the compiler. Then export the PATH to the bin folder.
 ### Build
 	$ cd $HOME/devel/optee_client
 	$ make
+
+For a 64-bit build:
+
+	$ make CROSS_COMPILE=aarch64-linux-gnu-
 
 #### Compiler flags
 To be able to see the full command when building you could build using following
