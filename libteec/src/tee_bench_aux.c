@@ -45,31 +45,42 @@ const char *bench_str_src(uint64_t source)
 	}
 }
 
+static void print_line(void)
+{
+		int32_t n = 53;
+
+		while (n-- > 0)
+			printf("=");
+		printf("\n");
+}
+
 void print_latency_info(void *timebuffer)
 {
 	struct tee_time_buf *timeb = (struct tee_time_buf *)timebuffer;
 	uint64_t start = 0;
+	uint32_t ts_i;
 
 	printf("Latency information:\n");
-	printf("================================");
-	printf("================================\n");
-	for (uint32_t ts_i = 0; ts_i < timeb->tm_ind; ts_i++) {
+	print_line();
+	printf("| %17s | %9s | %18s |\n",
+		   "CPU cycles", "TEE layer", "Address");
+	print_line();
+	for (ts_i = 0; ts_i < timeb->tm_ind; ts_i++) {
 		if (!ts_i)
 			start = timeb->stamps[ts_i].cnt;
 
 		if (timeb->stamps[ts_i].cnt < start)
-			printf("| CCNT=overflow occured | SRC=%-8s | PC=0x%016"
+			printf("| overflow occurred | %-9s | 0x%016"
 				PRIx64 " |\n",
 				bench_str_src(timeb->stamps[ts_i].src),
 				(timeb->stamps[ts_i].addr));
 		else
-			printf("| CCNT=%16" PRIu64 " | SRC=%-8s | PC=0x%016"
+			printf("| %17" PRIu64 " | %-9s | 0x%016"
 				PRIx64 " |\n",
 				(timeb->stamps[ts_i].cnt - start) *
 				BENCH_DIVIDER,
 				bench_str_src(timeb->stamps[ts_i].src),
 				(timeb->stamps[ts_i].addr));
 	}
-	printf("================================");
-	printf("================================\n");
+	print_line();
 }

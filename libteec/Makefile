@@ -36,6 +36,8 @@ ifeq ($(CFG_TEE_BENCHMARK),y)
 TEEC_CFLAGS	+= -DCFG_TEE_BENCHMARK
 endif
 
+# print latency statistics for each invocation of TEEC_InvokeCommand
+# CFG_TEE_BENCHMARK also should be enabled
 ifeq ($(CFG_TEE_PRINT_LATENCY_STAT),y)
 TEEC_CFLAGS += -DCFG_TEE_PRINT_LATENCY_STAT
 endif
