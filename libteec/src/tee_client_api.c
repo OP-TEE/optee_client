@@ -443,6 +443,19 @@ static TEEC_Result ioctl_errno_to_res(int err)
 	}
 }
 
+static void uuid_to_octets(uint8_t d[TEE_IOCTL_UUID_LEN], const TEEC_UUID *s)
+{
+	d[0] = s->timeLow >> 24;
+	d[1] = s->timeLow >> 16;
+	d[2] = s->timeLow >> 8;
+	d[3] = s->timeLow;
+	d[4] = s->timeMid >> 8;
+	d[5] = s->timeMid;
+	d[6] = s->timeHiAndVersion >> 8;
+	d[7] = s->timeHiAndVersion;
+	memcpy(d + 8, s->clockSeqAndNode, sizeof(s->clockSeqAndNode));
+}
+
 TEEC_Result TEEC_OpenSession(TEEC_Context *ctx, TEEC_Session *session,
 			const TEEC_UUID *destination,
 			uint32_t connection_method, const void *connection_data,
@@ -475,7 +488,7 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *ctx, TEEC_Session *session,
 	arg->num_params = TEEC_CONFIG_PAYLOAD_REF_COUNT;
 	params = (struct tee_ioctl_param *)(arg + 1);
 
-	memcpy(arg->uuid, destination, sizeof(TEEC_UUID));
+	uuid_to_octets(arg->uuid, destination);
 	arg->clnt_login = connection_method;
 
 	res = teec_pre_process_operation(ctx, operation, params, shm);

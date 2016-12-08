@@ -179,6 +179,14 @@ static void process_sql_fs(union tee_rpc_invoke *request)
 	request->send.ret = sql_fs_process(&request->recv);
 }
 
+static void uuid_from_octets(TEEC_UUID *d, const uint8_t s[TEE_IOCTL_UUID_LEN])
+{
+	d->timeLow = (s[0] << 24) | (s[1] << 16) | (s[2] << 8) | s[3];
+	d->timeMid = (s[4] << 8) | s[5];
+	d->timeHiAndVersion = (s[6] << 8) | s[7];
+	memcpy(d->clockSeqAndNode, s + 8, sizeof(d->clockSeqAndNode));
+}
+
 static void load_ta(union tee_rpc_invoke *request)
 {
 	int ta_found = 0;
@@ -194,7 +202,7 @@ static void load_ta(union tee_rpc_invoke *request)
 		request->send.ret = TEEC_ERROR_BAD_PARAMETERS;
 		return;
 	}
-	memcpy(&uuid, val_cmd, sizeof(uuid));
+	uuid_from_octets(&uuid, (void *)val_cmd);
 
 	size = shm_ta.size;
 	ta_found = TEECI_LoadSecureModule(ta_dir, &uuid, shm_ta.buffer, &size);
