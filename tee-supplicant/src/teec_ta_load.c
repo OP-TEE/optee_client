@@ -95,7 +95,7 @@ static int try_load_secure_module(const char* prefix,
 	}
 
 	n = snprintf(fname, PATH_MAX,
-		     "%s/%s/%08x-%04x-%04x-%02x%02x%02x%02x%02x%02x%02x%02x.ta",
+		     "%s/%s/%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x.ta",
 		     prefix, dev_path,
 		     destination->timeLow,
 		     destination->timeMid,
