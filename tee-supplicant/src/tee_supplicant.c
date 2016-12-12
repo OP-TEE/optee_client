@@ -56,7 +56,7 @@
 #endif
 #include <linux/tee.h>
 
-#define RPC_NUM_PARAMS	3
+#define RPC_NUM_PARAMS	4
 
 #define RPC_BUF_SIZE	(sizeof(struct tee_iocl_supp_send_arg) + \
 			 RPC_NUM_PARAMS * sizeof(struct tee_ioctl_param))
@@ -84,20 +84,14 @@ struct tee_shm {
 
 static struct tee_shm *shm_head;
 
-static int read_request(int fd, union tee_rpc_invoke *request);
-static int write_response(int fd, union tee_rpc_invoke *request);
-
 static const char *ta_dir;
 
-static int get_value(union tee_rpc_invoke *request, const uint32_t idx,
-		     struct tee_ioctl_param_value **value)
+static int get_value(size_t num_params, struct tee_ioctl_param *params,
+		     const uint32_t idx, struct tee_ioctl_param_value **value)
 {
-	struct tee_ioctl_param *params;
-
-	if (idx >= request->recv.num_params)
+	if (idx >= num_params)
 		return -1;
 
-	params = (struct tee_ioctl_param *)(&request->send + 1);
 	switch (params[idx].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) {
 	case TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT:
 	case TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_OUTPUT:
@@ -120,16 +114,14 @@ static struct tee_shm *find_tshm(int id)
 }
 
 /* Get parameter allocated by secure world */
-static int get_param(union tee_rpc_invoke *request, const uint32_t idx,
-		     TEEC_SharedMemory *shm)
+static int get_param(size_t num_params, struct tee_ioctl_param *params,
+		     const uint32_t idx, TEEC_SharedMemory *shm)
 {
-	struct tee_ioctl_param *params;
 	struct tee_shm *tshm;
 
-	if (idx >= request->recv.num_params)
+	if (idx >= num_params)
 		return -1;
 
-	params = (struct tee_ioctl_param *)(&request->send + 1);
 	switch (params[idx].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) {
 	case TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INPUT:
 	case TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_OUTPUT:
@@ -171,16 +163,6 @@ static int get_param(union tee_rpc_invoke *request, const uint32_t idx,
 	return 0;
 }
 
-static void process_fs(union tee_rpc_invoke *request)
-{
-	request->send.ret = tee_supp_fs_process(&request->recv);
-}
-
-static void process_sql_fs(union tee_rpc_invoke *request)
-{
-	request->send.ret = sql_fs_process(&request->recv);
-}
-
 static void uuid_from_octets(TEEC_UUID *d, const uint8_t s[TEE_IOCTL_UUID_LEN])
 {
 	d->timeLow = (s[0] << 24) | (s[1] << 16) | (s[2] << 8) | s[3];
@@ -189,7 +171,7 @@ static void uuid_from_octets(TEEC_UUID *d, const uint8_t s[TEE_IOCTL_UUID_LEN])
 	memcpy(d->clockSeqAndNode, s + 8, sizeof(d->clockSeqAndNode));
 }
 
-static void load_ta(union tee_rpc_invoke *request)
+static uint32_t load_ta(size_t num_params, struct tee_ioctl_param *params)
 {
 	int ta_found = 0;
 	size_t size = 0;
@@ -199,28 +181,25 @@ static void load_ta(union tee_rpc_invoke *request)
 
 	memset(&shm_ta, 0, sizeof(shm_ta));
 
-	if (request->recv.num_params != 2 || get_value(request, 0, &val_cmd) ||
-	    get_param(request, 1, &shm_ta)) {
-		request->send.ret = TEEC_ERROR_BAD_PARAMETERS;
-		return;
-	}
+	if (num_params != 2 || get_value(num_params, params, 0, &val_cmd) ||
+	    get_param(num_params, params, 1, &shm_ta))
+		return TEEC_ERROR_BAD_PARAMETERS;
+
 	uuid_from_octets(&uuid, (void *)val_cmd);
 
 	size = shm_ta.size;
 	ta_found = TEECI_LoadSecureModule(ta_dir, &uuid, shm_ta.buffer, &size);
-	if (ta_found == TA_BINARY_FOUND) {
-		struct tee_ioctl_param *params =
-			(struct tee_ioctl_param *)(&request->recv + 1);
-
-		params[1].u.memref.size = size;
-		request->send.ret = TEEC_SUCCESS;
-	} else {
+	if (ta_found != TA_BINARY_FOUND) {
 		EMSG("  TA not found");
-		request->send.ret = TEEC_ERROR_ITEM_NOT_FOUND;
+		return TEEC_ERROR_ITEM_NOT_FOUND;
 	}
+
+	params[1].u.memref.size = size;
+	return TEEC_SUCCESS;
 }
 
-static void process_alloc(int fd, union tee_rpc_invoke *request)
+static uint32_t process_alloc(int fd, size_t num_params,
+			      struct tee_ioctl_param *params)
 {
 	struct tee_ioctl_shm_alloc_data data;
 	struct tee_ioctl_param_value *val;
@@ -229,23 +208,18 @@ static void process_alloc(int fd, union tee_rpc_invoke *request)
 
 	memset(&data, 0, sizeof(data));
 
-	if (request->recv.num_params != 1 || get_value(request, 0, &val)) {
-		request->send.ret = TEEC_ERROR_BAD_PARAMETERS;
-		return;
-	}
+	if (num_params != 1 || get_value(num_params, params, 0, &val))
+		return TEEC_ERROR_BAD_PARAMETERS;
 
 	shm = calloc(1, sizeof(*shm));
-	if (!shm) {
-		request->send.ret = TEEC_ERROR_OUT_OF_MEMORY;
-		return;
-	}
+	if (!shm)
+		return TEEC_ERROR_OUT_OF_MEMORY;
 
 	data.size = val->b;
 	shm_fd = ioctl(fd, TEE_IOC_SHM_ALLOC, &data);
 	if (shm_fd < 0) {
 		free(shm);
-		request->send.ret = TEEC_ERROR_OUT_OF_MEMORY;
-		return;
+		return TEEC_ERROR_OUT_OF_MEMORY;
 	}
 
 	shm->p = mmap(NULL, data.size, PROT_READ | PROT_WRITE, MAP_SHARED,
@@ -253,8 +227,7 @@ static void process_alloc(int fd, union tee_rpc_invoke *request)
 	close(shm_fd);
 	if (shm->p == (void *)MAP_FAILED) {
 		free(shm);
-		request->send.ret = TEEC_ERROR_OUT_OF_MEMORY;
-		return;
+		return TEEC_ERROR_OUT_OF_MEMORY;
 	}
 
 	shm->id = data.id;
@@ -262,23 +235,23 @@ static void process_alloc(int fd, union tee_rpc_invoke *request)
 	shm->next = shm_head;
 	shm_head = shm;
 	val->c = data.id;
-	request->send.ret = TEEC_SUCCESS;
+	return TEEC_SUCCESS;
 }
 
-static void process_free(union tee_rpc_invoke *request)
+static uint32_t process_free(size_t num_params, struct tee_ioctl_param *params)
 {
 	struct tee_ioctl_param_value *val;
 	struct tee_shm *shm;
 	int id;
 
-	if (request->recv.num_params != 1 || get_value(request, 0, &val))
-		goto bad;
+	if (num_params != 1 || get_value(num_params, params, 0, &val))
+		return TEEC_ERROR_BAD_PARAMETERS;
 
 	id = val->b;
 
 	shm = shm_head;
 	if (!shm)
-		goto bad;
+		return TEEC_ERROR_BAD_PARAMETERS;
 	if (shm->id == id) {
 		shm_head = shm->next;
 	} else {
@@ -288,7 +261,7 @@ static void process_free(union tee_rpc_invoke *request)
 			prev = shm;
 			shm = shm->next;
 			if (!shm)
-				goto bad;
+				return TEEC_ERROR_BAD_PARAMETERS;
 		} while (shm->id != id);
 		prev->next = shm->next;
 	}
@@ -297,14 +270,11 @@ static void process_free(union tee_rpc_invoke *request)
 		EMSG("munmap(%p, %zu) failed - Error = %s",
 		     shm->p, shm->size, strerror(errno));
 		free(shm);
-		goto bad;
+		return TEEC_ERROR_BAD_PARAMETERS;
 	}
 
 	free(shm);
-	request->send.ret = TEEC_SUCCESS;
-	return;
-bad:
-	request->send.ret = TEEC_ERROR_BAD_PARAMETERS;
+	return TEEC_SUCCESS;
 }
 
 
@@ -358,37 +328,78 @@ static int usage(void)
 	return EXIT_FAILURE;
 }
 
-static void process_rpmb(union tee_rpc_invoke *inv)
+static uint32_t process_rpmb(size_t num_params, struct tee_ioctl_param *params)
 {
-	TEEC_SharedMemory req, rsp;
+	TEEC_SharedMemory req;
+	TEEC_SharedMemory rsp;
 
-	INMSG();
-	if (get_param(inv, 0, &req)) {
-		inv->send.ret = TEEC_ERROR_BAD_PARAMETERS;
-		goto out;
-	}
-	if (get_param(inv, 1, &rsp)) {
-		inv->send.ret = TEEC_ERROR_BAD_PARAMETERS;
-		goto out;
-	}
+	if (get_param(num_params, params, 0, &req) ||
+	    get_param(num_params, params, 1, &rsp))
+		return TEEC_ERROR_BAD_PARAMETERS;
 
-	inv->send.ret = rpmb_process_request(req.buffer, req.size, rsp.buffer,
-					     rsp.size);
-
-out:
-	OUTMSG();
+	return rpmb_process_request(req.buffer, req.size, rsp.buffer, rsp.size);
 }
 
-static void process_gprof(union tee_rpc_invoke *request)
+static bool read_request(int fd, union tee_rpc_invoke *request)
 {
-	request->send.ret = gprof_process(&request->recv);
+	struct tee_ioctl_buf_data data;
+
+	data.buf_ptr = (uintptr_t)request;
+	data.buf_len = sizeof(*request);
+	if (ioctl(fd, TEE_IOC_SUPPL_RECV, &data)) {
+		EMSG("TEE_IOC_SUPPL_RECV: %s", strerror(errno));
+		return false;
+	}
+	return true;
+}
+
+static bool write_response(int fd, union tee_rpc_invoke *request)
+{
+	struct tee_ioctl_buf_data data;
+
+	data.buf_ptr = (uintptr_t)&request->send;
+	data.buf_len = sizeof(struct tee_iocl_supp_send_arg) +
+		       sizeof(struct tee_ioctl_param) *
+				request->send.num_params;
+	if (ioctl(fd, TEE_IOC_SUPPL_SEND, &data)) {
+		EMSG("TEE_IOC_SUPPL_SEND: %s", strerror(errno));
+		return false;
+	}
+	return true;
+}
+
+static bool find_params(union tee_rpc_invoke *request, uint32_t *func,
+			size_t *num_params, struct tee_ioctl_param **params)
+{
+	struct tee_ioctl_param *p;
+	size_t n;
+
+	p = (struct tee_ioctl_param *)(&request->recv + 1);
+
+	/* Skip meta parameters in the front */
+	for (n = 0; n < request->recv.num_params; n++)
+		if (!(p[n].attr & TEE_IOCTL_PARAM_ATTR_META))
+			break;
+
+	*func = request->recv.func;
+	*num_params = request->recv.num_params - n;
+	*params = p + n;
+
+	/* Make sure that no meta parameters follows a non-meta parameter */
+	for (; n < request->recv.num_params; n++) {
+		if (p[n].attr & TEE_IOCTL_PARAM_ATTR_META) {
+			EMSG("Unexpected meta parameter");
+			return false;
+		}
+	}
+
+	return true;
 }
 
 int main(int argc, char *argv[])
 {
 	int fd;
 	union tee_rpc_invoke request;
-	int ret;
 
 	if (argc > 2)
 		return usage();
@@ -416,77 +427,63 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	/* major failure on read kills supplicant, malformed data will not */
-	do {
+	while (true) {
+		size_t num_params;
+		struct tee_ioctl_param *params;
+		uint32_t func;
+		uint32_t ret;
+
 		DMSG("looping");
 		memset(&request, 0, sizeof(request));
 		request.recv.num_params = RPC_NUM_PARAMS;
-		ret = read_request(fd, &request);
-		if (ret == 0) {
-			switch (request.recv.func) {
-			case RPC_CMD_LOAD_TA:
-				load_ta(&request);
-				break;
-			case RPC_CMD_FS:
-				process_fs(&request);
-				break;
-			case RPC_CMD_SQL_FS:
-				process_sql_fs(&request);
-				break;
-			case RPC_CMD_RPMB:
-				process_rpmb(&request);
-				break;
-			case RPC_CMD_SHM_ALLOC:
-				process_alloc(fd, &request);
-				break;
-			case RPC_CMD_SHM_FREE:
-				process_free(&request);
-				break;
-			case RPC_CMD_GPROF:
-				process_gprof(&request);
-				break;
-			default:
-				EMSG("Cmd [0x%" PRIx32 "] not supported",
-				     request.recv.func);
-				/* Not supported. */
-				break;
-			}
 
-			ret = write_response(fd, &request);
+		/* Let it be known that we can deal with meta parameters */
+		params = (struct tee_ioctl_param *)(&request.send + 1);
+		params->attr = TEE_IOCTL_PARAM_ATTR_META;
+
+		if (!read_request(fd, &request))
+			break;
+
+		if (!find_params(&request, &func, &num_params, &params))
+			break;
+
+		switch (func) {
+		case RPC_CMD_LOAD_TA:
+			ret = load_ta(num_params, params);
+			break;
+		case RPC_CMD_FS:
+			ret = tee_supp_fs_process(num_params, params);
+			break;
+		case RPC_CMD_SQL_FS:
+			ret = sql_fs_process(num_params, params);
+			break;
+		case RPC_CMD_RPMB:
+			ret = process_rpmb(num_params, params);
+			break;
+		case RPC_CMD_SHM_ALLOC:
+			ret = process_alloc(fd, num_params, params);
+			break;
+		case RPC_CMD_SHM_FREE:
+			ret = process_free(num_params, params);
+			break;
+		case RPC_CMD_GPROF:
+			ret = gprof_process(num_params, params);
+			break;
+		default:
+			EMSG("Cmd [0x%" PRIx32 "] not supported", func);
+			/* Not supported. */
+			ret = TEEC_ERROR_NOT_SUPPORTED;
+			break;
 		}
-	} while (ret >= 0);
+
+		request.send.ret = ret;
+		if (!write_response(fd, &request))
+			break;
+	}
 
 	close(fd);
 
 	return EXIT_FAILURE;
-}
-
-static int read_request(int fd, union tee_rpc_invoke *request)
-{
-	struct tee_ioctl_buf_data data;
-
-	data.buf_ptr = (uintptr_t)request;
-	data.buf_len = sizeof(*request);
-	if (ioctl(fd, TEE_IOC_SUPPL_RECV, &data)) {
-		EMSG("TEE_IOC_SUPPL_RECV: %s", strerror(errno));
-		return -1;
-	}
-	return 0;
-}
-
-static int write_response(int fd, union tee_rpc_invoke *request)
-{
-	struct tee_ioctl_buf_data data;
-
-	data.buf_ptr = (uintptr_t)&request->send;
-	data.buf_len = sizeof(struct tee_iocl_supp_send_arg) +
-		       sizeof(struct tee_ioctl_param) *
-				request->send.num_params;
-	if (ioctl(fd, TEE_IOC_SUPPL_SEND, &data)) {
-		EMSG("TEE_IOC_SUPPL_SEND: %s", strerror(errno));
-		return -1;
-	}
-	return 0;
 }
 
 bool tee_supp_param_is_memref(struct tee_ioctl_param *param)

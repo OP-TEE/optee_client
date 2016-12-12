@@ -41,9 +41,8 @@
 #endif
 #include <linux/tee.h>
 
-TEEC_Result gprof_process(struct tee_iocl_supp_recv_arg *recv)
+TEEC_Result gprof_process(size_t num_params, struct tee_ioctl_param *params)
 {
-	struct tee_ioctl_param *params = (void *)(recv + 1);
 	char vers[5] = "";
 	char path[255];
 	size_t bufsize;
@@ -55,7 +54,7 @@ TEEC_Result gprof_process(struct tee_iocl_supp_recv_arg *recv)
 	int st;
 	int n;
 
-	if (recv->num_params != 3 ||
+	if (num_params != 3 ||
 	    (params[0].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
 		TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INOUT ||
 	    (params[1].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=

@@ -821,44 +821,43 @@ static TEEC_Result ree_fs_new_readdir(size_t num_params,
 	return TEEC_SUCCESS;
 }
 
-TEEC_Result tee_supp_fs_process(struct tee_iocl_supp_recv_arg *recv)
+TEEC_Result tee_supp_fs_process(size_t num_params,
+				struct tee_ioctl_param *params)
 {
-	struct tee_ioctl_param *param = (void *)(recv + 1);
-
-	if (recv->num_params == 1 && tee_supp_param_is_memref(param)) {
-		void *va = tee_supp_param_to_va(param);
+	if (num_params == 1 && tee_supp_param_is_memref(params)) {
+		void *va = tee_supp_param_to_va(params);
 
 		if (!va)
 			return TEEC_ERROR_BAD_PARAMETERS;
-		return tee_supp_fs_process_primitive(va, param->u.memref.size);
+		return tee_supp_fs_process_primitive(va, params->u.memref.size);
 	}
 
-	if (!tee_supp_param_is_value(param))
+	if (!num_params || !tee_supp_param_is_value(params))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	switch (param->u.value.a) {
+	switch (params->u.value.a) {
 	case OPTEE_MRF_OPEN:
-		return ree_fs_new_open(recv->num_params, param);
+		return ree_fs_new_open(num_params, params);
 	case OPTEE_MRF_CREATE:
-		return ree_fs_new_create(recv->num_params, param);
+		return ree_fs_new_create(num_params, params);
 	case OPTEE_MRF_CLOSE:
-		return ree_fs_new_close(recv->num_params, param);
+		return ree_fs_new_close(num_params, params);
 	case OPTEE_MRF_READ:
-		return ree_fs_new_read(recv->num_params, param);
+		return ree_fs_new_read(num_params, params);
 	case OPTEE_MRF_WRITE:
-		return ree_fs_new_write(recv->num_params, param);
+		return ree_fs_new_write(num_params, params);
 	case OPTEE_MRF_TRUNCATE:
-		return ree_fs_new_truncate(recv->num_params, param);
+		return ree_fs_new_truncate(num_params, params);
 	case OPTEE_MRF_REMOVE:
-		return ree_fs_new_remove(recv->num_params, param);
+		return ree_fs_new_remove(num_params, params);
 	case OPTEE_MRF_RENAME:
-		return ree_fs_new_rename(recv->num_params, param);
+		return ree_fs_new_rename(num_params, params);
 	case OPTEE_MRF_OPENDIR:
-		return ree_fs_new_opendir(recv->num_params, param);
+		return ree_fs_new_opendir(num_params, params);
 	case OPTEE_MRF_CLOSEDIR:
-		return ree_fs_new_closedir(recv->num_params, param);
+		return ree_fs_new_closedir(num_params, params);
 	case OPTEE_MRF_READDIR:
-		return ree_fs_new_readdir(recv->num_params, param);
+		return ree_fs_new_readdir(num_params, params);
 	default:
 		return TEEC_ERROR_BAD_PARAMETERS;
 	}

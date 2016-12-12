@@ -29,9 +29,11 @@
 
 #include <tee_client_api.h>
 
+struct tee_ioctl_param;
+
 int tee_supp_fs_init(void);
 
-struct tee_iocl_supp_recv_arg;
-TEEC_Result tee_supp_fs_process(struct tee_iocl_supp_recv_arg *recv);
+TEEC_Result tee_supp_fs_process(size_t num_params,
+				struct tee_ioctl_param *params);
 
 #endif

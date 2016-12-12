@@ -30,17 +30,19 @@
 
 #include <tee_client_api.h>
 
-struct tee_iocl_supp_recv_arg;
+struct tee_ioctl_param;
 
 #if defined(CFG_TA_GPROF_SUPPORT)
 
-TEEC_Result gprof_process(struct tee_iocl_supp_recv_arg *recv);
+TEEC_Result gprof_process(size_t num_params, struct tee_ioctl_param *params);
 
 #else
 
-static inline TEEC_Result gprof_process(struct tee_iocl_supp_recv_arg *recv)
+static inline TEEC_Result gprof_process(size_t num_params,
+					struct tee_ioctl_param *params)
 {
-	(void)recv;
+	(void)num_params;
+	(void)params;
 
 	return TEEC_ERROR_NOT_SUPPORTED;
 }
