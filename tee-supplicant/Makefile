@@ -20,6 +20,11 @@ TEES_SRCS	:= tee_supplicant.c \
 		   rpmb.c \
 		   handle.c
 
+
+ifeq ($(CFG_GP_SOCKETS),y)
+TEES_SRCS 	+= tee_socket.c
+endif
+
 ifeq ($(RPMB_EMU),1)
 TEES_SRCS	+= sha2.c hmac_sha2.c
 endif
@@ -42,6 +47,9 @@ TEES_INCLUDES 	:= ${CURDIR}/../libteec/include \
 TEES_CFLAGS	:= $(addprefix -I, $(TEES_INCLUDES)) $(CFLAGS) \
 		   -DDEBUGLEVEL_$(CFG_TEE_SUPP_LOG_LEVEL) \
 		   -DBINARY_PREFIX=\"TEES\"
+ifeq ($(CFG_GP_SOCKETS),y)
+TEES_CFLAGS	+= -DCFG_GP_SOCKETS=1
+endif
 ifeq ($(RPMB_EMU),1)
 TEES_CFLAGS	+= -DRPMB_EMU=1
 endif
@@ -67,6 +75,8 @@ TEES_CFLAGS	+= -DCFG_TA_GPROF_SUPPORT
 endif
 
 TEES_LDFLAGS	+= -lpthread
+# Needed to get clock_gettime() for for glibc versions before 2.17
+TEES_LDFLAGS	+= -lrt
 
 tee-supplicant: $(TEES_FILE)
 

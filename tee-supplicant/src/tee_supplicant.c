@@ -49,16 +49,19 @@
 #include <tee_client_api.h>
 #include <teec_ta_load.h>
 #include <teec_trace.h>
+#include <tee_socket.h>
 #include <tee_supp_fs.h>
 #include <tee_supplicant.h>
 #include <unistd.h>
+
+#include "optee_msg_supplicant.h"
 
 #ifndef __aligned
 #define __aligned(x) __attribute__((__aligned__(x)))
 #endif
 #include <linux/tee.h>
 
-#define RPC_NUM_PARAMS	4
+#define RPC_NUM_PARAMS	5
 
 #define RPC_BUF_SIZE	(sizeof(struct tee_iocl_supp_send_arg) + \
 			 RPC_NUM_PARAMS * sizeof(struct tee_ioctl_param))
@@ -72,7 +75,7 @@
 #define RPC_CMD_GPROF		9
 
 union tee_rpc_invoke {
-	uint64_t buf[RPC_BUF_SIZE / sizeof(uint64_t)];
+	uint64_t buf[(RPC_BUF_SIZE - 1) / sizeof(uint64_t) + 1];
 	struct tee_iocl_supp_recv_arg recv;
 	struct tee_iocl_supp_send_arg send;
 };
@@ -544,6 +547,9 @@ static bool process_one_request(struct thread_arg *arg)
 		break;
 	case RPC_CMD_GPROF:
 		ret = gprof_process(num_params, params);
+		break;
+	case OPTEE_MSG_RPC_CMD_SOCKET:
+		ret = tee_socket_process(num_params, params);
 		break;
 	default:
 		EMSG("Cmd [0x%" PRIx32 "] not supported", func);

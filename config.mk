@@ -38,6 +38,10 @@ CFG_TEE_CLIENT_LOAD_PATH ?= /system/lib
 # such as 1008.5 that test loading of corrupt TAs.
 CFG_TA_TEST_PATH ?= y
 
+# CFG_GP_SOCKETS
+# Enable Global Platform Sockets support
+CFG_GP_SOCKETS ?= y
+
 # Default output directory.
 # May be absolute, or relative to the optee_client source directory.
 O               ?= out

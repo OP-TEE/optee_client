@@ -75,4 +75,8 @@ void *handle_put(struct handle_db *db, int handle);
  */
 void *handle_lookup(struct handle_db *db, int handle);
 
+void handle_foreach_put(struct handle_db *db,
+			void (*cb)(int handle, void *ptr, void *arg),
+			void *arg);
+
 #endif /*HANDLE_H*/

@@ -152,3 +152,24 @@ out:
 	mutex_unlock(db);
 	return p;
 }
+
+void handle_foreach_put(struct handle_db *db,
+			void (*cb)(int handle, void *ptr, void *arg),
+			void *arg)
+{
+	size_t n;
+
+	if (!db || !cb)
+		return;
+
+	mutex_lock(db);
+
+	for (n = 0; n < db->max_ptrs; n++) {
+		if (db->ptrs[n]) {
+			cb(n, db->ptrs[n], arg);
+			db->ptrs[n] = NULL;
+		}
+	}
+
+	mutex_unlock(db);
+}
