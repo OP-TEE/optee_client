@@ -29,11 +29,15 @@
 #define TEE_SUPPLICANT_H
 
 #include <stdbool.h>
+#include <pthread.h>
 
 struct tee_ioctl_param;
 
 bool tee_supp_param_is_memref(struct tee_ioctl_param *param);
 bool tee_supp_param_is_value(struct tee_ioctl_param *param);
 void *tee_supp_param_to_va(struct tee_ioctl_param *param);
+
+void tee_supp_mutex_lock(pthread_mutex_t *mu);
+void tee_supp_mutex_unlock(pthread_mutex_t *mu);
 
 #endif /*TEE_SUPPLICANT_H*/

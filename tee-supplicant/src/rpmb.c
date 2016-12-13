@@ -25,19 +25,21 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <rpmb.h>
-#include <tee_client_api.h>
-#include <teec_trace.h>
-#include <string.h>
-#include <netinet/in.h>
-#include <sys/ioctl.h>
+#include <fcntl.h>
 #include <linux/types.h>
 #include <linux/mmc/ioctl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
+#include <netinet/in.h>
+#include <pthread.h>
+#include <rpmb.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/ioctl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <tee_client_api.h>
+#include <teec_trace.h>
+#include <tee_supplicant.h>
 #include <unistd.h>
 
 #ifdef RPMB_EMU
@@ -103,6 +105,9 @@ struct rpmb_data_frame {
 #define RPMB_MSG_TYPE_RESP_AUTH_DATA_READ		0x0400
 };
 
+
+static pthread_mutex_t rpmb_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 /*
  * ioctl() interface
  * Comes from: uapi/linux/major.h, linux/mmc/core.h
@@ -138,6 +143,7 @@ struct rpmb_data_frame {
 			EMSG("ioctl ret=%d errno=%d", ret, errno); \
 		ret;						   \
 	})
+
 
 /* Open and/or return file descriptor to RPMB partition of device dev_id */
 static int mmc_rpmb_fd(uint16_t dev_id)
@@ -728,12 +734,13 @@ err:
 	return res;
 }
 
+
 /*
  * req is one struct rpmb_req followed by one or more struct rpmb_data_frame
  * rsp is either one struct rpmb_dev_info or one or more struct rpmb_data_frame
  */
-uint32_t rpmb_process_request(void *req, size_t req_size, void *rsp,
-			      size_t rsp_size)
+static uint32_t rpmb_process_request_unlocked(void *req, size_t req_size,
+					      void *rsp, size_t rsp_size)
 {
 	struct rpmb_req *sreq = req;
 	size_t req_nfrm;
@@ -770,6 +777,19 @@ uint32_t rpmb_process_request(void *req, size_t req_size, void *rsp,
 		res = TEEC_ERROR_BAD_PARAMETERS;
 		break;
 	}
+
+	return res;
+}
+
+
+uint32_t rpmb_process_request(void *req, size_t req_size, void *rsp,
+			      size_t rsp_size)
+{
+	uint32_t res;
+
+	tee_supp_mutex_lock(&rpmb_mutex);
+	res = rpmb_process_request_unlocked(req, req_size, rsp, rsp_size);
+	tee_supp_mutex_unlock(&rpmb_mutex);
 
 	return res;
 }

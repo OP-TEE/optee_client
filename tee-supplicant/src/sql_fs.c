@@ -30,6 +30,7 @@
 #include <handle.h>
 #include <libgen.h>
 #include <optee_msg_supplicant.h>
+#include <pthread.h>
 #include <sql_fs.h>
 #include <sqlfs.h>
 #include <sqlfs_internal.h>
@@ -78,6 +79,8 @@ struct dir_entry {
 static struct handle_db dir_db = HANDLE_DB_INITIALIZER;
 
 static sqlfs_t *db;
+
+static pthread_mutex_t sqlfs_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void put_file(struct file_state *fs)
 {
@@ -912,7 +915,8 @@ static TEEC_Result sql_fs_new_end_transaction(size_t num_params,
 	return TEEC_ERROR_GENERIC;
 }
 
-TEEC_Result sql_fs_process(size_t num_params, struct tee_ioctl_param *params)
+static TEEC_Result sql_fs_process_unlocked(size_t num_params,
+					   struct tee_ioctl_param *params)
 {
 	if (num_params == 1 && tee_supp_param_is_memref(params)) {
 		void *va = tee_supp_param_to_va(params);
@@ -955,4 +959,15 @@ TEEC_Result sql_fs_process(size_t num_params, struct tee_ioctl_param *params)
 	default:
 		return TEEC_ERROR_BAD_PARAMETERS;
 	}
+}
+
+TEEC_Result sql_fs_process(size_t num_params, struct tee_ioctl_param *params)
+{
+	TEEC_Result res;
+
+	tee_supp_mutex_lock(&sqlfs_mutex);
+	res = sql_fs_process_unlocked(num_params, params);
+	tee_supp_mutex_unlock(&sqlfs_mutex);
+
+	return res;
 }
