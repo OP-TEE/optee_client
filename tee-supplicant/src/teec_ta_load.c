@@ -26,6 +26,7 @@
  */
 #include <dirent.h>
 #include <fcntl.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -86,22 +87,31 @@ static int try_load_secure_module(const char* prefix,
 {
 	char fname[PATH_MAX];
 	FILE *file = NULL;
-	int n;
+	bool first_try = true;
 	size_t s;
+	int n;
 
 	if (!ta_size || !destination) {
 		printf("wrong inparameter to TEECI_LoadSecureModule\n");
 		return TA_BINARY_NOT_FOUND;
 	}
 
+	/*
+	 * We expect the TA binary to be named after the UUID as per RFC4122,
+	 * that is: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.ta
+	 * If the file cannot be open, try the deprecated format:
+	 * xxxxxxxx-xxxx-xxxx-xxxxxxxxxxxxxxxx.ta
+	 */
+again:
 	n = snprintf(fname, PATH_MAX,
-		     "%s/%s/%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x.ta",
+		     "%s/%s/%08x-%04x-%04x-%02x%02x%s%02x%02x%02x%02x%02x%02x.ta",
 		     prefix, dev_path,
 		     destination->timeLow,
 		     destination->timeMid,
 		     destination->timeHiAndVersion,
 		     destination->clockSeqAndNode[0],
 		     destination->clockSeqAndNode[1],
+		     first_try ? "-" : "",
 		     destination->clockSeqAndNode[2],
 		     destination->clockSeqAndNode[3],
 		     destination->clockSeqAndNode[4],
@@ -119,6 +129,10 @@ static int try_load_secure_module(const char* prefix,
 	file = fopen(fname, "r");
 	if (file == NULL) {
 		DMSG("failed to open the ta %s TA-file", fname);
+		if (first_try) {
+			first_try = false;
+			goto again;
+		}
 		return TA_BINARY_NOT_FOUND;
 	}
 
