@@ -50,8 +50,9 @@ TEES_LDFLAGS    := -L$(OUT_DIR)/../libteec -lteec
 
 ifeq ($(CFG_SQL_FS),y)
 TEES_CFLAGS	+= -DCFG_SQL_FS
-TEES_CFLAGS	+= -Wno-strict-prototypes -Wno-implicit-function-declaration \
-		   -Wno-nested-externs -Wno-unused-function
+TEES_CFLAGS_sql_fs.c	:= -Wno-strict-prototypes \
+			   -Wno-implicit-function-declaration \
+			   -Wno-nested-externs -Wno-unused-function
 # Note: explicitly requesting a shared library (.so) here, because statically
 # linking a LGPL library has licensing implications. Make sure you review
 # and comply with libsqlfs/COPYING section 6 before doing so.
@@ -70,7 +71,7 @@ $(TEES_FILE): $(TEES_OBJS)
 $(TEES_OBJ_DIR)/%.o: $(TEES_SRC_DIR)/%.c
 	$(VPREFIX)mkdir -p $(dir $@)
 	@echo "  CC      $<"
-	$(VPREFIX)$(CC) $(TEES_CFLAGS) -c $< -o $@
+	$(VPREFIX)$(CC) $(TEES_CFLAGS) $(TEES_CFLAGS_$(notdir $<)) -c $< -o $@
 
 ################################################################################
 # Cleaning up configuration
