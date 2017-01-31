@@ -410,8 +410,15 @@ static TEEC_Result ree_fs_new_open(size_t num_params,
 		return TEEC_ERROR_BAD_PARAMETERS;
 
 	fd = open_wrapper(abs_filename, O_RDWR);
-	if (fd < 0)
-		return TEEC_ERROR_ITEM_NOT_FOUND;
+	if (fd < 0) {
+		/*
+		 * In case the problem is the filesystem is RO, retry with the
+		 * open flags restricted to RO.
+		 */
+		fd = open_wrapper(abs_filename, O_RDONLY);
+		if (fd < 0)
+			return TEEC_ERROR_ITEM_NOT_FOUND;
+	}
 
 	params[2].u.value.a = fd;
 	return TEEC_SUCCESS;
