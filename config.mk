@@ -36,7 +36,7 @@ CFG_TEE_CLIENT_LOAD_PATH ?= /system/lib
 # Enable the tee test path.  When enabled, the supplicant will try
 # loading from a debug path before the regular path.  This allows test
 # such as 1008.5 that test loading of corrupt TAs.
-CFG_TA_TEST_PATH ?= 1
+CFG_TA_TEST_PATH ?= y
 
 # Default output directory.
 # May be absolute, or relative to the optee_client source directory.
