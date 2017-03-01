@@ -380,7 +380,7 @@ static TEEC_Result poll_with_timeout(struct pollfd *pfd, nfds_t nfds,
 {
 	struct timespec now;
 	struct timespec until;
-	int to;
+	int to = 0;
 	int r;
 
 	if (timeout == OPTEE_MRC_SOCKET_TIMEOUT_BLOCKING) {
