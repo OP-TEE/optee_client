@@ -379,7 +379,7 @@ static int open_wrapper(const char *fname, int flags)
 	int fd;
 
 	while (true) {
-		fd = open(fname, flags);
+		fd = open(fname, flags, 0600);
 		if (fd >= 0 || errno != EINTR)
 			return fd;
 	}
