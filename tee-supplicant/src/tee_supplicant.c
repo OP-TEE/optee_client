@@ -75,11 +75,14 @@ struct tee_shm {
 	int id;
 	void *p;
 	size_t size;
+	bool registered;
+	int fd;
 	struct tee_shm *next;
 };
 
 struct thread_arg {
 	int fd;
+	uint32_t gen_caps;
 	bool abort;
 	size_t num_waiters;
 	pthread_mutex_t mutex;
@@ -283,41 +286,91 @@ static uint32_t load_ta(size_t num_params, struct tee_ioctl_param *params)
 	return TEEC_SUCCESS;
 }
 
-static uint32_t process_alloc(int fd, size_t num_params,
-			      struct tee_ioctl_param *params)
+static struct tee_shm *alloc_shm(int fd, size_t size)
 {
 	struct tee_ioctl_shm_alloc_data data;
-	struct tee_ioctl_param_value *val;
 	struct tee_shm *shm;
-	int shm_fd;
 
 	memset(&data, 0, sizeof(data));
+
+	shm = calloc(1, sizeof(*shm));
+	if (!shm)
+		return NULL;
+
+	data.size = size;
+	shm->fd = ioctl(fd, TEE_IOC_SHM_ALLOC, &data);
+	if (shm->fd < 0) {
+		free(shm);
+		return NULL;
+	}
+
+	shm->p = mmap(NULL, data.size, PROT_READ | PROT_WRITE, MAP_SHARED,
+		      shm->fd, 0);
+	if (shm->p == (void *)MAP_FAILED) {
+		free(shm);
+		close(shm->fd);
+		return NULL;
+	}
+
+	shm->id = data.id;
+	shm->registered = false;
+	return shm;
+}
+
+static struct tee_shm *register_local_shm(int fd, size_t size)
+{
+	struct tee_ioctl_shm_register_data data;
+	struct tee_shm *shm;
+	void *buf;
+
+	memset(&data, 0, sizeof(data));
+
+	buf = malloc(size);
+	if (!buf)
+		return NULL;
+
+	shm = calloc(1, sizeof(*shm));
+	if (!shm) {
+		free(buf);
+		return NULL;
+	}
+
+	data.addr = (uintptr_t)buf;
+	data.length = size;
+
+	shm->fd = ioctl(fd, TEE_IOC_SHM_REGISTER, &data);
+	if (shm->fd < 0) {
+		free(shm);
+		free(buf);
+		return NULL;
+	}
+
+	shm->p = buf;
+	shm->registered = true;
+	shm->id = data.id;
+
+	return shm;
+}
+
+static uint32_t process_alloc(struct thread_arg *arg, size_t num_params,
+			      struct tee_ioctl_param *params)
+{
+	struct tee_ioctl_param_value *val;
+	struct tee_shm *shm;
 
 	if (num_params != 1 || get_value(num_params, params, 0, &val))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	shm = calloc(1, sizeof(*shm));
+	if (arg->gen_caps & TEE_GEN_CAP_REG_MEM)
+		shm = register_local_shm(arg->fd, val->b);
+	else
+		shm = alloc_shm(arg->fd, val->b);
+
 	if (!shm)
 		return TEEC_ERROR_OUT_OF_MEMORY;
 
-	data.size = val->b;
-	shm_fd = ioctl(fd, TEE_IOC_SHM_ALLOC, &data);
-	if (shm_fd < 0) {
-		free(shm);
-		return TEEC_ERROR_OUT_OF_MEMORY;
-	}
-
-	shm->p = mmap(NULL, data.size, PROT_READ | PROT_WRITE, MAP_SHARED,
-		      shm_fd, 0);
-	close(shm_fd);
-	if (shm->p == (void *)MAP_FAILED) {
-		free(shm);
-		return TEEC_ERROR_OUT_OF_MEMORY;
-	}
-
-	shm->id = data.id;
-	shm->size = data.size;
-	val->c = data.id;
+	shm->size = val->b;
+	val->c = shm->id;
 	push_tshm(shm);
 
 	return TEEC_SUCCESS;
@@ -338,13 +391,19 @@ static uint32_t process_free(size_t num_params, struct tee_ioctl_param *params)
 	if (!shm)
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	if (munmap(shm->p, shm->size) != 0) {
-		EMSG("munmap(%p, %zu) failed - Error = %s",
-		     shm->p, shm->size, strerror(errno));
-		free(shm);
-		return TEEC_ERROR_BAD_PARAMETERS;
+	if (shm->registered) {
+		free(shm->p);
+	} else  {
+		if (munmap(shm->p, shm->size) != 0) {
+			EMSG("munmap(%p, %zu) failed - Error = %s",
+			     shm->p, shm->size, strerror(errno));
+			close(shm->fd);
+			free(shm);
+			return TEEC_ERROR_BAD_PARAMETERS;
+		}
 	}
 
+	close(shm->fd);
 	free(shm);
 	return TEEC_SUCCESS;
 }
@@ -354,7 +413,7 @@ static uint32_t process_free(size_t num_params, struct tee_ioctl_param *params)
 /* How many device sequence numbers will be tried before giving up */
 #define MAX_DEV_SEQ	10
 
-static int open_dev(const char *devname)
+static int open_dev(const char *devname, uint32_t *gen_caps)
 {
 	struct tee_ioctl_version_data vers;
 	int fd;
@@ -371,6 +430,8 @@ static int open_dev(const char *devname)
 		goto err;
 
 	ta_dir = "optee_armtz";
+	if (gen_caps)
+		*gen_caps = vers.gen_caps;
 
 	DMSG("using device \"%s\"", devname);
 	return fd;
@@ -379,7 +440,7 @@ err:
 	return -1;
 }
 
-static int get_dev_fd(void)
+static int get_dev_fd(uint32_t *gen_caps)
 {
 	int fd;
 	char name[PATH_MAX];
@@ -387,7 +448,7 @@ static int get_dev_fd(void)
 
 	for (n = 0; n < MAX_DEV_SEQ; n++) {
 		snprintf(name, sizeof(name), "/dev/teepriv%zu", n);
-		fd = open_dev(name);
+		fd = open_dev(name, gen_caps);
 		if (fd >= 0)
 			return fd;
 	}
@@ -536,7 +597,7 @@ static bool process_one_request(struct thread_arg *arg)
 		ret = process_rpmb(num_params, params);
 		break;
 	case OPTEE_MSG_RPC_CMD_SHM_ALLOC:
-		ret = process_alloc(arg->fd, num_params, params);
+		ret = process_alloc(arg, num_params, params);
 		break;
 	case OPTEE_MSG_RPC_CMD_SHM_FREE:
 		ret = process_free(num_params, params);
@@ -591,13 +652,13 @@ int main(int argc, char *argv[])
 	if (argc > 2)
 		return usage();
 	if (argc == 2) {
-		arg.fd = open_dev(argv[1]);
+		arg.fd = open_dev(argv[1], &arg.gen_caps);
 		if (arg.fd < 0) {
 			EMSG("failed to open \"%s\"", argv[1]);
 			exit(EXIT_FAILURE);
 		}
 	} else {
-		arg.fd = get_dev_fd();
+		arg.fd = get_dev_fd(&arg.gen_caps);
 		if (arg.fd < 0) {
 			EMSG("failed to find an OP-TEE supplicant device");
 			exit(EXIT_FAILURE);
