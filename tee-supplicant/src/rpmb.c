@@ -150,10 +150,14 @@ static int mmc_rpmb_fd(uint16_t dev_id)
 {
 	static int id;
 	static int fd = -1;
-	char path[21];
+	char path[PATH_MAX];
 
 	if (fd < 0) {
+#ifdef __ANDROID__
+		snprintf(path, sizeof(path), "/dev/block/mmcblk%urpmb", dev_id);
+#else
 		snprintf(path, sizeof(path), "/dev/mmcblk%urpmb", dev_id);
+#endif
 		fd = open(path, O_RDWR);
 		if (fd < 0) {
 			EMSG("Could not open %s (%s)", path, strerror(errno));
@@ -172,9 +176,13 @@ static int mmc_rpmb_fd(uint16_t dev_id)
 static int mmc_fd(uint16_t dev_id)
 {
 	int fd;
-	char path[17];
+	char path[PATH_MAX];
 
+#ifdef __ANDROID__
+	snprintf(path, sizeof(path), "/dev/block/mmcblk%u", dev_id);
+#else
 	snprintf(path, sizeof(path), "/dev/mmcblk%u", dev_id);
+#endif
 	fd = open(path, O_RDONLY);
 	if (fd < 0)
 		EMSG("Could not open %s (%s)", path, strerror(errno));
