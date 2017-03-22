@@ -272,6 +272,14 @@ static uint32_t load_ta(size_t num_params, struct tee_ioctl_param *params)
 	}
 
 	params[1].u.memref.size = size;
+
+	/*
+	 * If a buffer wasn't provided, just tell which size it should be.
+	 * If it was provided but isn't big enough, report an error.
+	 */
+	if (shm_ta.buffer && size > shm_ta.size)
+		return TEEC_ERROR_SHORT_BUFFER;
+
 	return TEEC_SUCCESS;
 }
 
