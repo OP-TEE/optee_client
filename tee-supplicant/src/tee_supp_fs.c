@@ -726,6 +726,8 @@ static TEEC_Result ree_fs_new_opendir(size_t num_params,
 	char *fname;
 	DIR *dir;
 	int handle;
+	struct dirent *dent;
+	bool empty = true;
 
 	if (num_params != 3 ||
 	    (params[0].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
@@ -747,6 +749,30 @@ static TEEC_Result ree_fs_new_opendir(size_t num_params,
 	dir = opendir(abs_filename);
 	if (!dir)
 		return TEEC_ERROR_ITEM_NOT_FOUND;
+
+	/*
+	 * Ignore empty directories. Works around an issue when the
+	 * data path is mounted over NFS. Due to the way OP-TEE implements
+	 * TEE_CloseAndDeletePersistentObject1() currently, tee-supplicant
+	 * still has a file descriptor open to the file when it's removed in
+	 * ree_fs_new_remove(). In this case the NFS server may create a
+	 * temporary reference called .nfs????, and the rmdir() call fails
+	 * so that the TA directory is left over. Checking this special case
+	 * here avoids that TEE_StartPersistentObjectEnumerator() returns
+	 * TEE_SUCCESS when it should return TEEC_ERROR_ITEM_NOT_FOUND.
+	 * Test case: "xtest 6009 6010".
+	 */
+	while ((dent = readdir(dir))) {
+		if (dent->d_name[0] == '.')
+			continue;
+		empty = false;
+		break;
+	}
+	if (empty) {
+		closedir(dir);
+		return TEEC_ERROR_ITEM_NOT_FOUND;
+	}
+	rewinddir(dir);
 
 	handle = handle_get(&dir_handle_db, dir);
 	if (handle < 0) {
