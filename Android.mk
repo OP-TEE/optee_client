@@ -17,7 +17,7 @@ optee_CFLAGS = $(CFLAGS)
 include $(CLEAR_VARS)
 LOCAL_CFLAGS += $(optee_CFLAGS)
 
-ifeq ($(CFG_TEE_CLIENT_LOG_FILE), true)
+ifneq ($(CFG_TEE_CLIENT_LOG_FILE),)
 LOCAL_CFLAGS += -DTEEC_LOG_FILE=$(CFG_TEE_CLIENT_LOG_FILE)
 endif
 
