@@ -239,6 +239,7 @@
 #define TEEC_PARAM_TYPE_GET(p, i) (((p) >> (i * 4)) & 0xF)
 
 typedef uint32_t TEEC_Result;
+typedef uint32_t TEEC_ErrorOrigin;
 
 /**
  * struct TEEC_Context - Represents a connection between a client application
