@@ -34,15 +34,6 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/../public \
 
 LOCAL_SHARED_LIBRARIES := libteec
 
-ifeq ($(CFG_SQL_FS),y)
-LOCAL_SRC_FILES += src/sql_fs.c
-LOCAL_CFLAGS += -DCFG_SQL_FS
-LOCAL_CFLAGS += -Wno-strict-prototypes
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../libsqlfs/include \
-                    $(LOCAL_PATH)/../libsqlite3/include
-LOCAL_SHARED_LIBRARIES += libsqlfs
-endif
-
 ifeq ($(CFG_TA_GPROF_SUPPORT),y)
 LOCAL_SRC_FILES += src/gprof.c
 LOCAL_CFLAGS += -DCFG_TA_GPROF_SUPPORT

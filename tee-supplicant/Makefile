@@ -28,9 +28,6 @@ endif
 ifeq ($(RPMB_EMU),1)
 TEES_SRCS	+= sha2.c hmac_sha2.c
 endif
-ifeq ($(CFG_SQL_FS),y)
-TEES_SRCS	+= sql_fs.c
-endif
 ifeq ($(CFG_TA_GPROF_SUPPORT),y)
 TEES_SRCS	+= gprof.c
 endif
@@ -39,8 +36,6 @@ TEES_SRC_DIR	:= src
 TEES_OBJ_DIR	:= $(OUT_DIR)
 TEES_OBJS 	:= $(patsubst %.c,$(TEES_OBJ_DIR)/%.o, $(TEES_SRCS))
 TEES_INCLUDES 	:= ${CURDIR}/../libteec/include \
-		   ${CURDIR}/../libsqlite3/include \
-		   ${CURDIR}/../libsqlfs/include \
 		   ${CURDIR}/src \
 		   ${CURDIR}/../public \
 
@@ -58,17 +53,6 @@ TEES_CFLAGS	+= -DCFG_TA_TEST_PATH=1
 endif
 TEES_FILE	:= $(OUT_DIR)/$(PACKAGE_NAME)
 TEES_LDFLAGS    := -L$(OUT_DIR)/../libteec -lteec
-
-ifeq ($(CFG_SQL_FS),y)
-TEES_CFLAGS	+= -DCFG_SQL_FS
-TEES_CFLAGS_sql_fs.c	:= -Wno-strict-prototypes \
-			   -Wno-implicit-function-declaration \
-			   -Wno-nested-externs -Wno-unused-function
-# Note: explicitly requesting a shared library (.so) here, because statically
-# linking a LGPL library has licensing implications. Make sure you review
-# and comply with libsqlfs/COPYING section 6 before doing so.
-TEES_LDFLAGS	+= -L$(OUT_DIR)/../libsqlfs -l:libsqlfs.so -ldl
-endif
 
 ifeq ($(CFG_TA_GPROF_SUPPORT),y)
 TEES_CFLAGS	+= -DCFG_TA_GPROF_SUPPORT

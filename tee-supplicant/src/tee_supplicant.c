@@ -35,7 +35,6 @@
 #include <inttypes.h>
 #include <pthread.h>
 #include <rpmb.h>
-#include <sql_fs.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -71,7 +70,6 @@
 #define RPC_CMD_FS		2
 #define RPC_CMD_SHM_ALLOC	6
 #define RPC_CMD_SHM_FREE	7
-#define RPC_CMD_SQL_FS		8
 #define RPC_CMD_GPROF		9
 
 union tee_rpc_invoke {
@@ -533,9 +531,6 @@ static bool process_one_request(struct thread_arg *arg)
 	case RPC_CMD_FS:
 		ret = tee_supp_fs_process(num_params, params);
 		break;
-	case RPC_CMD_SQL_FS:
-		ret = sql_fs_process(num_params, params);
-		break;
 	case RPC_CMD_RPMB:
 		ret = process_rpmb(num_params, params);
 		break;
@@ -610,11 +605,6 @@ int main(int argc, char *argv[])
 
 	if (tee_supp_fs_init() != 0) {
 		EMSG("error tee_supp_fs_init");
-		exit(EXIT_FAILURE);
-	}
-
-	if (sql_fs_init() != 0) {
-		EMSG("sql_fs_init() failed ");
 		exit(EXIT_FAILURE);
 	}
 

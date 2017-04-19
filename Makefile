@@ -16,12 +16,7 @@ BINDIR ?= /bin
 LIBDIR ?= /lib
 INCLUDEDIR ?= /include
 
-CFG_SQL_FS ?= n
 CFG_TA_GPROF_SUPPORT ?= n
-
-ifeq ($(CFG_SQL_FS),y)
-BUILD-LIBSQLFS = build-libsqlfs
-endif
 
 .PHONY: all build build-libteec install copy_export \
 	clean cscope clean-cscope \
@@ -36,7 +31,7 @@ build-libteec:
 	@echo "Building libteec.so"
 	@$(MAKE) --directory=libteec --no-print-directory --no-builtin-variables
 
-build-tee-supplicant: build-libteec $(BUILD-LIBSQLFS)
+build-tee-supplicant: build-libteec
 	@echo "Building tee-supplicant"
 	$(MAKE) --directory=tee-supplicant  --no-print-directory --no-builtin-variables
 
@@ -129,30 +124,5 @@ distclean: clean
 copy_export: build
 	mkdir -p $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(INCLUDEDIR)
 	cp ${O}/libteec/libteec.so* $(DESTDIR)$(LIBDIR)
-	if [ "$(BUILD-LIBSQLFS)" ]; then cp ${O}/libsqlfs/libsqlfs.so* $(DESTDIR)$(LIBDIR); fi
 	cp ${O}/tee-supplicant/tee-supplicant $(DESTDIR)$(BINDIR)
 	cp public/*.h $(DESTDIR)$(INCLUDEDIR)
-
-ifeq ($(CFG_SQL_FS),y)
-
-.PHONY: build-libsqlite3 build-libsqlfs
-
-build: build-libsqlite3 build-libsqlfs
-
-clean: clean-libsqlite3 clean-libsqlfs
-
-build-libsqlite3:
-	@echo "Building in libsqlite3"
-	@$(MAKE) --directory=libsqlite3 --no-print-directory --no-builtin-variables
-
-clean-libsqlite3:
-	@$(MAKE) --directory=libsqlite3 --no-print-directory clean
-
-build-libsqlfs: build-libsqlite3
-	@echo "Building in libsqlfs"
-	@$(MAKE) --directory=libsqlfs --no-print-directory --no-builtin-variables
-
-clean-libsqlfs:
-	@$(MAKE) --directory=libsqlfs --no-print-directory clean
-
-endif
