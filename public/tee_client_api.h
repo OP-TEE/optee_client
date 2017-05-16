@@ -40,10 +40,11 @@
 
 /**
  * Defines the maximum size of a single shared memory block, in bytes, of both
- * API allocated and API registered memory. The size is currently set to
- * 512 * kB (512 * 1024).
+ * API allocated and API registered memory. There is no good value to put here
+ * (limits depend on specific config used), so this define does not provide any
+ * restriction in this implementation.
  */
-#define TEEC_CONFIG_SHAREDMEM_MAX_SIZE 0x8000
+#define TEEC_CONFIG_SHAREDMEM_MAX_SIZE ULONG_MAX
 
 /**
  * Flag constants indicating the type of parameters encoded inside the
