@@ -340,7 +340,7 @@ static void teec_post_process_whole(TEEC_RegisteredMemoryReference *memref,
 		 * the shadow buffer into the real buffer now that we've
 		 * returned from secure world.
 		 */
-		if (shm->shadow_buffer && param->u.memref.size <= memref->size)
+		if (shm->shadow_buffer && param->u.memref.size <= shm->size)
 			memcpy(shm->buffer, shm->shadow_buffer,
 			       param->u.memref.size);
 
