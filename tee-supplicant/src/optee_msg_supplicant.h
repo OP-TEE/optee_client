@@ -43,13 +43,6 @@
  */
 #define OPTEE_MSG_RPC_CMD_FS		2
 
-/* Was OPTEE_MSG_RPC_CMD_SQL_FS, which isn't supported any longer */
-#define OPTEE_MSG_RPC_CMD_SQL_FS_RESERVED	8
-
-/*
- * Values 3-7 are reserved in optee_msg.h for use by the kernel driver
- */
-
 /*
  * Define protocol for messages with .cmd == OPTEE_MSG_RPC_CMD_FS and first
  * parameter has the attribute OPTEE_MSG_ATTR_TYPE_VALUE_INPUT.
@@ -158,6 +151,27 @@
 /*
  * End of definitions for messages with .cmd == OPTEE_MSG_RPC_CMD_FS
  */
+
+/*
+ * Command Ids 3, 4 and 5 of OPTEE_MSG_RPC_CMD_xxx macros are reserved for use
+ * by the kernel driver.
+ */
+
+/*
+ * Shared memory allocation
+ */
+#define OPTEE_MSG_RPC_CMD_SHM_ALLOC	6
+#define OPTEE_MSG_RPC_CMD_SHM_FREE	7
+
+/*
+ * Was OPTEE_MSG_RPC_CMD_SQL_FS, which isn't supported any longer
+ */
+#define OPTEE_MSG_RPC_CMD_SQL_FS_RESERVED	8
+
+/*
+ * GPROF support management commands
+ */
+#define OPTEE_MSG_RPC_CMD_GPROF		9
 
 /*
  * Socket commands
