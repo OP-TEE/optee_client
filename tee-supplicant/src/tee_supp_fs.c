@@ -174,7 +174,7 @@ static TEEC_Result ree_fs_new_create(size_t num_params,
 	strncpy(abs_dir, abs_filename, sizeof(abs_dir));
 	abs_dir[sizeof(abs_dir) - 1] = '\0';
 	d = dirname(abs_dir);
-	if (!mkdir(d, S_IRUSR | S_IWUSR | S_IXUSR)) {
+	if (!mkdir(d, 0700)) {
 		fd = open_wrapper(abs_filename, flags);
 		if (fd >= 0)
 			goto out;
@@ -190,14 +190,14 @@ static TEEC_Result ree_fs_new_create(size_t num_params,
 
 	/* Parent directory for file missing, try to make it */
 	d = dirname(d);
-	if (mkdir(d, S_IRUSR | S_IWUSR | S_IXUSR))
+	if (mkdir(d, 0700))
 		return TEEC_ERROR_GENERIC;
 
 	/* Try to make directory for file again */
 	strncpy(abs_dir, abs_filename, sizeof(abs_dir));
 	abs_dir[sizeof(abs_dir) - 1] = '\0';
 	d = dirname(abs_dir);
-	if (mkdir(d, S_IRUSR | S_IWUSR | S_IXUSR)) {
+	if (mkdir(d, 0700)) {
 		d = dirname(d);
 		rmdir(d);
 		return TEEC_ERROR_GENERIC;
