@@ -65,13 +65,6 @@
 #define RPC_BUF_SIZE	(sizeof(struct tee_iocl_supp_send_arg) + \
 			 RPC_NUM_PARAMS * sizeof(struct tee_ioctl_param))
 
-#define RPC_CMD_LOAD_TA		0
-#define RPC_CMD_RPMB		1
-#define RPC_CMD_FS		2
-#define RPC_CMD_SHM_ALLOC	6
-#define RPC_CMD_SHM_FREE	7
-#define RPC_CMD_GPROF		9
-
 union tee_rpc_invoke {
 	uint64_t buf[(RPC_BUF_SIZE - 1) / sizeof(uint64_t) + 1];
 	struct tee_iocl_supp_recv_arg recv;
@@ -525,22 +518,22 @@ static bool process_one_request(struct thread_arg *arg)
 		return false;
 
 	switch (func) {
-	case RPC_CMD_LOAD_TA:
+	case OPTEE_MSG_RPC_CMD_LOAD_TA:
 		ret = load_ta(num_params, params);
 		break;
-	case RPC_CMD_FS:
+	case OPTEE_MSG_RPC_CMD_FS:
 		ret = tee_supp_fs_process(num_params, params);
 		break;
-	case RPC_CMD_RPMB:
+	case OPTEE_MSG_RPC_CMD_RPMB:
 		ret = process_rpmb(num_params, params);
 		break;
-	case RPC_CMD_SHM_ALLOC:
+	case OPTEE_MSG_RPC_CMD_SHM_ALLOC:
 		ret = process_alloc(arg->fd, num_params, params);
 		break;
-	case RPC_CMD_SHM_FREE:
+	case OPTEE_MSG_RPC_CMD_SHM_FREE:
 		ret = process_free(num_params, params);
 		break;
-	case RPC_CMD_GPROF:
+	case OPTEE_MSG_RPC_CMD_GPROF:
 		ret = gprof_process(num_params, params);
 		break;
 	case OPTEE_MSG_RPC_CMD_SOCKET:
