@@ -78,6 +78,11 @@
  *                             behaviors of TEEC_MEMREF_TEMP_INPUT and
  *                             TEEC_MEMREF_TEMP_OUTPUT apply.
  *
+ * TEEC_MEMREF_SECURE          Memref relates to a secure buffer. Cpu must
+ *                             not attempt to access to the buffer, not even
+ *                             map it. Private field 'id' of structure
+ *                             TEEC_SharedMemory stores a dmabuf file handle.
+ *
  * TEEC_MEMREF_WHOLE           The Parameter is a Registered Memory Reference
  *                             that refers to the entirety of its parent Shared
  *                             Memory block. The parameter structure is a
@@ -105,6 +110,7 @@
 #define TEEC_VALUE_INPUT            0x00000001
 #define TEEC_VALUE_OUTPUT           0x00000002
 #define TEEC_VALUE_INOUT            0x00000003
+#define TEEC_MEMREF_SECURE          0x00000004
 #define TEEC_MEMREF_TEMP_INPUT      0x00000005
 #define TEEC_MEMREF_TEMP_OUTPUT     0x00000006
 #define TEEC_MEMREF_TEMP_INOUT      0x00000007
@@ -123,9 +129,12 @@
  *                  application to the Trusted Application.
  * TEEC_MEM_OUTPUT  The Shared Memory can carry data from the Trusted
  *                  Application to the client application.
+ * TEEC_MEM_SECURE  The referenced memory is a secure buffer.
+ *                  TEE connection is not expected to access memory.
  */
-#define TEEC_MEM_INPUT   0x00000001
-#define TEEC_MEM_OUTPUT  0x00000002
+#define TEEC_MEM_INPUT         0x00000001
+#define TEEC_MEM_OUTPUT        0x00000002
+#define TEEC_MEM_SECURE        0x00000004
 
 /**
  * Return values. Type is TEEC_Result
