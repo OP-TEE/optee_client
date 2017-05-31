@@ -21,11 +21,16 @@ ifneq ($(CFG_TEE_CLIENT_LOG_FILE),)
 LOCAL_CFLAGS += -DTEEC_LOG_FILE=$(CFG_TEE_CLIENT_LOG_FILE)
 endif
 
+ifeq ($(CFG_TEE_BENCHMARK),y)
+LOCAL_CFLAGS += -DCFG_TEE_BENCHMARK
+endif
+
 LOCAL_CFLAGS += -DDEBUGLEVEL_$(CFG_TEE_CLIENT_LOG_LEVEL)
 LOCAL_CFLAGS += -DBINARY_PREFIX=\"TEEC\"
 
 LOCAL_SRC_FILES := libteec/src/tee_client_api.c\
-                  libteec/src/teec_trace.c
+                   libteec/src/teec_benchmark.c \
+                   libteec/src/teec_trace.c
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/public \
                     $(LOCAL_PATH)/libteec/include \
