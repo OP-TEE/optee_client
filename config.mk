@@ -32,6 +32,11 @@ CFG_TEE_SUPP_LOG_FILE ?= \"/data/teesupp.log\"
 # The location of the client library file.
 CFG_TEE_CLIENT_LOAD_PATH ?= /system/lib
 
+# CFG_TEE_FS_PARENT_PATH
+# Path to folder that will contain TEE filesystem.
+# This folder should be created before tee-supplicant start.
+CFG_TEE_FS_PARENT_PATH ?= /data
+
 # CFG_TA_TEST_PATH
 # Enable the tee test path.  When enabled, the supplicant will try
 # loading from a debug path before the regular path.  This allows test
