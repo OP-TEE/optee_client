@@ -34,6 +34,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <teec_trace.h>
@@ -46,13 +47,12 @@
 #endif
 #include <linux/tee.h>
 
-/* Path to all secure storage files. */
-#define TEE_FS_SUBPATH "/data"
-#define TEE_FS_PATH "/data/tee/"
-
 #ifndef PATH_MAX
 #define PATH_MAX 255
 #endif
+
+/* Path to all secure storage files. */
+static char tee_fs_root[PATH_MAX];
 
 #define TEE_FS_FILENAME_MAX_LENGTH 150
 
@@ -65,10 +65,10 @@ static size_t tee_fs_get_absolute_filename(char *file, char *out,
 {
 	int s;
 
-	if (!file || !out || (out_size <= sizeof(TEE_FS_PATH)))
+	if (!file || !out || (out_size <= strlen(tee_fs_root) + 1))
 		return 0;
 
-	s = snprintf(out, out_size, "%s%s", TEE_FS_PATH, file);
+	s = snprintf(out, out_size, "%s%s", tee_fs_root, file);
 	if (s < 0 || (size_t)s >= out_size)
 		return 0;
 
@@ -76,14 +76,56 @@ static size_t tee_fs_get_absolute_filename(char *file, char *out,
 	return (size_t)s;
 }
 
-int tee_supp_fs_init(void)
+static int do_mkdir(const char *path, mode_t mode)
 {
 	struct stat st;
 
-	mkdir(TEE_FS_SUBPATH, 0700);
-	mkdir(TEE_FS_PATH, 0700);
-	if (stat(TEE_FS_PATH, &st) != 0)
+	if (mkdir(path, mode) != 0 && errno != EEXIST)
 		return -1;
+
+	if (stat(path, &st) != 0 && !S_ISDIR(st.st_mode))
+		return -1;
+
+	return 0;
+}
+
+static int mkpath(const char *path, mode_t mode)
+{
+	int status = 0;
+	char *subpath = strdup(path);
+	char *prev = subpath;
+	char *curr;
+
+	while (status == 0 && (curr = strchr(prev, '/')) != 0) {
+		/*
+		 * Check for root or double slash
+		 */
+		if (curr != prev) {
+			*curr = '\0';
+			status = do_mkdir(subpath, mode);
+			*curr = '/';
+		}
+		prev = curr + 1;
+	}
+	if (status == 0)
+		status = do_mkdir(path, mode);
+
+	free(subpath);
+	return status;
+}
+
+int tee_supp_fs_init(void)
+{
+	size_t n;
+	mode_t mode = 0700;
+
+	n = snprintf(tee_fs_root, sizeof(tee_fs_root), "%s/tee/", TEE_FS_PARENT_PATH);
+	if (n >= sizeof(tee_fs_root))
+		return -1;
+
+	if (mkpath(tee_fs_root, mode) != 0)
+		return -1;
+
 	return 0;
 }
 
