@@ -29,24 +29,24 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <pthread.h>
-#include <string.h>
-#include <stdio.h>
 #include <stdbool.h>
-#include <sys/types.h>
+#include <stdio.h>
+#include <string.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <tee_client_api.h>
+#include <sys/types.h>
 #include <tee_client_api_extensions.h>
+#include <tee_client_api.h>
+#include <teec_trace.h>
 #include <unistd.h>
 
 #ifndef __aligned
 #define __aligned(x) __attribute__((__aligned__(x)))
 #endif
 #include <linux/tee.h>
-#include <linux/teec_benchmark.h>
 
-#include <teec_trace.h>
+#include "teec_benchmark.h"
 
 /* How many device sequence numbers will be tried before giving up */
 #define TEEC_MAX_DEV_SEQ	10

@@ -28,9 +28,10 @@
 #ifndef __TEEC_BENCHMARK_H
 #define __TEEC_BENCHMARK_H
 
-#include <stdbool.h>
-#include <tee_bench.h>
-
-bool benchmark_check_mode(void);
+#ifdef CFG_TEE_BENCHMARK
 void bm_timestamp(void);
+#else
+static inline void bm_timestamp(void) {}
+#endif
+
 #endif /* __TEEC_BENCHMARK_H */

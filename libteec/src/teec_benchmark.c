@@ -26,20 +26,21 @@
  */
 #include <err.h>
 #include <fcntl.h>
-#include <linux/teec_benchmark.h>
 #include <math.h>
 #include <pthread.h>
 #include <sched.h>
 #include <stdbool.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <tee_bench.h>
 #include <tee_client_api.h>
 #include <unistd.h>
 
-#ifdef CFG_TEE_BENCHMARK
+#include "teec_benchmark.h"
+
 struct tee_ts_global *bench_ts_global;
 static const TEEC_UUID pta_benchmark_uuid = PTA_BENCHMARK_UUID;
 
@@ -139,7 +140,7 @@ static void *mmap_paddr(intptr_t paddr, uint64_t size)
 }
 
 /* check if we are in benchmark mode */
-bool benchmark_check_mode(void)
+static bool benchmark_check_mode(void)
 {
 	uint64_t ts_buf_raw = 0;
 	uint64_t ts_buf_size = 0;
@@ -211,7 +212,4 @@ void bm_timestamp(void)
 error:
 	pthread_mutex_unlock(&teec_bench_mu);
 }
-#else /* CFG_TEE_BENCHMARK */
-void bm_timestamp(void) {}
-#endif /* CFG_TEE_BENCHMARK */
 
