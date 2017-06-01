@@ -16,8 +16,10 @@ LIB_MAJOR	:= $(LIB_NAME).$(MAJOR_VERSION)
 LIB_MAJ_MIN	:= $(LIB_NAME).$(MAJOR_VERSION).$(MINOR_VERSION)
 
 TEEC_SRCS	:= tee_client_api.c \
-			teec_trace.c \
-			teec_benchmark.c
+		   teec_trace.c
+ifeq ($(CFG_TEE_BENCHMARK),y)
+TEEC_SRCS	+= teec_benchmark.c
+endif
 
 TEEC_SRC_DIR	:= src
 TEEC_OBJ_DIR	:= $(OUT_DIR)
