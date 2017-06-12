@@ -125,6 +125,6 @@ distclean: clean
 
 copy_export: build
 	mkdir -p $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(INCLUDEDIR)
-	cp ${O}/libteec/libteec.so* $(DESTDIR)$(LIBDIR)
+	cp -a ${O}/libteec/libteec.so* $(DESTDIR)$(LIBDIR)
 	cp ${O}/tee-supplicant/tee-supplicant $(DESTDIR)$(BINDIR)
 	cp public/*.h $(DESTDIR)$(INCLUDEDIR)
