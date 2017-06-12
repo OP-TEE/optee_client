@@ -40,8 +40,8 @@ TEEC_LFLAGS    := -lpthread
 TEEC_LIBRARY	:= $(OUT_DIR)/$(LIB_MAJ_MIN)
 
 libteec: $(TEEC_LIBRARY)
-	$(VPREFIX)ln -sf $(TEEC_LIBRARY) $(OUT_DIR)/$(LIB_MAJOR)
-	$(VPREFIX)ln -sf $(OUT_DIR)/$(LIB_MAJOR) $(OUT_DIR)/$(LIB_NAME)
+	$(VPREFIX)ln -sf $(LIB_MAJ_MIN) $(OUT_DIR)/$(LIB_MAJOR)
+	$(VPREFIX)ln -sf $(LIB_MAJOR) $(OUT_DIR)/$(LIB_NAME)
 
 $(TEEC_LIBRARY): $(TEEC_OBJS)
 	@echo "  LINK    $@"
