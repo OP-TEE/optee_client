@@ -36,7 +36,7 @@ ifeq ($(CFG_TEE_BENCHMARK),y)
 TEEC_CFLAGS	+= -DCFG_TEE_BENCHMARK
 endif
 
-TEEC_LFLAGS    := -lpthread
+TEEC_LFLAGS    := $(LDFLAGS) -lpthread
 TEEC_LIBRARY	:= $(OUT_DIR)/$(LIB_MAJ_MIN)
 
 libteec: $(TEEC_LIBRARY) $(OUT_DIR)/libteec.a
