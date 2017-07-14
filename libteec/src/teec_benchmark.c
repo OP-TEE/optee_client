@@ -121,7 +121,7 @@ static void *mmap_paddr(intptr_t paddr, uint64_t size)
 	off_t page_addr;
 	intptr_t *hw_addr = (intptr_t *)paddr;
 
-	devmem = open("/dev/mem", O_RDWR | O_SYNC);
+	devmem = open("/dev/mem", O_RDWR);
 	if (!devmem)
 		return NULL;
 
