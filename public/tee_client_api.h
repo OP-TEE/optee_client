@@ -29,6 +29,10 @@
 #ifndef TEE_CLIENT_API_H
 #define TEE_CLIENT_API_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stddef.h>
 #include <limits.h>
@@ -534,5 +538,9 @@ void TEEC_ReleaseSharedMemory(TEEC_SharedMemory *sharedMemory);
  *                  or invoke.
  */
 void TEEC_RequestCancellation(TEEC_Operation *operation);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -26,6 +26,11 @@
  */
 #ifndef TEEC_TRACE_H
 #define TEEC_TRACE_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <string.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -134,5 +139,9 @@ int _dprintf(const char *function, int flen, int line, int level,
  * @return void
  */
 void dump_buffer(const char *bname, const uint8_t *buffer, size_t blen);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
