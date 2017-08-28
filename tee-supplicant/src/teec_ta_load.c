@@ -36,10 +36,6 @@
 #include <teec_trace.h>
 #include <teec_ta_load.h>
 
-#ifndef TEEC_LOAD_PATH
-#define TEEC_LOAD_PATH "/lib"
-#endif
-
 /*
  * Attempt to first load TAs from a writable directory.  This is
  * intended for testing (xtest 1008, load_corrupt_ta specifically),
