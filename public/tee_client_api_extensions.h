@@ -29,6 +29,10 @@
 
 #include <tee_client_api.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * TEEC_RegisterMemoryFileDescriptor() - Register a block of existing memory as
  * a shared block within the scope of the specified context.
@@ -45,5 +49,9 @@
 TEEC_Result TEEC_RegisterSharedMemoryFileDescriptor(TEEC_Context *context,
 						    TEEC_SharedMemory *sharedMem,
 						    int fd);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* TEE_CLIENT_API_EXTENSIONS_H */
