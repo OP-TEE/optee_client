@@ -3,6 +3,9 @@
 ################################################################################
 LOCAL_PATH := $(call my-dir)
 
+# set CFG_TEE_CLIENT_LOAD_PATH before include config.mk
+CFG_TEE_CLIENT_LOAD_PATH ?= /system/lib
+
 ################################################################################
 # Include optee-client common config and flags                                 #
 ################################################################################
