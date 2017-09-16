@@ -39,13 +39,8 @@
 #define BENCHMARK_CMD_GET_MEMREF		BENCHMARK_CMD(2)
 #define BENCHMARK_CMD_UNREGISTER		BENCHMARK_CMD(3)
 
-/*
- * Cycle count divider is enabled (in PMCR),
- * CCNT value is incremented every 64th clock cycle
- */
-#define TEE_BENCH_DIVIDER		64
 /* max amount of timestamps per buffer */
-#define TEE_BENCH_MAX_STAMPS	32
+#define TEE_BENCH_MAX_STAMPS	128
 #define TEE_BENCH_MAX_MASK		(TEE_BENCH_MAX_STAMPS - 1)
 
 /* OP-TEE susbsystems ids */
@@ -72,6 +67,7 @@ struct tee_ts_cpu_buf {
 /* memory layout for shared memory, where timestamps will be stored */
 struct tee_ts_global {
 	uint64_t cores;
+	uint64_t freq;
 	struct tee_ts_cpu_buf cpu_buf[];
 };
 #endif /* TEE_BENCH_H */

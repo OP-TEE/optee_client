@@ -54,11 +54,11 @@ static inline uint64_t read_ccounter(void)
 {
 	uint64_t ccounter = 0;
 #ifdef __aarch64__
-	asm volatile("mrs %0, PMCCNTR_EL0" : "=r"(ccounter));
+	asm volatile("mrs %0, cntvct_el0" : "=r" (ccounter));
 #else
-	asm volatile("mrc p15, 0, %0, c9, c13, 0" : "=r"(ccounter));
+	asm volatile("mrrc p15, 1, %Q0, %R0, c14" : "=r" (ccounter));
 #endif
-	return ccounter * TEE_BENCH_DIVIDER;
+	return ccounter;
 }
 
 static TEEC_Result benchmark_pta_open(void)
@@ -163,14 +163,11 @@ static bool benchmark_check_mode(void)
 /* Adding timestamp to buffer */
 void bm_timestamp(void)
 {
-	cpu_set_t cpu_set_old;
-	cpu_set_t cpu_set_tmp;
 	struct tee_ts_cpu_buf *cpu_buf;
 	struct tee_time_st ts_data;
 	uint64_t ts_i;
 	void *ret_addr;
 	uint32_t cur_cpu;
-	int ret;
 
 	if (pthread_mutex_trylock(&teec_bench_mu))
 		return;
@@ -178,22 +175,11 @@ void bm_timestamp(void)
 	if (!benchmark_check_mode())
 		goto error;
 
-	CPU_ZERO(&cpu_set_old);
-	ret = sched_getaffinity(0, sizeof(cpu_set_old), &cpu_set_old);
-	if (ret)
-		goto error;
-
 	/* stick to the same core while putting timestamp */
 	cur_cpu = sched_getcpu();
-	CPU_ZERO(&cpu_set_tmp);
-	CPU_SET(cur_cpu, &cpu_set_tmp);
-	ret = sched_setaffinity(0, sizeof(cpu_set_tmp), &cpu_set_tmp);
-	if (ret)
-		goto error;
 
 	/* fill timestamp data */
 	if (cur_cpu >= bench_ts_global->cores) {
-		ret = sched_setaffinity(0, sizeof(cpu_set_old), &cpu_set_old);
 		goto error;
 	}
 
@@ -205,9 +191,6 @@ void bm_timestamp(void)
 	ts_data.addr = (uintptr_t)ret_addr;
 	ts_data.src = TEE_BENCH_CLIENT;
 	cpu_buf->stamps[ts_i & TEE_BENCH_MAX_MASK] = ts_data;
-
-	/* set back affinity mask */
-	sched_setaffinity(0, sizeof(cpu_set_old), &cpu_set_old);
 
 error:
 	pthread_mutex_unlock(&teec_bench_mu);
