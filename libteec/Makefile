@@ -39,7 +39,7 @@ endif
 TEEC_LFLAGS    := -lpthread
 TEEC_LIBRARY	:= $(OUT_DIR)/$(LIB_MAJ_MIN)
 
-libteec: $(TEEC_LIBRARY)
+libteec: $(TEEC_LIBRARY) $(OUT_DIR)/libteec.a
 	$(VPREFIX)ln -sf $(LIB_MAJ_MIN) $(OUT_DIR)/$(LIB_MAJOR)
 	$(VPREFIX)ln -sf $(LIB_MAJOR) $(OUT_DIR)/$(LIB_NAME)
 
@@ -47,6 +47,10 @@ $(TEEC_LIBRARY): $(TEEC_OBJS)
 	@echo "  LINK    $@"
 	$(VPREFIX)$(CC) -shared -Wl,-soname,$(LIB_MAJ_MIN) $(TEEC_LFLAGS) -o $@ $+
 	@echo ""
+
+$(OUT_DIR)/libteec.a: $(TEEC_OBJS)
+	@echo "  AR      $@"
+	$(VPREFIX)$(AR) rcs $@ $+
 
 $(TEEC_OBJ_DIR)/%.o: ${TEEC_SRC_DIR}/%.c
 	$(VPREFIX)mkdir -p $(TEEC_OBJ_DIR)
@@ -58,4 +62,5 @@ $(TEEC_OBJ_DIR)/%.o: ${TEEC_SRC_DIR}/%.c
 ################################################################################
 clean:
 	$(RM) $(TEEC_OBJS) $(TEEC_LIBRARY) $(OUT_DIR)/$(LIB_MAJOR) $(OUT_DIR)/$(LIB_NAME)
+	$(RM) $(OUT_DIR)/libteec.a
 	$(call rmdir,$(OUT_DIR))
