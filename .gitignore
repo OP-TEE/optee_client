@@ -7,3 +7,8 @@ Debug
 .project
 /libs
 /obj
+aclocal.m4
+autom4te.cache
+Makefile.in
+Makefile
+optee_client.pc

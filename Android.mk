@@ -3,13 +3,10 @@
 ################################################################################
 LOCAL_PATH := $(call my-dir)
 
-# set CFG_TEE_CLIENT_LOAD_PATH before include config.mk
-CFG_TEE_CLIENT_LOAD_PATH ?= /system/lib
-
 ################################################################################
 # Include optee-client common config and flags                                 #
 ################################################################################
-include $(LOCAL_PATH)/config.mk
+include $(LOCAL_PATH)/android_config.mk
 include $(LOCAL_PATH)/android_flags.mk
 
 optee_CFLAGS = $(CFLAGS)
