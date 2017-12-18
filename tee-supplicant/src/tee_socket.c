@@ -379,7 +379,7 @@ static TEEC_Result poll_with_timeout(struct pollfd *pfd, nfds_t nfds,
 				     uint32_t timeout)
 {
 	struct timespec now;
-	struct timespec until;
+	struct timespec until = { 0, 0 }; /* gcc warning */
 	int to = 0;
 	int r;
 
