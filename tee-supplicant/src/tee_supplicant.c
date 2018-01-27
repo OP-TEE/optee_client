@@ -307,8 +307,8 @@ static struct tee_shm *alloc_shm(int fd, size_t size)
 	shm->p = mmap(NULL, data.size, PROT_READ | PROT_WRITE, MAP_SHARED,
 		      shm->fd, 0);
 	if (shm->p == (void *)MAP_FAILED) {
-		free(shm);
 		close(shm->fd);
+		free(shm);
 		return NULL;
 	}
 
