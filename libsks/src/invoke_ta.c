@@ -173,6 +173,7 @@ CK_RV ck_invoke_ta(struct sks_invoke *sks_ctx,
 	TEEC_SharedMemory *ctrl_shm = ctrl;
 	TEEC_SharedMemory *in_shm = in;
 	TEEC_SharedMemory *out_shm = out;
+	uint32_t sks_rc;
 
 	memset(&op, 0, sizeof(op));
 
@@ -182,7 +183,7 @@ CK_RV ck_invoke_ta(struct sks_invoke *sks_ctx,
 	if (ctrl && ctrl_sz) {
 		op.params[0].tmpref.buffer = ctrl;
 		op.params[0].tmpref.size = ctrl_sz;
-		op.paramTypes |= TEEC_PARAM_TYPES(TEEC_MEMREF_TEMP_INPUT,
+		op.paramTypes |= TEEC_PARAM_TYPES(TEEC_MEMREF_TEMP_INOUT,
 						  0, 0, 0);
 	}
 	if (ctrl && !ctrl_sz) {
@@ -223,23 +224,26 @@ CK_RV ck_invoke_ta(struct sks_invoke *sks_ctx,
 	 * Too short buffers are treated as positive errors.
 	 */
 	res = TEEC_InvokeCommand(teec_sess(ctx), command, &op, &origin);
-	switch (res) {
-	case TEEC_SUCCESS:
-	case TEEC_ERROR_SHORT_BUFFER:
-		break;
-	case TEEC_ERROR_OUT_OF_MEMORY:
-		return CKR_DEVICE_MEMORY;
-	default:
-		return CKR_DEVICE_ERROR;
+
+	if (res) {
+		if (res == TEEC_ERROR_SHORT_BUFFER && out_sz)
+			*out_sz = op.params[2].tmpref.size;
+
+		return teec2ck_rv(res);
 	}
 
-	if (out_sz)
+	/* Get SKS return value from ctrl buffer, if none we expect success */
+	if (ctrl &&
+	    ((ctrl_sz && op.params[0].tmpref.size == sizeof(uint32_t)) ||
+	    (!ctrl_sz && op.params[0].memref.size == sizeof(uint32_t))))
+		memcpy(&sks_rc, ctrl, sizeof(uint32_t));
+	else
+		sks_rc = SKS_OK;
+
+	if (out_sz && (sks_rc == SKS_OK || sks_rc == SKS_SHORT_BUFFER))
 		*out_sz = op.params[2].tmpref.size;
 
-	if (res == TEEC_ERROR_SHORT_BUFFER)
-		return CKR_BUFFER_TOO_SMALL;
-
-	return CKR_OK;
+	return sks2ck_rv(sks_rc);
 }
 
 void sks_invoke_terminate(void)
