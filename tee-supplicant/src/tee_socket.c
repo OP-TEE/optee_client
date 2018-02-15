@@ -548,7 +548,7 @@ static TEEC_Result sa_set_port(struct sockaddr *sa, socklen_t slen,
 	if (sa->sa_family == AF_INET) {
 		struct sockaddr_in *sain = (void *)sa;
 
-		if (slen < sizeof(*sain))
+		if (slen < (socklen_t)sizeof(*sain))
 			return TEEC_ERROR_BAD_PARAMETERS;
 		sain->sin_port = htons(port);
 
@@ -558,7 +558,7 @@ static TEEC_Result sa_set_port(struct sockaddr *sa, socklen_t slen,
 	if (sa->sa_family == AF_INET6) {
 		struct sockaddr_in6 *sain6 = (void *)sa;
 
-		if (slen < sizeof(*sain6))
+		if (slen < (socklen_t)sizeof(*sain6))
 			return TEEC_ERROR_BAD_PARAMETERS;
 		sain6->sin6_port = htons(port);
 
@@ -574,7 +574,7 @@ static TEEC_Result sa_get_port(struct sockaddr *sa, socklen_t slen,
 	if (sa->sa_family == AF_INET) {
 		struct sockaddr_in *sain = (void *)sa;
 
-		if (slen < sizeof(*sain))
+		if (slen < (socklen_t)sizeof(*sain))
 			return TEEC_ERROR_BAD_PARAMETERS;
 		*port = ntohs(sain->sin_port);
 
@@ -584,7 +584,7 @@ static TEEC_Result sa_get_port(struct sockaddr *sa, socklen_t slen,
 	if (sa->sa_family == AF_INET6) {
 		struct sockaddr_in6 *sain6 = (void *)sa;
 
-		if (slen < sizeof(*sain6))
+		if (slen < (socklen_t)sizeof(*sain6))
 			return TEEC_ERROR_BAD_PARAMETERS;
 		*port = ntohs(sain6->sin6_port);
 
