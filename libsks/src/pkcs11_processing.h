@@ -34,4 +34,10 @@ CK_RV ck_encdecrypt_final(CK_SESSION_HANDLE session,
 			  CK_ULONG_PTR out_len,
 			  int decrypt);
 
+CK_RV ck_generate_key(CK_SESSION_HANDLE session,
+		      CK_MECHANISM_PTR mechanism,
+		      CK_ATTRIBUTE_PTR attribs,
+		      CK_ULONG count,
+		      CK_OBJECT_HANDLE_PTR handle);
+
 #endif /*__PKCS11_PROCESSING_H*/
