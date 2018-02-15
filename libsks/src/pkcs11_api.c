@@ -5,6 +5,7 @@
  */
 
 #include <pkcs11.h>
+#include "invoke_ta.h"
 #include "local_utils.h"
 
 static int inited;
@@ -43,6 +44,7 @@ CK_RV C_Finalize(CK_VOID_PTR res)
 	(void)res;
 	SANITY_LIB_INIT;
 
+	sks_invoke_terminate();
 	inited = 0;
 
 	return CKR_OK;
