@@ -253,3 +253,70 @@ CK_RV sks_ck_token_mechanism_info(CK_SLOT_ID slot,
 	}
 	return rv;
 }
+
+/*
+ * TODO: with following code, the session identifier are abstracted by the SKS
+ * library. It could be better to let the TA provide the handle, so that
+ * several applications can see the same session identifiers.
+ */
+CK_RV sks_ck_open_session(CK_SLOT_ID slot,
+		          CK_FLAGS flags,
+		          CK_VOID_PTR cookie,
+		          CK_NOTIFY callback,
+		          CK_SESSION_HANDLE_PTR session)
+{
+	uint32_t ctrl[1] = { slot };
+	unsigned long cmd;
+	uint32_t handle;
+	size_t out_sz = sizeof(handle);
+	CK_RV rv;
+
+	if (cookie || callback) {
+		LOG_ERROR("C_OpenSession does not handle callback yet\n");
+		return CKR_FUNCTION_NOT_SUPPORTED;
+	}
+
+	if (flags & CKF_RW_SESSION)
+		cmd = SKS_CMD_CK_OPEN_RW_SESSION;
+	else
+		cmd = SKS_CMD_CK_OPEN_RO_SESSION;
+
+	rv = ck_invoke_ta(NULL, cmd, &ctrl, sizeof(ctrl),
+			  NULL, 0, &handle, &out_sz);
+	if (rv)
+		return rv;
+
+	*session = handle;
+
+	return CKR_OK;
+}
+
+CK_RV sks_ck_close_session(CK_SESSION_HANDLE session)
+{
+	uint32_t ctrl[1] = { (uint32_t)session };
+
+	return ck_invoke_ta(NULL, SKS_CMD_CK_CLOSE_SESSION,
+			    &ctrl, sizeof(ctrl), NULL, 0, NULL, NULL);
+}
+
+/*
+ * Scan all registered session handle by the lib
+ * and close all session related to the target slot.
+ */
+CK_RV sks_ck_close_all_sessions(CK_SLOT_ID slot)
+{
+	uint32_t ctrl[1] = { (uint32_t)slot };
+
+	return ck_invoke_ta(NULL, SKS_CMD_CK_CLOSE_ALL_SESSIONS,
+			    &ctrl, sizeof(ctrl), NULL, 0, NULL, NULL);
+}
+
+CK_RV sks_ck_get_session_info(CK_SESSION_HANDLE session,
+			      CK_SESSION_INFO_PTR info)
+{
+	uint32_t ctrl[1] = { (uint32_t)session };
+	size_t info_size = sizeof(CK_SESSION_INFO);
+
+	return ck_invoke_ta(NULL, SKS_CMD_CK_SESSION_INFO,
+			    &ctrl, sizeof(ctrl), NULL, 0, info, &info_size);
+}

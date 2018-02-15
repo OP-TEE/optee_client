@@ -30,4 +30,14 @@ CK_RV sks_ck_init_token(CK_SLOT_ID slot,
 			CK_ULONG pin_len,
 			CK_UTF8CHAR_PTR label);
 
+CK_RV sks_ck_open_session(CK_SLOT_ID slot,
+		          CK_FLAGS flags,
+		          CK_VOID_PTR cookie,
+		          CK_NOTIFY callback,
+		          CK_SESSION_HANDLE_PTR session);
+CK_RV sks_ck_close_session(CK_SESSION_HANDLE session);
+CK_RV sks_ck_close_all_sessions(CK_SLOT_ID slot);
+CK_RV sks_ck_get_session_info(CK_SESSION_HANDLE session,
+			      CK_SESSION_INFO_PTR info);
+
 #endif /*__PKCS11_TOKEN_H*/

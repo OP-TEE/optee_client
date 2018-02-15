@@ -25,6 +25,13 @@ static int inited;
 			return CKR_ARGUMENTS_BAD; \
 	} while (0)
 
+#define SANITY_SESSION_FLAGS(flags) \
+	do { \
+		if (flags & ~(CKF_RW_SESSION | \
+			      CKF_SERIAL_SESSION)) \
+			return CKR_ARGUMENTS_BAD; \
+	} while (0)
+
 #define REGISTER_CK_FUNCTION(_function)		._function = _function
 #define DO_NOT_REGISTER_CK_FUNCTION(_function)	._function = NULL
 
@@ -41,10 +48,10 @@ static const CK_FUNCTION_LIST libsks_function_list = {
 	REGISTER_CK_FUNCTION(C_InitToken),
 	DO_NOT_REGISTER_CK_FUNCTION(C_InitPIN),
 	DO_NOT_REGISTER_CK_FUNCTION(C_SetPIN),
-	DO_NOT_REGISTER_CK_FUNCTION(C_OpenSession),
-	DO_NOT_REGISTER_CK_FUNCTION(C_CloseSession),
-	DO_NOT_REGISTER_CK_FUNCTION(C_CloseAllSessions),
-	DO_NOT_REGISTER_CK_FUNCTION(C_GetSessionInfo),
+	REGISTER_CK_FUNCTION(C_OpenSession),
+	REGISTER_CK_FUNCTION(C_CloseSession),
+	REGISTER_CK_FUNCTION(C_CloseAllSessions),
+	REGISTER_CK_FUNCTION(C_GetSessionInfo),
 	DO_NOT_REGISTER_CK_FUNCTION(C_GetOperationState),
 	DO_NOT_REGISTER_CK_FUNCTION(C_SetOperationState),
 	DO_NOT_REGISTER_CK_FUNCTION(C_Login),
@@ -342,41 +349,103 @@ CK_RV C_OpenSession(CK_SLOT_ID slot,
 		    CK_NOTIFY callback,
 		    CK_SESSION_HANDLE_PTR session)
 {
-	(void)slot;
-	(void)flags;
-	(void)cookie;
-	(void)callback;
-	(void)session;
+	CK_RV rv;
+
 	SANITY_LIB_INIT;
+	SANITY_SESSION_FLAGS(flags);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	/* Specific mandated flag */
+	if (!(flags & CKF_SERIAL_SESSION))
+		return CKR_SESSION_PARALLEL_NOT_SUPPORTED;
 
+	rv = sks_ck_open_session(slot, flags, cookie, callback, session);
+
+	switch (rv) {
+	case CKR_CRYPTOKI_NOT_INITIALIZED:
+	case CKR_DEVICE_ERROR:
+	case CKR_DEVICE_MEMORY:
+	case CKR_DEVICE_REMOVED:
+	case CKR_FUNCTION_FAILED:
+	case CKR_GENERAL_ERROR:
+	case CKR_HOST_MEMORY:
+	case CKR_OK:
+	case CKR_SESSION_COUNT:
+	case CKR_SESSION_PARALLEL_NOT_SUPPORTED:
+	case CKR_SESSION_READ_WRITE_SO_EXISTS:
+	case CKR_SLOT_ID_INVALID:
+	case CKR_TOKEN_NOT_PRESENT:
+	case CKR_TOKEN_NOT_RECOGNIZED:
+	case CKR_TOKEN_WRITE_PROTECTED:
+	case CKR_ARGUMENTS_BAD:
+		break;
+	default:
+		ASSERT(rv);
+	}
+
+	return rv;
 }
 
 CK_RV C_CloseSession(CK_SESSION_HANDLE session)
 {
-	(void)session;
+	CK_RV rv;
+
 	SANITY_LIB_INIT;
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	rv = sks_ck_close_session(session);
+
+	switch (rv) {
+	case CKR_CRYPTOKI_NOT_INITIALIZED:
+	case CKR_DEVICE_ERROR:
+	case CKR_DEVICE_MEMORY:
+	case CKR_DEVICE_REMOVED:
+	case CKR_FUNCTION_FAILED:
+	case CKR_GENERAL_ERROR:
+	case CKR_HOST_MEMORY:
+	case CKR_OK:
+	case CKR_SESSION_CLOSED:
+	case CKR_SESSION_HANDLE_INVALID:
+		break;
+	default:
+		ASSERT(rv);
+	}
+
+	return rv;
 }
 
 CK_RV C_CloseAllSessions(CK_SLOT_ID slot)
 {
-	(void)slot;
+	CK_RV rv;
+
 	SANITY_LIB_INIT;
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	rv = sks_ck_close_all_sessions(slot);
+
+	switch (rv) {
+	case CKR_CRYPTOKI_NOT_INITIALIZED:
+	case CKR_DEVICE_ERROR:
+	case CKR_DEVICE_MEMORY:
+	case CKR_DEVICE_REMOVED:
+	case CKR_FUNCTION_FAILED:
+	case CKR_GENERAL_ERROR:
+	case CKR_HOST_MEMORY:
+	case CKR_OK:
+	case CKR_SLOT_ID_INVALID:
+	case CKR_TOKEN_NOT_PRESENT:
+		break;
+	default:
+		ASSERT(rv);
+	}
+
+	return rv;
 }
 
 CK_RV C_GetSessionInfo(CK_SESSION_HANDLE session,
 		       CK_SESSION_INFO_PTR info)
 {
-	(void)session;
-	(void)info;
 	SANITY_LIB_INIT;
+	SANITY_NONNULL_PTR(info);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	return sks_ck_get_session_info(session, info);
 }
 
 CK_RV C_InitPIN(CK_SESSION_HANDLE session,
