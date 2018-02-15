@@ -4,7 +4,11 @@
  * IMPLIED OR EXPRESS WARRANTY; there is no warranty of MERCHANTABILITY, FITNESS FOR A
  * PARTICULAR PURPOSE or NONINFRINGEMENT of the rights of others.
  */
-        
+
+/*
+ * Linaro/2017: local changes to define some directives required by pkcs11.h.
+ */
+
 /* Latest version of the specification:
  * http://docs.oasis-open.org/pkcs11/pkcs11-base/v2.40/pkcs11-base-v2.40.html
  */
@@ -181,6 +185,14 @@ extern "C" {
  * #endif
  */
 
+/* We go the UNIX way */
+#define CK_DECLARE_FUNCTION(returnType, name)		returnType name
+#define CK_DECLARE_FUNCTION_POINTER(returnType, name)	returnType (* name)
+#define CK_CALLBACK_FUNCTION(returnType, name)		returnType (* name)
+#define CK_PTR	*
+#ifndef NULL_PTR
+#define NULL_PTR 0
+#endif
 
 /* All the various Cryptoki types and #define'd values are in the
  * file pkcs11t.h.
