@@ -25,4 +25,9 @@ CK_RV sks_ck_token_mechanism_info(CK_SLOT_ID slot,
 				  CK_MECHANISM_TYPE type,
 				  CK_MECHANISM_INFO_PTR info);
 
+CK_RV sks_ck_init_token(CK_SLOT_ID slot,
+			CK_UTF8CHAR_PTR pin,
+			CK_ULONG pin_len,
+			CK_UTF8CHAR_PTR label);
+
 #endif /*__PKCS11_TOKEN_H*/

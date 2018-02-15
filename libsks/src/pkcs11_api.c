@@ -38,7 +38,7 @@ static const CK_FUNCTION_LIST libsks_function_list = {
 	REGISTER_CK_FUNCTION(C_GetTokenInfo),
 	REGISTER_CK_FUNCTION(C_GetMechanismList),
 	REGISTER_CK_FUNCTION(C_GetMechanismInfo),
-	DO_NOT_REGISTER_CK_FUNCTION(C_InitToken),
+	REGISTER_CK_FUNCTION(C_InitToken),
 	DO_NOT_REGISTER_CK_FUNCTION(C_InitPIN),
 	DO_NOT_REGISTER_CK_FUNCTION(C_SetPIN),
 	DO_NOT_REGISTER_CK_FUNCTION(C_OpenSession),
@@ -210,13 +210,36 @@ CK_RV C_InitToken(CK_SLOT_ID slot,
 		  CK_ULONG pin_len,
 		  CK_UTF8CHAR_PTR label)
 {
-	(void)slot;
-	(void)pin;
-	(void)pin_len;
-	(void)label;
+	CK_RV rv;
+
 	SANITY_LIB_INIT;
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	rv = sks_ck_init_token(slot, pin, pin_len, label);
+
+	switch (rv) {
+	case CKR_ARGUMENTS_BAD:
+	case CKR_CRYPTOKI_NOT_INITIALIZED:
+	case CKR_DEVICE_ERROR:
+	case CKR_DEVICE_MEMORY:
+	case CKR_DEVICE_REMOVED:
+	case CKR_FUNCTION_CANCELED:
+	case CKR_FUNCTION_FAILED:
+	case CKR_GENERAL_ERROR:
+	case CKR_HOST_MEMORY:
+	case CKR_OK:
+	case CKR_PIN_INCORRECT:
+	case CKR_PIN_LOCKED:
+	case CKR_SESSION_EXISTS:
+	case CKR_SLOT_ID_INVALID:
+	case CKR_TOKEN_NOT_PRESENT:
+	case CKR_TOKEN_NOT_RECOGNIZED:
+	case CKR_TOKEN_WRITE_PROTECTED:
+		break;
+	default:
+		ASSERT(rv);
+	}
+
+	return rv;
 }
 
 CK_RV C_GetTokenInfo(CK_SLOT_ID slot,

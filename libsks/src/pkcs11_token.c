@@ -155,6 +155,42 @@ bail:
 	return rv;
 }
 
+/**
+ * sks_ck_init_token - implementation of C_InitToken
+ */
+CK_RV sks_ck_init_token(CK_SLOT_ID slot,
+			CK_UTF8CHAR_PTR pin,
+			CK_ULONG pin_len,
+			CK_UTF8CHAR_PTR label)
+{
+	TEEC_SharedMemory *shm;
+	uint32_t sks_slot = slot;
+	uint32_t sks_pin_len = pin_len;
+	size_t ctrl_size = 2 * sizeof(uint32_t) + sks_pin_len +
+			   32 * sizeof(uint8_t);
+	char *ctrl;
+
+	shm = sks_alloc_shm_in(NULL, ctrl_size);
+	if (!shm)
+		return CKR_HOST_MEMORY;
+
+	ctrl = shm->buffer;
+
+	memcpy(ctrl, &sks_slot, sizeof(uint32_t));
+	ctrl += sizeof(uint32_t);
+
+	memcpy(ctrl, &sks_pin_len, sizeof(uint32_t));
+	ctrl += sizeof(uint32_t);
+
+	memcpy(ctrl, pin, sks_pin_len);
+	ctrl += sks_pin_len;
+
+	memcpy(ctrl, label, 32 * sizeof(uint8_t));
+
+	return ck_invoke_ta(NULL, SKS_CMD_CK_INIT_TOKEN,
+			    shm, 0, NULL, 0, NULL, NULL);
+}
+
 CK_RV sks_ck_token_mechanism_ids(CK_SLOT_ID slot,
 				 CK_MECHANISM_TYPE_PTR mechanisms,
 				 CK_ULONG_PTR count)
