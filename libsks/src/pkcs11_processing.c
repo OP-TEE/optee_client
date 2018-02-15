@@ -75,3 +75,104 @@ CK_RV ck_destroy_object(CK_SESSION_HANDLE session,
 			    SKS_CMD_DESTROY_OBJECT, ctrl, sizeof(ctrl),
 			    NULL, 0, NULL, NULL);
 }
+
+CK_RV ck_encdecrypt_init(CK_SESSION_HANDLE session,
+			 CK_MECHANISM_PTR mechanism,
+			 CK_OBJECT_HANDLE key,
+			 int decrypt)
+{
+	CK_RV rv;
+	struct serializer obj;
+	uint32_t session_handle = session;
+	uint32_t key_handle = key;
+	char *ctrl = NULL;
+	size_t ctrl_size;
+
+	rv = serialize_ck_mecha_params(&obj, mechanism);
+	if (rv)
+		return rv;
+
+	/* params = [session-handle][key-handle][serialized-mechanism-blob] */
+	ctrl_size = 2 * sizeof(uint32_t) + obj.size;
+	ctrl = malloc(ctrl_size);
+	if (!ctrl)
+		return CKR_HOST_MEMORY;
+
+	memcpy(ctrl, &session_handle, sizeof(uint32_t));
+	memcpy(ctrl + sizeof(uint32_t), &key_handle, sizeof(uint32_t));
+	memcpy(ctrl + 2 * sizeof(uint32_t), obj.buffer, obj.size);
+
+	rv = ck_invoke_ta(ck_session2sks_ctx(session), decrypt ?
+			  SKS_CMD_DECRYPT_INIT : SKS_CMD_ENCRYPT_INIT,
+			  ctrl, ctrl_size, NULL, 0, NULL, NULL);
+
+	free(ctrl);
+	release_serial_object(&obj);
+
+	return rv;
+}
+
+CK_RV ck_encdecrypt_update(CK_SESSION_HANDLE session,
+			   CK_BYTE_PTR in,
+			   CK_ULONG in_len,
+			   CK_BYTE_PTR out,
+			   CK_ULONG_PTR out_len,
+			   int decrypt)
+{
+	CK_RV rv;
+	uint32_t ctrl;
+	size_t ctrl_size;
+	void *in_buf = in;
+	size_t in_size = in_len;
+	void *out_buf = out;
+	size_t out_size;
+
+	/* params = [session-handle] */
+	ctrl = session;
+	ctrl_size = sizeof(ctrl);
+
+	if (!out_len)
+		out_size = 0;
+	else
+		out_size = *out_len;
+
+	rv = ck_invoke_ta(ck_session2sks_ctx(session), decrypt ?
+			  SKS_CMD_DECRYPT_UPDATE : SKS_CMD_ENCRYPT_UPDATE,
+			  &ctrl, ctrl_size, in_buf, in_size,
+			  out_buf, &out_size);
+
+	if (out_len && (rv == CKR_OK || rv == CKR_BUFFER_TOO_SMALL))
+		*out_len = out_size;
+
+	return rv;
+}
+
+CK_RV ck_encdecrypt_final(CK_SESSION_HANDLE session,
+			  CK_BYTE_PTR out,
+			  CK_ULONG_PTR out_len,
+			  int decrypt)
+{
+	CK_RV rv;
+	uint32_t ctrl;
+	size_t ctrl_size;
+	void *out_buf = out;
+	size_t out_size;
+
+	/* params = [session-handle] */
+	ctrl = session;
+	ctrl_size = sizeof(ctrl);
+
+	if (!out_len)
+		out_size = 0;
+	else
+		out_size = *out_len;
+
+	rv = ck_invoke_ta(ck_session2sks_ctx(session), decrypt ?
+			  SKS_CMD_DECRYPT_FINAL : SKS_CMD_ENCRYPT_FINAL,
+			  &ctrl, ctrl_size, NULL, 0, out_buf, &out_size);
+
+	if (out_len && (rv == CKR_OK || rv == CKR_BUFFER_TOO_SMALL))
+		*out_len = out_size;
+
+	return rv;
+}
