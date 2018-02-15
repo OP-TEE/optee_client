@@ -10,6 +10,7 @@
 #include "invoke_ta.h"
 #include "local_utils.h"
 #include "pkcs11_token.h"
+#include "pkcs11_processing.h"
 
 static int inited;
 
@@ -56,9 +57,9 @@ static const CK_FUNCTION_LIST libsks_function_list = {
 	DO_NOT_REGISTER_CK_FUNCTION(C_SetOperationState),
 	DO_NOT_REGISTER_CK_FUNCTION(C_Login),
 	DO_NOT_REGISTER_CK_FUNCTION(C_Logout),
-	DO_NOT_REGISTER_CK_FUNCTION(C_CreateObject),
+	REGISTER_CK_FUNCTION(C_CreateObject),
 	DO_NOT_REGISTER_CK_FUNCTION(C_CopyObject),
-	DO_NOT_REGISTER_CK_FUNCTION(C_DestroyObject),
+	REGISTER_CK_FUNCTION(C_DestroyObject),
 	DO_NOT_REGISTER_CK_FUNCTION(C_GetObjectSize),
 	DO_NOT_REGISTER_CK_FUNCTION(C_GetAttributeValue),
 	DO_NOT_REGISTER_CK_FUNCTION(C_SetAttributeValue),
@@ -532,13 +533,41 @@ CK_RV C_CreateObject(CK_SESSION_HANDLE session,
 		     CK_ULONG count,
 		     CK_OBJECT_HANDLE_PTR phObject)
 {
-	(void)session;
-	(void)attribs;
-	(void)count;
-	(void)phObject;
+	CK_RV rv;
+
 	SANITY_LIB_INIT;
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	rv = ck_create_object(session, attribs, count, phObject);
+
+	switch (rv) {
+	case CKR_ARGUMENTS_BAD:
+	case CKR_ATTRIBUTE_READ_ONLY:
+	case CKR_ATTRIBUTE_TYPE_INVALID:
+	case CKR_ATTRIBUTE_VALUE_INVALID:
+	case CKR_CRYPTOKI_NOT_INITIALIZED:
+	case CKR_CURVE_NOT_SUPPORTED:
+	case CKR_DEVICE_ERROR:
+	case CKR_DEVICE_MEMORY:
+	case CKR_DEVICE_REMOVED:
+	case CKR_DOMAIN_PARAMS_INVALID:
+	case CKR_FUNCTION_FAILED:
+	case CKR_GENERAL_ERROR:
+	case CKR_HOST_MEMORY:
+	case CKR_OK:
+	case CKR_PIN_EXPIRED:
+	case CKR_SESSION_CLOSED:
+	case CKR_SESSION_HANDLE_INVALID:
+	case CKR_SESSION_READ_ONLY:
+	case CKR_TEMPLATE_INCOMPLETE:
+	case CKR_TEMPLATE_INCONSISTENT:
+	case CKR_TOKEN_WRITE_PROTECTED:
+	case CKR_USER_NOT_LOGGED_IN:
+		break;
+	default:
+		ASSERT(rv);
+	}
+
+	return rv;
 }
 
 CK_RV C_CopyObject(CK_SESSION_HANDLE session,
@@ -560,11 +589,35 @@ CK_RV C_CopyObject(CK_SESSION_HANDLE session,
 CK_RV C_DestroyObject(CK_SESSION_HANDLE session,
 		      CK_OBJECT_HANDLE obj)
 {
-	(void)session;
-	(void)obj;
+	CK_RV rv;
+
 	SANITY_LIB_INIT;
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	rv = ck_destroy_object(session, obj);
+
+	switch (rv) {
+	case CKR_ACTION_PROHIBITED:
+	case CKR_CRYPTOKI_NOT_INITIALIZED:
+	case CKR_DEVICE_ERROR:
+	case CKR_DEVICE_MEMORY:
+	case CKR_DEVICE_REMOVED:
+	case CKR_FUNCTION_FAILED:
+	case CKR_GENERAL_ERROR:
+	case CKR_HOST_MEMORY:
+	case CKR_OBJECT_HANDLE_INVALID:
+	case CKR_OK:
+	case CKR_PIN_EXPIRED:
+	case CKR_SESSION_CLOSED:
+	case CKR_SESSION_HANDLE_INVALID:
+	case CKR_SESSION_READ_ONLY:
+	case CKR_TOKEN_WRITE_PROTECTED:
+		break;
+	default:
+		ASSERT(rv);
+	}
+
+	return rv;
+
 }
 
 CK_RV C_GetObjectSize(CK_SESSION_HANDLE session,

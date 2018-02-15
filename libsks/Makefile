@@ -26,6 +26,7 @@ LIBSKS_SRCS 		+= invoke_ta.c
 LIBSKS_SRCS 		+= pkcs11_token.c
 LIBSKS_SRCS		+= serializer.c
 LIBSKS_SRCS		+= serialize_ck.c
+LIBSKS_SRCS		+= pkcs11_processing.c
 
 LIBSKS_INCLUDES		= ${CURDIR}/include
 LIBSKS_INCLUDES 	+= ${CURDIR}/../public
