@@ -16,6 +16,86 @@ static int inited;
 			return CKR_CRYPTOKI_NOT_INITIALIZED; \
 	} while (0)
 
+#define SANITY_NONNULL_PTR(ptr) \
+	do { \
+		if (!ptr) \
+			return CKR_ARGUMENTS_BAD; \
+	} while (0)
+
+#define REGISTER_CK_FUNCTION(_function)		._function = _function
+#define DO_NOT_REGISTER_CK_FUNCTION(_function)	._function = NULL
+
+static const CK_FUNCTION_LIST libsks_function_list = {
+	REGISTER_CK_FUNCTION(C_Initialize),
+	REGISTER_CK_FUNCTION(C_Finalize),
+	DO_NOT_REGISTER_CK_FUNCTION(C_GetInfo),
+	REGISTER_CK_FUNCTION(C_GetFunctionList),
+	DO_NOT_REGISTER_CK_FUNCTION(C_GetSlotList),
+	DO_NOT_REGISTER_CK_FUNCTION(C_GetSlotInfo),
+	DO_NOT_REGISTER_CK_FUNCTION(C_GetTokenInfo),
+	DO_NOT_REGISTER_CK_FUNCTION(C_GetMechanismList),
+	DO_NOT_REGISTER_CK_FUNCTION(C_GetMechanismInfo),
+	DO_NOT_REGISTER_CK_FUNCTION(C_InitToken),
+	DO_NOT_REGISTER_CK_FUNCTION(C_InitPIN),
+	DO_NOT_REGISTER_CK_FUNCTION(C_SetPIN),
+	DO_NOT_REGISTER_CK_FUNCTION(C_OpenSession),
+	DO_NOT_REGISTER_CK_FUNCTION(C_CloseSession),
+	DO_NOT_REGISTER_CK_FUNCTION(C_CloseAllSessions),
+	DO_NOT_REGISTER_CK_FUNCTION(C_GetSessionInfo),
+	DO_NOT_REGISTER_CK_FUNCTION(C_GetOperationState),
+	DO_NOT_REGISTER_CK_FUNCTION(C_SetOperationState),
+	DO_NOT_REGISTER_CK_FUNCTION(C_Login),
+	DO_NOT_REGISTER_CK_FUNCTION(C_Logout),
+	DO_NOT_REGISTER_CK_FUNCTION(C_CreateObject),
+	DO_NOT_REGISTER_CK_FUNCTION(C_CopyObject),
+	DO_NOT_REGISTER_CK_FUNCTION(C_DestroyObject),
+	DO_NOT_REGISTER_CK_FUNCTION(C_GetObjectSize),
+	DO_NOT_REGISTER_CK_FUNCTION(C_GetAttributeValue),
+	DO_NOT_REGISTER_CK_FUNCTION(C_SetAttributeValue),
+	DO_NOT_REGISTER_CK_FUNCTION(C_FindObjectsInit),
+	DO_NOT_REGISTER_CK_FUNCTION(C_FindObjects),
+	DO_NOT_REGISTER_CK_FUNCTION(C_FindObjectsFinal),
+	DO_NOT_REGISTER_CK_FUNCTION(C_EncryptInit),
+	DO_NOT_REGISTER_CK_FUNCTION(C_Encrypt),
+	DO_NOT_REGISTER_CK_FUNCTION(C_EncryptUpdate),
+	DO_NOT_REGISTER_CK_FUNCTION(C_EncryptFinal),
+	DO_NOT_REGISTER_CK_FUNCTION(C_DecryptInit),
+	DO_NOT_REGISTER_CK_FUNCTION(C_Decrypt),
+	DO_NOT_REGISTER_CK_FUNCTION(C_DecryptUpdate),
+	DO_NOT_REGISTER_CK_FUNCTION(C_DecryptFinal),
+	DO_NOT_REGISTER_CK_FUNCTION(C_DigestInit),
+	DO_NOT_REGISTER_CK_FUNCTION(C_Digest),
+	DO_NOT_REGISTER_CK_FUNCTION(C_DigestUpdate),
+	DO_NOT_REGISTER_CK_FUNCTION(C_DigestKey),
+	DO_NOT_REGISTER_CK_FUNCTION(C_DigestFinal),
+	DO_NOT_REGISTER_CK_FUNCTION(C_SignInit),
+	DO_NOT_REGISTER_CK_FUNCTION(C_Sign),
+	DO_NOT_REGISTER_CK_FUNCTION(C_SignUpdate),
+	DO_NOT_REGISTER_CK_FUNCTION(C_SignFinal),
+	DO_NOT_REGISTER_CK_FUNCTION(C_SignRecoverInit),
+	DO_NOT_REGISTER_CK_FUNCTION(C_SignRecover),
+	DO_NOT_REGISTER_CK_FUNCTION(C_VerifyInit),
+	DO_NOT_REGISTER_CK_FUNCTION(C_Verify),
+	DO_NOT_REGISTER_CK_FUNCTION(C_VerifyUpdate),
+	DO_NOT_REGISTER_CK_FUNCTION(C_VerifyFinal),
+	DO_NOT_REGISTER_CK_FUNCTION(C_VerifyRecoverInit),
+	DO_NOT_REGISTER_CK_FUNCTION(C_VerifyRecover),
+	DO_NOT_REGISTER_CK_FUNCTION(C_DigestEncryptUpdate),
+	DO_NOT_REGISTER_CK_FUNCTION(C_DecryptDigestUpdate),
+	DO_NOT_REGISTER_CK_FUNCTION(C_SignEncryptUpdate),
+	DO_NOT_REGISTER_CK_FUNCTION(C_DecryptVerifyUpdate),
+	DO_NOT_REGISTER_CK_FUNCTION(C_GenerateKey),
+	DO_NOT_REGISTER_CK_FUNCTION(C_GenerateKeyPair),
+	DO_NOT_REGISTER_CK_FUNCTION(C_WrapKey),
+	DO_NOT_REGISTER_CK_FUNCTION(C_UnwrapKey),
+	DO_NOT_REGISTER_CK_FUNCTION(C_DeriveKey),
+	DO_NOT_REGISTER_CK_FUNCTION(C_SeedRandom),
+	DO_NOT_REGISTER_CK_FUNCTION(C_GenerateRandom),
+	DO_NOT_REGISTER_CK_FUNCTION(C_GetFunctionStatus),
+	DO_NOT_REGISTER_CK_FUNCTION(C_CancelFunction),
+	DO_NOT_REGISTER_CK_FUNCTION(C_WaitForSlotEvent),
+};
+
 /*
  * List of all PKCS#11 cryptoki API functions implemented
  */
@@ -60,9 +140,13 @@ CK_RV C_GetInfo(CK_INFO_PTR info)
 
 CK_RV C_GetFunctionList(CK_FUNCTION_LIST_PTR_PTR ppFunctionList)
 {
-	/* Note: no SANITY_LIB_INIT here */
-	(void)ppFunctionList;
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	/* Note: no SANITY_LIB_INIT needed here */
+	SANITY_NONNULL_PTR(ppFunctionList);
+
+	/* Discard the const attribute when exporting the list address */
+	*ppFunctionList = (void *)&libsks_function_list;
+
+	return CKR_OK;
 }
 
 CK_RV C_GetSlotList(CK_BBOOL token_present,
