@@ -59,19 +59,15 @@
  *
  * param#0: none
  * param#1: none
- * param#2: out-memref : [struct sks_ck_slot_id slot_ids]
+ * param#2: out-memref : [uint32_t slot_ids]
  * param#3: none
  */
 #define SKS_CMD_CK_SLOT_LIST		0x00000001
 
-struct sks_ck_slot_id {
-	uint32_t slot_id;
-};
-
 /*
  * SKS_CMD_CK_SLOT_INFO - Get cryptoki structured slot information
  *
- * param#0: in(*)-memref : [struct sks_ck_slot_id slot_id]
+ * param#0: in(*)-memref : [uint32_t slot_id]
  * param#1: none
  * param#2: out-memref : [struct sks_ck_slot_info info]
  * param#3: none
@@ -91,15 +87,10 @@ struct sks_ck_slot_info {
 #define SKS_TOKEN_REMOVABLE		MSK(1)
 #define SKS_TOKEN_HW			MSK(2)
 
-#define CK_SKS_SLOT_FLAG_MASKS \
-	CK_SKS_ID(CKF_TOKEN_PRESENT,	SKS_TOKEN_PRESENT) \
-	CK_SKS_ID(CKF_REMOVABLE_DEVICE,	SKS_TOKEN_REMOVABLE) \
-	CK_SKS_ID(CKF_HW_SLOT,		SKS_TOKEN_HW)
-
 /*
  * SKS_CMD_CK_TOKEN_INFO - Get cryptoki structured token information
  *
- * param#0: in(*)-memref : [struct sks_ck_slot_id slot_id]
+ * param#0: in(*)-memref : [uint32_t slot_id]
  * param#1: none
  * param#2: out-memref : [struct sks_ck_token_info info]
  * param#3: none
@@ -152,32 +143,12 @@ struct sks_ck_token_info {
 #define SKS_TOKEN_SO_PIN_TO_CHANGE	MSK(16)	/* CKF_SO_PIN_TO_BE_CHANGED */
 #define SKS_TOKEN_BAD_STATE		MSK(17)	/* CKF_ERROR_STATE */
 
-#define CK_SKS_TOKEN_FLAG_MASKS \
-	CK_SKS_ID(CKF_RNG,				SKS_TOKEN_HAS_RNG) \
-	CK_SKS_ID(CKF_WRITE_PROTECTED,			SKS_TOKEN_IS_READ_ONLY) \
-	CK_SKS_ID(CKF_LOGIN_REQUIRED,			SKS_TOKEN_REQUIRE_LOGIN) \
-	CK_SKS_ID(CKF_USER_PIN_INITIALIZED,		SKS_TOKEN_HAS_USER_PIN) \
-	CK_SKS_ID(CKF_RESTORE_KEY_NOT_NEEDED,		SKS_TOKEN_FULLY_RESTORABLE) \
-	CK_SKS_ID(CKF_CLOCK_ON_TOKEN,			SKS_TOKEN_HAS_CLOCK) \
-	CK_SKS_ID(CKF_PROTECTED_AUTHENTICATION_PATH,	SKS_TOKEN_ALT_AUTHENT) \
-	CK_SKS_ID(CKF_DUAL_CRYPTO_OPERATIONS,		SKS_TOKEN_CAN_DUAL_PROC) \
-	CK_SKS_ID(CKF_TOKEN_INITIALIZED,		SKS_TOKEN_INITED) \
-	CK_SKS_ID(CKF_USER_PIN_COUNT_LOW,		SKS_TOKEN_USR_PIN_FAILURE) \
-	CK_SKS_ID(CKF_USER_PIN_FINAL_TRY,		SKS_TOKEN_USR_PIN_LAST) \
-	CK_SKS_ID(CKF_USER_PIN_LOCKED,			SKS_TOKEN_USR_PIN_LOCKED) \
-	CK_SKS_ID(CKF_USER_PIN_TO_BE_CHANGED,		SKS_TOKEN_USR_PIN_TO_CHANGE) \
-	CK_SKS_ID(CKF_SO_PIN_COUNT_LOW,			SKS_TOKEN_SO_PIN_FAILURE) \
-	CK_SKS_ID(CKF_SO_PIN_FINAL_TRY,			SKS_TOKEN_SO_PIN_LAST) \
-	CK_SKS_ID(CKF_SO_PIN_LOCKED,			SKS_TOKEN_SO_PIN_LOCKED) \
-	CK_SKS_ID(CKF_SO_PIN_TO_BE_CHANGED,		SKS_TOKEN_SO_PIN_TO_CHANGE) \
-	CK_SKS_ID(CKF_ERROR_STATE,			SKS_TOKEN_BAD_STATE)
-
 /*
  * SKS_CMD_CK_MECHANISM_IDS - Get list of the supported mechanisms
  *
- * param#0: in(*)-memref : [struct sks_ck_slot_id slot_id]
+ * param#0: in(*)-memref : [uint32_t slot_id]
  * param#1: none
- * param#2: out-memref : [struct sks_ck_mecha_id mecha_ids[]]
+ * param#2: out-memref : [struct sks_ck_mecha_id mecha_ids[N]]
  * param#3: none
  */
 #define SKS_CMD_CK_MECHANISM_IDS	0x00000004
@@ -189,7 +160,7 @@ struct sks_ck_mecha_id {
 /*
  * SKS_CMD_CK_MECHANISM_INFO - Get information on a specific mechanism
  *
- * param#0: in(*)-memref : [struct sks_ck_slot_id slot_id]
+ * param#0: in(*)-memref : [uint32_t slot_id]
  *			   [struct sks_ck_mecha_id mecha_id]
  * param#1: none
  * param#2: out-memref : [struct sks_ck_mecha_info info]
@@ -218,26 +189,11 @@ struct sks_ck_mecha_info {
 #define SKS_PROC_UNWRAP			MSK(11)
 #define SKS_PROC_DERIVE			MSK(12)
 
-#define CK_SKS_MECHANISM_FLAG_IDS \
-	CK_SKS_ID(CKF_HW,			SKS_PROC_HW) \
-	CK_SKS_ID(CKF_ENCRYPT,			SKS_PROC_ENCRYPT) \
-	CK_SKS_ID(CKF_DECRYPT,			SKS_PROC_DECRYPT) \
-	CK_SKS_ID(CKF_DIGEST,			SKS_PROC_DIGEST) \
-	CK_SKS_ID(CKF_SIGN,			SKS_PROC_SIGN) \
-	CK_SKS_ID(CKF_SIGN_RECOVER,		SKS_PROC_SIGN_RECOVER) \
-	CK_SKS_ID(CKF_VERIFY,			SKS_PROC_VERIFY) \
-	CK_SKS_ID(CKF_VERIFY_RECOVER,		SKS_PROC_VERFIY_RECOVER) \
-	CK_SKS_ID(CKF_GENERATE,			SKS_PROC_GENERATE) \
-	CK_SKS_ID(CKF_GENERATE_KEY_PAIR,	SKS_PROC_GENERATE_PAIR) \
-	CK_SKS_ID(CKF_WRAP,			SKS_PROC_WRAP) \
-	CK_SKS_ID(CKF_UNWRAP,			SKS_PROC_UNWRAP) \
-	CK_SKS_ID(CKF_DERIVE,			SKS_PROC_DERIVE)
-
 /*
  * SKS_CMD_CK_INIT_TOKEN - Initialiaze PKCS#11 token
  *
- * param#0: in(*)-memref : [struct sks_ck_slot_id slot_id]
- *			   [struct sks_item_length pin_len]
+ * param#0: in(*)-memref : [uint32_t slot_id]
+ *			   [uint32_t pin_len]
  *			   [uint8_t pin[pin_len]]
  *			   [uint8_t label[32]]
  * param#1: none
@@ -253,8 +209,8 @@ struct sks_item_length {
 /*
  * SKS_CMD_CK_INIT_PIN - Initialiaze PKCS#11 token PIN
  *
- * param#0: in(*)-memref : [struct sks_handle session_id]
- *			   [struct sks_item_length pin_len]
+ * param#0: in(*)-memref : [uint32_t session_handle]
+ *			   [uint32_t pin_len]
  *			   [uint8_t pin[pin_len]]
  * param#1: none
  * param#2: none
@@ -269,10 +225,10 @@ struct sks_handle {
 /*
  * SKS_CMD_CK_SET_PIN - Set PKCS#11 token PIN
  *
- * param#0: in(*)-memref : [struct sks_handle session_id]
- *			   [struct sks_item_length old_pin_len]
+ * param#0: in(*)-memref : [uint32_t session_id]
+ *			   [uint32_t old_pin_len]
  *			   [uint8_t old_pin[old_pin_len]]
- *			   [struct sks_item_length new_pin_len]
+ *			   [uint32_t new_pin_len]
  *			   [uint8_t new_pin[new_pin_len]]
  * param#1: none
  * param#2: none
@@ -283,9 +239,9 @@ struct sks_handle {
 /*
  * SKS_CMD_CK_OPEN_RO_SESSION - Open Read-only Session
  *
- * param#0: in(*)-memref : [struct sks_ck_slot_id slot_id]
+ * param#0: in(*)-memref : [uint32_t slot_id]
  * param#1: none
- * param#2: out-memref : [struct sks_handle session_id]
+ * param#2: out-memref : [uint32_t session_handle]
  * param#3: none
  */
 #define SKS_CMD_CK_OPEN_RO_SESSION	0x00000009
@@ -293,9 +249,9 @@ struct sks_handle {
 /*
  * SKS_CMD_CK_OPEN_RW_SESSION - Open Read/Write Session
  *
- * param#0: in(*)-memref : [struct sks_ck_slot_id slot_id]
+ * param#0: in(*)-memref : [uint32_t slot_id]
  * param#1: none
- * param#2: out-memref : [struct sks_handle session_id]
+ * param#2: out-memref : [uint32_t session_handle]
  * param#3: none
  */
 #define SKS_CMD_CK_OPEN_RW_SESSION	0x0000000a
@@ -303,7 +259,7 @@ struct sks_handle {
 /*
  * SKS_CMD_CK_CLOSE_SESSION - Open Read/Write Session
  *
- * param#0: in(*)-memref : [struct sks_handle session_id]
+ * param#0: in(*)-memref : [uint32_t session_handle]
  * param#1: none
  * param#2: none
  * param#3: none
@@ -313,7 +269,7 @@ struct sks_handle {
 /*
  * SKS_CMD_CK_SESSION_INFO - Get Cryptoki information on a session
  *
- * param#0: in(*)-memref : [struct sks_handle session_id]
+ * param#0: in(*)-memref : [uint32_t session_handle]
  * param#1: none
  * param#2: out-memref : [struct sks_ck_session_info]
  * param#3: none
@@ -330,7 +286,7 @@ struct sks_ck_session_info {
 /*
  * SKS_CMD_CK_CLOSE_ALL_SESSIONS - Close all slot's pending sessions
  *
- * param#0: in(*)-memref : [struct sks_ck_slot_id slot_id]
+ * param#0: in(*)-memref : [uint32_t slot_id]
  * param#1: none
  * param#2: none
  * param#3: none
@@ -340,10 +296,10 @@ struct sks_ck_session_info {
 /*
  * SKS_CMD_IMPORT_OBJECT - Open Read/Write Session
  *
- * param#0: in(*)-memref : [struct sks_handle session]
- *			   [struct sks_object_head attribs + data]
+ * param#0: in(*)-memref : [uint32_t session_handle]
+ *			   [struct sks_object_head attribs + attributes data]
  * param#1: none
- * param#2: out-memref : [struct sks_handle object]
+ * param#2: out-memref : [uint32_t object_handle]
  * param#3: none
  */
 #define SKS_CMD_IMPORT_OBJECT		0x0000000e
@@ -388,8 +344,8 @@ struct sks_reference {
 /*
  * SKS_CMD_DESTROY_OBJECT - Destroy an object
  *
- * param#0: in(*)-memref : [struct sks_handle session]
- *			   [struct sks_handle object]
+ * param#0: in(*)-memref : [uint32_t session_handle]
+ *			   [uint32_t object_handle]
  * param#1: none
  * param#2: none
  * param#3: none
@@ -400,8 +356,8 @@ struct sks_reference {
  * SKS_CMD_ENCRYPT_INIT - Initialize decryption processing
  * SKS_CMD_DECRYPT_INIT - Initialize encryption processing
  *
- * param#0: in(*)-memref : [struct sks_handle session_id]
- *			   [struct sks_reference mecha + mecha params data]
+ * param#0: in(*)-memref : [uint32_t session_handle]
+ *			   [struct sks_reference proc + proc parameters data]
  * param#1: none
  * param#2: none
  * param#3: none
@@ -413,7 +369,7 @@ struct sks_reference {
  * SKS_CMD_ENCRYPT_UPDATE - Update encryption processing
  * SKS_CMD_DECRYPT_UPDATE - Update decryption processing
  *
- * param#0: in(*)-memref : [struct sks_handle session_id]
+ * param#0: in(*)-memref : [uint32_t session_handle]
  * param#1: in-memref : [input-data]
  * param#2: out-memref : [output-data]
  * param#3: none
@@ -425,7 +381,7 @@ struct sks_reference {
  * SKS_CMD_ENCRYPT_FINAL - Finalize encryption processing
  * SKS_CMD_DECRYPT_FINAL - Finalize decryption processing
  *
- * param#0: in(*)-memref : [struct sks_handle session_id]
+ * param#0: in(*)-memref : [uint32_t session_handle]
  * param#1: none
  * param#2: out-memref : [output-data]
  * param#3: none
@@ -436,11 +392,11 @@ struct sks_reference {
 /*
  * SKS_CMD_GENERATE_SYMM_KEY - Generate a symmetric key
  *
- * param#0: in(*)-memref : [struct sks_handle session_id]
- *			   [struct sks_reference mecha + mecha params data]
- *			   [struct sks_object_head attribs + data]   (template)
+ * param#0: in(*)-memref : [uint32_t session_handle]
+ *			   [struct sks_reference proc + proc parameters data]
+ *			   [struct sks_object_head attribs + attributes data]
  * param#1: none
- * param#2: out-memref : [struct sks_handle object]
+ * param#2: out-memref : [uint32_t object_handle]
  * param#3: none
  */
 #define SKS_CMD_GENERATE_SYMM_KEY	0x00000016
@@ -479,32 +435,6 @@ struct sks_reference {
 #define SKS_CK_NOT_PERMITTED		0x00001004	/* SKS_NOT_PERMITED? */
 #define SKS_PROCESSING_INACTIVE		0x00001005
 #define SKS_BAD_PROCESSING_PARAM	0x00001006
-
-/* sks-to-ck only: this is not a one-to-one relationship */
-#define CK_SKS_ERROR_CODES \
-	CK_SKS_ID(CKR_OK,			SKS_OK) \
-	CK_SKS_ID(CKR_GENERAL_ERROR,		SKS_ERROR) \
-	CK_SKS_ID(CKR_DEVICE_MEMORY,		SKS_MEMORY) \
-	CK_SKS_ID(CKR_ARGUMENTS_BAD,		SKS_BAD_PARAM) \
-	CK_SKS_ID(CKR_BUFFER_TOO_SMALL,		SKS_SHORT_BUFFER) \
-	CK_SKS_ID(CKR_FUNCTION_FAILED,		SKS_FAILED) \
-	CK_SKS_ID(CKR_GENERAL_ERROR,		SKS_NOT_FOUND)	/* No Cryptoki equivalent */ \
-	CK_SKS_ID(CKR_ATTRIBUTE_TYPE_INVALID,	SKS_INVALID_TYPE) \
-	CK_SKS_ID(CKR_ATTRIBUTE_VALUE_INVALID,	SKS_INVALID_VALUE) \
-	CK_SKS_ID(CKR_OBJECT_HANDLE_INVALID,	SKS_INVALID_OBJECT) \
-	CK_SKS_ID(CKR_KEY_HANDLE_INVALID,	SKS_INVALID_KEY) \
-	CK_SKS_ID(CKR_MECHANISM_INVALID,	SKS_INVALID_PROC) \
-	CK_SKS_ID(CKR_SLOT_ID_INVALID,		SKS_INVALID_SLOT) \
-	CK_SKS_ID(CKR_PIN_INCORRECT,		SKS_PIN_INCORRECT) \
-	CK_SKS_ID(CKR_PIN_LOCKED,		SKS_PIN_LOCKED) \
-	CK_SKS_ID(CKR_PIN_EXPIRED,		SKS_PIN_EXPIRED) \
-	CK_SKS_ID(CKR_PIN_INVALID,		SKS_PIN_INVALID) \
-	CK_SKS_ID(CKR_OPERATION_ACTIVE,		SKS_PROCESSING_ACTIVE) \
-	CK_SKS_ID(CKR_KEY_FUNCTION_NOT_PERMITTED,	SKS_CK_NOT_PERMITTED) \
-	CK_SKS_ID(CKR_OPERATION_NOT_INITIALIZED,	SKS_PROCESSING_INACTIVE) \
-	CK_SKS_ID(CKR_SESSION_READ_ONLY,	SKS_CK_SESSION_IS_READ_ONLY) \
-	CK_SKS_ID(CKR_MECHANISM_PARAM_INVALID,	SKS_BAD_PROCESSING_PARAM) \
-	CK_SKS_ID(CK_VENDOR_INVALID_ID,		SKS_UNDEFINED_ID)
 
 /* Attribute specifc values */
 #define SKS_UNDEFINED_ID			((uint32_t)0xFFFFFFFF)
@@ -615,47 +545,6 @@ struct sks_reference {
 #define SKS_ALWAYS_AUTHEN		SKS_BP_ATTR(SKS_ALWAYS_AUTHEN_SHIFT)
 #define SKS_WRAP_FROM_TRUSTED		SKS_BP_ATTR(SKS_WRAP_FROM_TRUSTED_SHIFT)
 
-#define CK_SKS_ATTRIBS_ID \
-	CK_SKS_ID(CKA_CLASS,			SKS_CLASS) \
-	CK_SKS_ID(CKA_KEY_TYPE,			SKS_TYPE) \
-	CK_SKS_ID(CKA_VALUE,			SKS_VALUE) \
-	CK_SKS_ID(CKA_VALUE_LEN,		SKS_VALUE_LEN) \
-	CK_SKS_ID(CKA_WRAP_TEMPLATE,		SKS_WRAP_ATTRIBS) \
-	CK_SKS_ID(CKA_UNWRAP_TEMPLATE,		SKS_UNWRAP_ATTRIBS) \
-	CK_SKS_ID(CKA_DERIVE_TEMPLATE,		SKS_DERIVE_ATTRIBS) \
-	CK_SKS_ID(CKA_START_DATE,		SKS_ACTIVATION_DATE) \
-	CK_SKS_ID(CKA_END_DATE,			SKS_REVOKATION_DATE) \
-	CK_SKS_ID(CKA_OBJECT_ID,		SKS_OBJECT_ID) \
-	CK_SKS_ID(CKA_APPLICATION,		SKS_APPLICATION_ID) \
-	CK_SKS_ID(CKA_MECHANISM_TYPE,		SKS_PROCESSING_ID) \
-	CK_SKS_ID(CKA_ID,			SKS_KEY_ID) \
-	CK_SKS_ID(CKA_ALLOWED_MECHANISMS,	SKS_ALLOWED_PROCESSINGS) \
-	/* Below are boolean attributes */\
-	CK_SKS_ID(CKA_TOKEN,			SKS_PERSISTENT) \
-	CK_SKS_ID(CKA_PRIVATE,			SKS_NEED_AUTHEN) \
-	CK_SKS_ID(CKA_TRUSTED,			SKS_TRUSTED) \
-	CK_SKS_ID(CKA_SENSITIVE,		SKS_SENSITIVE) \
-	CK_SKS_ID(CKA_ENCRYPT,			SKS_ENCRYPT) \
-	CK_SKS_ID(CKA_DECRYPT,			SKS_DECRYPT) \
-	CK_SKS_ID(CKA_WRAP,			SKS_WRAP) \
-	CK_SKS_ID(CKA_UNWRAP,			SKS_UNWRAP) \
-	CK_SKS_ID(CKA_SIGN,			SKS_SIGN) \
-	CK_SKS_ID(CKA_SIGN_RECOVER,		SKS_SIGN_RECOVER) \
-	CK_SKS_ID(CKA_VERIFY,			SKS_VERIFY) \
-	CK_SKS_ID(CKA_VERIFY_RECOVER,		SKS_VERIFY_RECOVER) \
-	CK_SKS_ID(CKA_DERIVE,			SKS_DERIVE) \
-	CK_SKS_ID(CKA_EXTRACTABLE,		SKS_EXTRACTABLE) \
-	CK_SKS_ID(CKA_LOCAL,			SKS_LOCALLY_GENERATED) \
-	CK_SKS_ID(CKA_NEVER_EXTRACTABLE,	SKS_NEVER_EXTRACTABLE) \
-	CK_SKS_ID(CKA_ALWAYS_SENSITIVE,		SKS_ALWAYS_SENSITIVE) \
-	CK_SKS_ID(CKA_MODIFIABLE,		SKS_MODIFIABLE) \
-	CK_SKS_ID(CKA_COPYABLE,			SKS_COPYABLE) \
-	CK_SKS_ID(CKA_DESTROYABLE,		SKS_DESTROYABLE) \
-	CK_SKS_ID(CKA_ALWAYS_AUTHENTICATE,	SKS_ALWAYS_AUTHEN) \
-	CK_SKS_ID(CKA_WRAP_WITH_TRUSTED,	SKS_WRAP_FROM_TRUSTED) \
-	/* Specifc SKS attribute IDs */ \
-	CK_SKS_ID(CK_VENDOR_INVALID_ID,		SKS_UNDEFINED_ID)
-
 /*
  * SKS supported object class
  */
@@ -669,28 +558,12 @@ struct sks_reference {
 #define SKS_OBJ_CK_HW_FEATURES			7 // TODO rename SKS_CK_HW_FEATURES
 #define SKS_OBJ_CK_MECHANISM			8 // TODO rename SKS_MECHANISM
 
-#define CK_SKS_OBJECT_CLASS_IDS \
-	CK_SKS_ID(CKO_SECRET_KEY,		SKS_OBJ_SYM_KEY) \
-	CK_SKS_ID(CKO_PUBLIC_KEY,		SKS_OBJ_PUB_KEY) \
-	CK_SKS_ID(CKO_PRIVATE_KEY,		SKS_OBJ_PRIV_KEY) \
-	CK_SKS_ID(CKO_OTP_KEY,			SKS_OBJ_OTP_KEY) \
-	CK_SKS_ID(CKO_CERTIFICATE,		SKS_OBJ_CERTIFICATE) \
-	CK_SKS_ID(CKO_DATA,			SKS_OBJ_RAW_DATA) \
-	CK_SKS_ID(CKO_DOMAIN_PARAMETERS,	SKS_OBJ_CK_DOMAIN_PARAMS) \
-	CK_SKS_ID(CKO_HW_FEATURE,		SKS_OBJ_CK_HW_FEATURES) \
-	CK_SKS_ID(CKO_MECHANISM,		SKS_OBJ_CK_MECHANISM) \
-	CK_SKS_ID(CK_VENDOR_INVALID_ID,		SKS_UNDEFINED_ID)
-
 /*
  * SKS supported types for SKS_OBJ_SYM_KEY
+ * TODO: other key types...
  */
 #define SKS_KEY_AES				0
 #define SKS_GENERIC_SECRET			1
-
-#define CK_SKS_KEY_TYPE_IDS \
-	CK_SKS_ID(CKK_AES,			SKS_KEY_AES) \
-	CK_SKS_ID(CKK_GENERIC_SECRET,		SKS_GENERIC_SECRET) \
-	CK_SKS_ID(CK_VENDOR_INVALID_ID,		SKS_UNDEFINED_ID)
 
 /*
  * SKS supported type for SKS_OBJ_CK_MECHANISM
@@ -707,27 +580,92 @@ struct sks_reference {
 #define SKS_PROC_AES_CMAC			8	/* AES Block aligned CMAC */
 #define SKS_PROC_AES_CMAC_GENERAL		9	/* Any sized AES CMAC */
 #define SKS_PROC_AES_DERIVE_BY_ECB		10	/* Generate key by data AES ECB ciphering */
-#define SKS_PROC_AES_DERIVE_BY_CCB		11	/* Generate key by data AES CBC ciphering */
+#define SKS_PROC_AES_DERIVE_BY_CBC		11	/* Generate key by data AES CBC ciphering */
 #define SKS_PROC_AES_GENERATE			12	/* Generate key CKM_AES_KEY_GEN */
 #define SKS_PROC_GENERIC_GENERATE		13	/* CKM_GENERIC_SECRET_KEY_GEN */
 #define SKS_PROC_RAW_IMPORT			14	/* Not exported to TA API */
 #define SKS_PROC_RAW_COPY			15	/* Not exported to TA API */
 
-#define CK_SKS_PROCESSING_IDS \
-	CK_SKS_ID(CKM_AES_ECB,			SKS_PROC_AES_ECB_NOPAD) \
-	CK_SKS_ID(CKM_AES_CBC,			SKS_PROC_AES_CBC_NOPAD) \
-	CK_SKS_ID(CKM_AES_CBC_PAD,		SKS_PROC_AES_CBC_PAD) \
-	CK_SKS_ID(CKM_AES_CTR,			SKS_PROC_AES_CTR) \
-	CK_SKS_ID(CKM_AES_GCM,			SKS_PROC_AES_GCM) \
-	CK_SKS_ID(CKM_AES_CCM,			SKS_PROC_AES_CCM) \
-	CK_SKS_ID(CKM_AES_CTS,			SKS_PROC_AES_CTS) \
-	CK_SKS_ID(CKM_AES_GMAC,			SKS_PROC_AES_GMAC) \
-	CK_SKS_ID(CKM_AES_CMAC,			SKS_PROC_AES_CMAC) \
-	CK_SKS_ID(CKM_AES_CMAC_GENERAL,		SKS_PROC_AES_CMAC_GENERAL) \
-	CK_SKS_ID(CKM_AES_ECB_ENCRYPT_DATA,	SKS_PROC_AES_DERIVE_BY_ECB) \
-	CK_SKS_ID(CKM_AES_CBC_ENCRYPT_DATA,	SKS_PROC_AES_DERIVE_BY_CCB) \
-	CK_SKS_ID(CKM_AES_KEY_GEN,		SKS_PROC_AES_GENERATE) \
-	CK_SKS_ID(CKM_GENERIC_SECRET_KEY_GEN,	SKS_PROC_GENERIC_GENERATE) \
-	CK_SKS_ID(CK_VENDOR_INVALID_ID,		SKS_UNDEFINED_ID)
+/*
+ * Processing parameters
+ *
+ * These can hardly be described by ANSI-C structures since some field of the
+ * structure have a size specify by a previous field. Therefore the format of
+ * the parameter binary data for each supported processing is define here from
+ * this comment rather than using C structures. Processing parameters are used
+ * as argument the C_EncryptInit and friends using the struct sks_reference
+ * format where field 'type' is the SKS processing ID and field 'size' is the
+ * parameter byte size. Below is shown the head struct sks_reference fields
+ * and the trailling data (the effective parameters binary blob).
+ *
+ * AES ECB
+ *   head:	32bit type = SKS_PROC_AES_ECB_NOPAD
+ *		32bit size = 0
+ *
+ * AES CBC, CBC_NOPAD and CTS
+ *   head:	32bit type = SKS_PROC_AES_CBC
+ *			  or SKS_PROC_AES_CBC_NOPAD
+ *			  or SKS_PROC_AES_CTS
+ *		32bit size = 16
+ *  params:	16byte inivial vector
+ *
+ * AES CTR
+ *   head:	32bit type = SKS_PROC_AES_CTR
+ *		32bit size = 20
+ *  params:	32bit counter bit increment
+ *		16byte inivial vector
+ *
+ * AES GCM
+ *   head:	32bit type = SKS_PROC_AES_GCM
+ *		32bit size
+ *  params:	32bit IV_byte_size
+ *		byte array: IV data (IV_byte_size bytes)
+ *		32bit IV_bit_size
+ *		32bit AAD_byte_size
+ *		byte array: AAD data (AAD_byte_size bytes)
+ *		32bit tag byte size
+ *
+ * AES CCM
+ *   head:	32bit type = SKS_PROC_AES_CCM
+ *		32bit size
+ *  params:	32bit data_byte_size
+ *		32bit nonce_byte_size
+ *		byte array: nonce data (nonce_byte_size bytes)
+ *		32bit AAD_byte_size
+ *		byte array: AAD data (AAD_byte_size bytes)
+ *		32bit MAC byte size
+ *
+ * AES GMAC
+ *   head:	32bit type = SKS_PROC_AES_GMAC
+ *		32bit size = 12
+ *  params:	12byte initial vector
+
+ * AES CMAC with general length
+ *   head:	32bit type = SKS_PROC_AES_CMAC_GENERAL
+ *		32bit size = 12
+ *  params:	32bit byte size of the output CMAC data
+ *
+ * AES CMAC fixed size (16byte CMAC)
+ *   head:	32bit type = SKS_PROC_AES_CMAC_GENERAL
+ *		32bit size = 0
+ *
+ * AES derive by ECB
+ *   head:	32bit type = SKS_PROC_AES_DERIVE_BY_ECB
+ *		32bit size
+ *  params:	32bit byte size of the data to encrypt
+ *		byte array: data to encrypt
+ *
+ * AES derive by CBC
+ *   head:	32bit type = SKS_PROC_AES_DERIVE_BY_CBC
+ *		32bit size
+ *  params:	16byte inivial vector
+ *		32bit byte size of the data to encrypt
+ *		byte array: data to encrypt
+ *
+ * AES and generic secret generation
+ *   head:	32bit type = SKS_PROC_AES_GENERATE
+ *			  or SKS_PROC_GENERIC_GENERATE
+ *		32bit size = 0
+ */
 
 #endif /* __SKS_TA_H */

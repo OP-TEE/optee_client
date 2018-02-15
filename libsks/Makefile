@@ -20,6 +20,8 @@ LIBSKS_AR_LIBRARY	:= $(LIB_NAME).a
 LIBSKS_SRC_DIR		:= src
 
 LIBSKS_SRCS		= pkcs11_api.c
+LIBSKS_SRCS		+= ck_debug.c
+LIBSKS_SRCS 		+= ck_helpers.c
 
 LIBSKS_INCLUDES		= ${CURDIR}/include
 LIBSKS_INCLUDES 	+= ${CURDIR}/../public
