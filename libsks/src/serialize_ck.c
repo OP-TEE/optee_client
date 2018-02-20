@@ -582,6 +582,23 @@ static CK_RV serialize_mecha_aes_iv(struct serializer *obj,
 	return serialize_buffer(obj, mecha->pParameter, mecha->ulParameterLen);
 }
 
+static CK_RV serialize_mecha_ulong_param(struct serializer *obj,
+					 CK_MECHANISM_PTR mecha)
+{
+	CK_RV rv;
+	uint32_t sks_data;
+	CK_ULONG ck_data;
+
+	memcpy(&ck_data, mecha->pParameter, mecha->ulParameterLen);
+	sks_data = ck_data;
+
+	rv = serialize_32b(obj, sizeof(uint32_t));
+	if (rv)
+		return rv;
+
+	return serialize_32b(obj, sks_data);
+}
+
 /**
  * serialize_ck_mecha_params - serialize a mechanism type & params
  *
@@ -617,20 +634,35 @@ CK_RV serialize_ck_mecha_params(struct serializer *obj,
 	case CKM_GENERIC_SECRET_KEY_GEN:
 	case CKM_AES_KEY_GEN:
 	case CKM_AES_ECB:
+	case CKM_AES_CMAC:
+	case CKM_MD5_HMAC:
+	case CKM_SHA_1_HMAC:
+	case CKM_SHA224_HMAC:
+	case CKM_SHA256_HMAC:
+	case CKM_SHA384_HMAC:
+	case CKM_SHA512_HMAC:
+	case CKM_AES_XCBC_MAC:
+	case CKM_AES_XCBC_MAC_96:
 		/* No parameter expected, size shall be 0 */
 		if (mechanism->ulParameterLen)
 			return CKR_MECHANISM_PARAM_INVALID;
 		return serialize_32b(obj, 0);
+
+	case CKM_AES_CMAC_GENERAL:
+		return serialize_mecha_ulong_param(obj, &mecha);
+
 	case CKM_AES_CBC:
 	case CKM_AES_CBC_PAD:
 	case CKM_AES_CTS:
 		return serialize_mecha_aes_iv(obj, &mecha);
+
 	case CKM_AES_CTR:
 		return serialize_mecha_aes_ctr(obj, &mecha);
 	case CKM_AES_CCM:
 		return serialize_mecha_aes_ccm(obj, &mecha);
 	case CKM_AES_GCM:
 		return serialize_mecha_aes_gcm(obj, &mecha);
+
 	default:
 		return CKR_MECHANISM_INVALID;
 	}

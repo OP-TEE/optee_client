@@ -40,4 +40,19 @@ CK_RV ck_generate_key(CK_SESSION_HANDLE session,
 		      CK_ULONG count,
 		      CK_OBJECT_HANDLE_PTR handle);
 
+CK_RV ck_signverify_init(CK_SESSION_HANDLE session,
+			 CK_MECHANISM_PTR mechanism,
+			 CK_OBJECT_HANDLE key,
+			 int sign);
+
+CK_RV ck_signverify_update(CK_SESSION_HANDLE session,
+			   CK_BYTE_PTR in,
+			   CK_ULONG in_len,
+			   int sign);
+
+CK_RV ck_signverify_final(CK_SESSION_HANDLE session,
+			  CK_BYTE_PTR out,
+			  CK_ULONG_PTR out_len,
+			  int sign);
+
 #endif /*__PKCS11_PROCESSING_H*/

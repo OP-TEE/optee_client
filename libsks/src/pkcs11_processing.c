@@ -230,3 +230,93 @@ bail:
 
 	return rv;
 }
+
+CK_RV ck_signverify_init(CK_SESSION_HANDLE session,
+			 CK_MECHANISM_PTR mechanism,
+			 CK_OBJECT_HANDLE key,
+			 int sign)
+{
+	CK_RV rv;
+	struct serializer obj;
+	uint32_t session_handle = session;
+	uint32_t key_handle = key;
+	char *ctrl = NULL;
+	size_t ctrl_size;
+
+	rv = serialize_ck_mecha_params(&obj, mechanism);
+	if (rv)
+		return rv;
+
+	/* params = [session-handle][key-handle][serialized-mechanism-blob] */
+	ctrl_size = 2 * sizeof(uint32_t) + obj.size;
+	ctrl = malloc(ctrl_size);
+	if (!ctrl)
+		return CKR_HOST_MEMORY;
+
+	memcpy(ctrl, &session_handle, sizeof(uint32_t));
+	memcpy(ctrl + sizeof(uint32_t), &key_handle, sizeof(uint32_t));
+	memcpy(ctrl + 2 * sizeof(uint32_t), obj.buffer, obj.size);
+
+printf("sign/verify init invoke ta\n");
+	rv = ck_invoke_ta(ck_session2sks_ctx(session), sign ?
+			  SKS_CMD_SIGN_INIT : SKS_CMD_VERIFY_INIT,
+			  ctrl, ctrl_size, NULL, 0, NULL, NULL);
+
+	free(ctrl);
+	release_serial_object(&obj);
+
+	return rv;
+}
+
+CK_RV ck_signverify_update(CK_SESSION_HANDLE session,
+			   CK_BYTE_PTR in,
+			   CK_ULONG in_len,
+			   int sign)
+{
+	CK_RV rv;
+	uint32_t ctrl;
+	size_t ctrl_size;
+	void *in_buf = in;
+	size_t in_size = in_len;
+
+	/* params = [session-handle] */
+	ctrl = session;
+	ctrl_size = sizeof(ctrl);
+
+	rv = ck_invoke_ta(ck_session2sks_ctx(session), sign ?
+			  SKS_CMD_SIGN_UPDATE : SKS_CMD_VERIFY_UPDATE,
+			  &ctrl, ctrl_size, in_buf, in_size,
+			  NULL, NULL);
+
+	return rv;
+}
+
+CK_RV ck_signverify_final(CK_SESSION_HANDLE session,
+			  CK_BYTE_PTR out,
+			  CK_ULONG_PTR out_len,
+			  int sign)
+{
+	CK_RV rv;
+	uint32_t ctrl;
+	size_t ctrl_size;
+	void *out_buf = out;
+	size_t out_size;
+
+	/* params = [session-handle] */
+	ctrl = session;
+	ctrl_size = sizeof(ctrl);
+
+	if (!out_len)
+		out_size = 0;
+	else
+		out_size = *out_len;
+
+	rv = ck_invoke_ta(ck_session2sks_ctx(session), sign ?
+			  SKS_CMD_SIGN_FINAL : SKS_CMD_VERIFY_FINAL,
+			  &ctrl, ctrl_size, NULL, 0, out_buf, &out_size);
+
+	if (out_len && (rv == CKR_OK || rv == CKR_BUFFER_TOO_SMALL))
+		*out_len = out_size;
+
+	return rv;
+}

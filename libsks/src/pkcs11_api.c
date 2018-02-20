@@ -79,16 +79,16 @@ static const CK_FUNCTION_LIST libsks_function_list = {
 	DO_NOT_REGISTER_CK_FUNCTION(C_DigestUpdate),
 	DO_NOT_REGISTER_CK_FUNCTION(C_DigestKey),
 	DO_NOT_REGISTER_CK_FUNCTION(C_DigestFinal),
-	DO_NOT_REGISTER_CK_FUNCTION(C_SignInit),
-	DO_NOT_REGISTER_CK_FUNCTION(C_Sign),
-	DO_NOT_REGISTER_CK_FUNCTION(C_SignUpdate),
-	DO_NOT_REGISTER_CK_FUNCTION(C_SignFinal),
+	REGISTER_CK_FUNCTION(C_SignInit),
+	REGISTER_CK_FUNCTION(C_Sign),
+	REGISTER_CK_FUNCTION(C_SignUpdate),
+	REGISTER_CK_FUNCTION(C_SignFinal),
 	DO_NOT_REGISTER_CK_FUNCTION(C_SignRecoverInit),
 	DO_NOT_REGISTER_CK_FUNCTION(C_SignRecover),
-	DO_NOT_REGISTER_CK_FUNCTION(C_VerifyInit),
-	DO_NOT_REGISTER_CK_FUNCTION(C_Verify),
-	DO_NOT_REGISTER_CK_FUNCTION(C_VerifyUpdate),
-	DO_NOT_REGISTER_CK_FUNCTION(C_VerifyFinal),
+	REGISTER_CK_FUNCTION(C_VerifyInit),
+	REGISTER_CK_FUNCTION(C_Verify),
+	REGISTER_CK_FUNCTION(C_VerifyUpdate),
+	REGISTER_CK_FUNCTION(C_VerifyFinal),
 	DO_NOT_REGISTER_CK_FUNCTION(C_VerifyRecoverInit),
 	DO_NOT_REGISTER_CK_FUNCTION(C_VerifyRecover),
 	DO_NOT_REGISTER_CK_FUNCTION(C_DigestEncryptUpdate),
@@ -703,7 +703,7 @@ CK_RV C_EncryptInit(CK_SESSION_HANDLE session,
 
 	SANITY_LIB_INIT;
 
-	rv = ck_encdecrypt_init(session, mechanism, key, 0);
+	rv = ck_encdecrypt_init(session, mechanism, key, CK_FALSE);
 
 	switch (rv) {
 	case CKR_CRYPTOKI_NOT_INITIALIZED:
@@ -773,7 +773,7 @@ CK_RV C_EncryptUpdate(CK_SESSION_HANDLE session,
 
 	SANITY_LIB_INIT;
 
-	rv = ck_encdecrypt_update(session, in, in_len, out, out_len, 0);
+	rv = ck_encdecrypt_update(session, in, in_len, out, out_len, CK_FALSE);
 
 	switch (rv) {
 	case CKR_ARGUMENTS_BAD:
@@ -807,7 +807,7 @@ CK_RV C_EncryptFinal(CK_SESSION_HANDLE session,
 
 	SANITY_LIB_INIT;
 
-	rv = ck_encdecrypt_final(session, out, out_len, 0);
+	rv = ck_encdecrypt_final(session, out, out_len, CK_FALSE);
 
 	switch (rv) {
 	case CKR_ARGUMENTS_BAD:
@@ -841,7 +841,7 @@ CK_RV C_DecryptInit(CK_SESSION_HANDLE session,
 
 	SANITY_LIB_INIT;
 
-	rv = ck_encdecrypt_init(session, mechanism, key, 1);
+	rv = ck_encdecrypt_init(session, mechanism, key, CK_TRUE);
 
 	switch (rv) {
 	case CKR_ARGUMENTS_BAD:
@@ -912,7 +912,7 @@ CK_RV C_DecryptUpdate(CK_SESSION_HANDLE session,
 
 	SANITY_LIB_INIT;
 
-	rv = ck_encdecrypt_update(session, in, in_len, out, out_len, 1);
+	rv = ck_encdecrypt_update(session, in, in_len, out, out_len, CK_TRUE);
 
 	switch (rv) {
 	case CKR_ARGUMENTS_BAD:
@@ -948,7 +948,7 @@ CK_RV C_DecryptFinal(CK_SESSION_HANDLE session,
 
 	SANITY_LIB_INIT;
 
-	rv = ck_encdecrypt_final(session, out, out_len, 1);
+	rv = ck_encdecrypt_final(session, out, out_len, CK_TRUE);
 
 	switch (rv) {
 	case CKR_ARGUMENTS_BAD:
@@ -1041,12 +1041,13 @@ CK_RV C_SignInit(CK_SESSION_HANDLE session,
 		 CK_MECHANISM_PTR mechanism,
 		 CK_OBJECT_HANDLE key)
 {
-	(void)session;
-	(void)mechanism;
-	(void)key;
+	CK_RV rv;
+
 	SANITY_LIB_INIT;
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	rv = ck_signverify_init(session, mechanism, key, CK_TRUE);
+
+	return rv;
 }
 
 CK_RV C_Sign(CK_SESSION_HANDLE session,
@@ -1055,38 +1056,44 @@ CK_RV C_Sign(CK_SESSION_HANDLE session,
 	     CK_BYTE_PTR       out,
 	     CK_ULONG_PTR      out_len)
 {
-	(void)session;
-	(void)in;
-	(void)in_len;
-	(void)out;
-	(void)out_len;
+	CK_RV rv;
+
 	SANITY_LIB_INIT;
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	rv = ck_signverify_update(session, in, in_len, CK_TRUE);
+	if (rv)
+		goto bail;
+
+	rv = ck_signverify_final(session, out, out_len, CK_TRUE);
+
+bail:
+	return rv;
 }
 
 CK_RV C_SignUpdate(CK_SESSION_HANDLE session,
 		   CK_BYTE_PTR in,
 		   CK_ULONG in_len)
 {
-	(void)session;
-	(void)in;
-	(void)in_len;
+	CK_RV rv;
+
 	SANITY_LIB_INIT;
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	rv = ck_signverify_update(session, in, in_len, CK_TRUE);
+
+	return rv;
 }
 
 CK_RV C_SignFinal(CK_SESSION_HANDLE session,
 		  CK_BYTE_PTR out,
 		  CK_ULONG_PTR out_len)
 {
-	(void)session;
-	(void)out;
-	(void)out_len;
+	CK_RV rv;
+
 	SANITY_LIB_INIT;
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	rv = ck_signverify_final(session, out, out_len, CK_TRUE);
+
+	return rv;
 }
 
 CK_RV C_SignRecoverInit(CK_SESSION_HANDLE session,
@@ -1121,10 +1128,11 @@ CK_RV C_VerifyInit(CK_SESSION_HANDLE session,
 		   CK_MECHANISM_PTR  mechanism,
 		   CK_OBJECT_HANDLE  key)
 {
-	(void)session;
-	(void)mechanism;
-	(void)key;
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	CK_RV rv;
+
+	rv = ck_signverify_init(session, mechanism, key, CK_FALSE);
+
+	return rv;
 }
 
 CK_RV C_Verify(CK_SESSION_HANDLE session,
@@ -1133,38 +1141,46 @@ CK_RV C_Verify(CK_SESSION_HANDLE session,
 	       CK_BYTE_PTR sign,
 	       CK_ULONG sign_len)
 {
-	(void)session;
-	(void)in;
-	(void)in_len;
-	(void)sign;
-	(void)sign_len;
+	CK_RV rv;
+	CK_ULONG out_len = sign_len;
+
 	SANITY_LIB_INIT;
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	rv = ck_signverify_update(session, in, in_len, CK_FALSE);
+	if (rv)
+		goto bail;
+
+	rv = ck_signverify_final(session, sign, &out_len, CK_FALSE);
+
+bail:
+	return rv;
 }
 
 CK_RV C_VerifyUpdate(CK_SESSION_HANDLE session,
 		     CK_BYTE_PTR in,
 		     CK_ULONG in_len)
 {
-	(void)session;
-	(void)in;
-	(void)in_len;
+	CK_RV rv;
+
 	SANITY_LIB_INIT;
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	rv = ck_signverify_update(session, in, in_len, CK_FALSE);
+
+	return rv;
 }
 
 CK_RV C_VerifyFinal(CK_SESSION_HANDLE session,
 		    CK_BYTE_PTR sign,
 		    CK_ULONG sign_len)
 {
-	(void)session;
-	(void)sign;
-	(void)sign_len;
+	CK_RV rv;
+	CK_ULONG out_len = sign_len;
+
 	SANITY_LIB_INIT;
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	rv = ck_signverify_final(session, sign, &out_len, CK_FALSE);
+
+	return rv;
 }
 
 CK_RV C_VerifyRecoverInit(CK_SESSION_HANDLE session,

@@ -402,6 +402,44 @@ struct sks_reference {
 #define SKS_CMD_GENERATE_SYMM_KEY	0x00000016
 
 /*
+ * SKS_CMD_SIGN_INIT - Initialize a signature computation processing
+ * SKS_CMD_VERIFY_INIT - Initialize a signature verification processing
+ *
+ * param#0: in(*)-memref : [uint32_t session_handle]
+ *			   [uint32_t key_handle]
+ *			   [struct sks_reference proc + proc parameters data]
+ * param#1: none
+ * param#2: none
+ * param#3: none
+ */
+#define SKS_CMD_SIGN_INIT		0x00000017
+#define SKS_CMD_VERIFY_INIT		0x00000018
+
+/*
+ * SKS_CMD_SIGN_UPDATE - Initialize a signature computation processing
+ * SKS_CMD_VERIFY_UPDATE - Initialize a signature verification processing
+ *
+ * param#0: in(*)-memref : [uint32_t session_handle]
+ * param#1: in-memref : [input-data]
+ * param#2: none
+ * param#3: none
+ */
+#define SKS_CMD_SIGN_UPDATE		0x00000019
+#define SKS_CMD_VERIFY_UPDATE		0x0000001a
+
+/*
+ * SKS_CMD_SIGN_FINAL - Initialize a signature computation processing
+ * SKS_CMD_VERIFY_FINAL - Initialize a signature verification processing
+ *
+ * param#0: in(*)-memref : [uint32_t session_handle]
+ * param#1: none
+ * param#2: out-memref : [output-data]
+ * param#3: none
+ */
+#define SKS_CMD_SIGN_FINAL		0x0000001b
+#define SKS_CMD_VERIFY_FINAL		0x0000001c
+
+/*
  * Return codes
  */
 #define SKS_OK				0x00000000	/* Success */
@@ -563,6 +601,12 @@ struct sks_reference {
  */
 #define SKS_KEY_AES				0
 #define SKS_GENERIC_SECRET			1
+#define SKS_KEY_HMAC_MD5			2
+#define SKS_KEY_HMAC_SHA1			3
+#define SKS_KEY_HMAC_SHA224			4
+#define SKS_KEY_HMAC_SHA256			5
+#define SKS_KEY_HMAC_SHA384			6
+#define SKS_KEY_HMAC_SHA512			7
 
 /*
  * SKS supported type for SKS_OBJ_CK_MECHANISM
@@ -584,6 +628,15 @@ struct sks_reference {
 #define SKS_PROC_GENERIC_GENERATE		13	/* CKM_GENERIC_SECRET_KEY_GEN */
 #define SKS_PROC_RAW_IMPORT			14	/* Not exported to TA API */
 #define SKS_PROC_RAW_COPY			15	/* Not exported to TA API */
+
+#define SKS_PROC_HMAC_MD5			20	/*  */
+#define SKS_PROC_HMAC_SHA1			21	/*  */
+#define SKS_PROC_HMAC_SHA224			22	/*  */
+#define SKS_PROC_HMAC_SHA256			23	/*  */
+#define SKS_PROC_HMAC_SHA384			24	/*  */
+#define SKS_PROC_HMAC_SHA512			25	/*  */
+#define SKS_PROC_AES_CBC_MAC			26	/*  */
+#define SKS_PROC_AES_CBC_MAC_96			27	/*  */
 
 /*
  * Processing parameters
