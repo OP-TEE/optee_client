@@ -421,6 +421,7 @@ struct sks_reference {
 #define SKS_INVALID_SESSION		0x00000106	/* session handle */
 #define SKS_INVALID_SLOT		0x00000107	/* slot id */
 #define SKS_INVALID_PROC_PARAM		0x00000108	/* processing parameters */
+#define SKS_NOT_IMPLEMENTED		0x00000109	/* */
 
 /* Report on Pin management */
 #define SKS_PIN_INCORRECT		0x00000200
@@ -434,8 +435,6 @@ struct sks_reference {
 #define SKS_PROCESSING_ACTIVE		0x00001003
 #define SKS_CK_NOT_PERMITTED		0x00001004	/* SKS_NOT_PERMITED? */
 #define SKS_PROCESSING_INACTIVE		0x00001005
-#define SKS_BAD_PROCESSING_PARAM	0x00001006
-
 /* Attribute specifc values */
 #define SKS_UNDEFINED_ID			((uint32_t)0xFFFFFFFF)
 #define SKS_FALSE				0
@@ -451,27 +450,27 @@ struct sks_reference {
  */
 #define SKS_PERSISTENT_SHIFT		0	/* Equiv for pkcs11 CKA_TOKEN */
 #define SKS_NEED_AUTHEN_SHIFT		1	/* Equiv for pkcs11 CKA_PRIVATE */
-#define SKS_TRUSTED_SHIFT		3	/* Equiv for pkcs11 CKA_TRUSTED */
-#define SKS_SENSITIVE_SHIFT		4	/* Equiv for pkcs11 CKA_SENSITIVE */
-#define SKS_ENCRYPT_SHIFT		5	/* Equiv for pkcs11 CKA_ENCRYPT */
-#define SKS_DECRYPT_SHIFT		6	/* Equiv for pkcs11 CKA_DECRYPT */
-#define SKS_WRAP_SHIFT			7	/* Equiv for pkcs11 CKA_WRAP */
-#define SKS_UNWRAP_SHIFT		8	/* Equiv for pkcs11 CKA_UNWRAP */
-#define SKS_SIGN_SHIFT			9	/* Equiv for pkcs11 CKA_SIGN */
-#define SKS_SIGN_RECOVER_SHIFT		10	/* Equiv for pkcs11 CKA_SIGN_RECOVER */
-#define SKS_VERIFY_SHIFT		11	/* Equiv for pkcs11 CKA_VERIFY */
-#define SKS_VERIFY_RECOVER_SHIFT	12	/* Equiv for pkcs11 CKA_VERIFY_RECOVER */
-#define SKS_DERIVE_SHIFT		13	/* Equiv for pkcs11 CKA_DERIVE */
-#define SKS_EXTRACTABLE_SHIFT		14	/* Equiv for pkcs11 CKA_EXTRACTABLE */
-#define SKS_LOCALLY_GENERATED_SHIFT	15	/* Equiv for pkcs11 CKA_LOCAL */
-#define SKS_NEVER_EXTRACTABLE_SHIFT	16	/* Equiv for pkcs11 CKA_NEVER_EXTRACTABLE */
-#define SKS_ALWAYS_SENSITIVE_SHIFT	17	/* Equiv for pkcs11 CKA_ALWAYS_SENSITIVE */
-#define SKS_MODIFIABLE_SHIFT		18	/* Equiv for pkcs11 CKA_MODIFIABLE */
-#define SKS_COPYABLE_SHIFT		19	/* Equiv for pkcs11 CKA_COPYABLE */
-#define SKS_DESTROYABLE_SHIFT		20	/* Equiv for pkcs11 CKA_DESTROYABLE */
-#define SKS_ALWAYS_AUTHEN_SHIFT		21	/* Equiv for pkcs11 CKA_ALWAYS_AUTHENTICATE */
-#define SKS_WRAP_FROM_TRUSTED_SHIFT	22	/* Equiv for pkcs11 CKA_WRAP_WITH_TRUSTED */
-#define SKS_BOOLPROP_LAST_SHIFT		22
+#define SKS_TRUSTED_SHIFT		2	/* Equiv for pkcs11 CKA_TRUSTED */
+#define SKS_SENSITIVE_SHIFT		3	/* Equiv for pkcs11 CKA_SENSITIVE */
+#define SKS_ENCRYPT_SHIFT		4	/* Equiv for pkcs11 CKA_ENCRYPT */
+#define SKS_DECRYPT_SHIFT		5	/* Equiv for pkcs11 CKA_DECRYPT */
+#define SKS_WRAP_SHIFT			6	/* Equiv for pkcs11 CKA_WRAP */
+#define SKS_UNWRAP_SHIFT		7	/* Equiv for pkcs11 CKA_UNWRAP */
+#define SKS_SIGN_SHIFT			8	/* Equiv for pkcs11 CKA_SIGN */
+#define SKS_SIGN_RECOVER_SHIFT		9	/* Equiv for pkcs11 CKA_SIGN_RECOVER */
+#define SKS_VERIFY_SHIFT		10	/* Equiv for pkcs11 CKA_VERIFY */
+#define SKS_VERIFY_RECOVER_SHIFT	11	/* Equiv for pkcs11 CKA_VERIFY_RECOVER */
+#define SKS_DERIVE_SHIFT		12	/* Equiv for pkcs11 CKA_DERIVE */
+#define SKS_EXTRACTABLE_SHIFT		13	/* Equiv for pkcs11 CKA_EXTRACTABLE */
+#define SKS_LOCALLY_GENERATED_SHIFT	14	/* Equiv for pkcs11 CKA_LOCAL */
+#define SKS_NEVER_EXTRACTABLE_SHIFT	15	/* Equiv for pkcs11 CKA_NEVER_EXTRACTABLE */
+#define SKS_ALWAYS_SENSITIVE_SHIFT	16	/* Equiv for pkcs11 CKA_ALWAYS_SENSITIVE */
+#define SKS_MODIFIABLE_SHIFT		17	/* Equiv for pkcs11 CKA_MODIFIABLE */
+#define SKS_COPYABLE_SHIFT		18	/* Equiv for pkcs11 CKA_COPYABLE */
+#define SKS_DESTROYABLE_SHIFT		19	/* Equiv for pkcs11 CKA_DESTROYABLE */
+#define SKS_ALWAYS_AUTHEN_SHIFT		20	/* Equiv for pkcs11 CKA_ALWAYS_AUTHENTICATE */
+#define SKS_WRAP_FROM_TRUSTED_SHIFT	21	/* Equiv for pkcs11 CKA_WRAP_WITH_TRUSTED */
+#define SKS_BOOLPROP_LAST_SHIFT		21
 
 #define SKS_BP_PERSISTENT		(1 << SKS_PERSISTENT_SHIFT)
 #define SKS_BP_NEED_AUTHEN		(1 << SKS_NEED_AUTHEN_SHIFT)
