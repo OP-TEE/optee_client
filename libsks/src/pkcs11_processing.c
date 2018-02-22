@@ -257,7 +257,6 @@ CK_RV ck_signverify_init(CK_SESSION_HANDLE session,
 	memcpy(ctrl + sizeof(uint32_t), &key_handle, sizeof(uint32_t));
 	memcpy(ctrl + 2 * sizeof(uint32_t), obj.buffer, obj.size);
 
-printf("sign/verify init invoke ta\n");
 	rv = ck_invoke_ta(ck_session2sks_ctx(session), sign ?
 			  SKS_CMD_SIGN_INIT : SKS_CMD_VERIFY_INIT,
 			  ctrl, ctrl_size, NULL, 0, NULL, NULL);
