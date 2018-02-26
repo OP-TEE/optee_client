@@ -313,7 +313,8 @@ CK_RV ck_signverify_final(CK_SESSION_HANDLE session,
 
 	rv = ck_invoke_ta(ck_session2sks_ctx(session), sign ?
 			  SKS_CMD_SIGN_FINAL : SKS_CMD_VERIFY_FINAL,
-			  &ctrl, ctrl_size, NULL, 0, out_buf, &out_size);
+			  &ctrl, ctrl_size, NULL, 0,
+			  out_buf, out_len ? &out_size : NULL);
 
 	if (out_len && (rv == CKR_OK || rv == CKR_BUFFER_TOO_SMALL))
 		*out_len = out_size;
