@@ -196,7 +196,7 @@ CK_RV sks_ck_token_mechanism_ids(CK_SLOT_ID slot,
 				 CK_ULONG_PTR count)
 {
 	uint32_t ctrl[1] = { slot };
-	uint32_t outsize = *count * sizeof(uint32_t);
+	size_t outsize = *count * sizeof(uint32_t);
 	void *outbuf;
 	CK_RV rv;
 
@@ -205,7 +205,8 @@ CK_RV sks_ck_token_mechanism_ids(CK_SLOT_ID slot,
 		return CKR_HOST_MEMORY;
 
 	rv = ck_invoke_ta(NULL, SKS_CMD_CK_MECHANISM_IDS,
-			  &ctrl, sizeof(ctrl), NULL, 0, outbuf, &outsize);
+			  (void *)&ctrl, sizeof(ctrl), NULL, 0,
+			  outbuf, &outsize);
 	if (rv == CKR_OK || rv == CKR_BUFFER_TOO_SMALL)
 		*count = outsize / sizeof(uint32_t);
 	if (rv)
@@ -230,7 +231,7 @@ CK_RV sks_ck_token_mechanism_info(CK_SLOT_ID slot,
 	CK_RV rv;
 	uint32_t ctrl[2];
 	struct sks_ck_mecha_info outbuf;
-	uint32_t outsize = sizeof(outbuf);
+	size_t outsize = sizeof(outbuf);
 
 	ctrl[0] = (uint32_t)slot;
 	ctrl[1] = ck2sks_mechanism_type(type);
@@ -241,7 +242,8 @@ CK_RV sks_ck_token_mechanism_info(CK_SLOT_ID slot,
 
 	/* info is large enought, for sure */
 	rv = ck_invoke_ta(NULL, SKS_CMD_CK_MECHANISM_INFO,
-			  &ctrl, sizeof(ctrl), NULL, 0, &outbuf, &outsize);
+			  (void *)&ctrl, sizeof(ctrl), NULL, 0,
+			  (void *)&outbuf, &outsize);
 	if (rv) {
 		LOG_ERROR("Unexpected bad state (%x)\n", (unsigned)rv);
 		return CKR_DEVICE_ERROR;
@@ -296,7 +298,7 @@ CK_RV sks_ck_close_session(CK_SESSION_HANDLE session)
 	uint32_t ctrl[1] = { (uint32_t)session };
 
 	return ck_invoke_ta(NULL, SKS_CMD_CK_CLOSE_SESSION,
-			    &ctrl, sizeof(ctrl), NULL, 0, NULL, NULL);
+			    (void *)&ctrl, sizeof(ctrl), NULL, 0, NULL, NULL);
 }
 
 /*
@@ -308,7 +310,7 @@ CK_RV sks_ck_close_all_sessions(CK_SLOT_ID slot)
 	uint32_t ctrl[1] = { (uint32_t)slot };
 
 	return ck_invoke_ta(NULL, SKS_CMD_CK_CLOSE_ALL_SESSIONS,
-			    &ctrl, sizeof(ctrl), NULL, 0, NULL, NULL);
+			    (void *)&ctrl, sizeof(ctrl), NULL, 0, NULL, NULL);
 }
 
 CK_RV sks_ck_get_session_info(CK_SESSION_HANDLE session,
@@ -318,5 +320,6 @@ CK_RV sks_ck_get_session_info(CK_SESSION_HANDLE session,
 	size_t info_size = sizeof(CK_SESSION_INFO);
 
 	return ck_invoke_ta(NULL, SKS_CMD_CK_SESSION_INFO,
-			    &ctrl, sizeof(ctrl), NULL, 0, info, &info_size);
+			    (void *)&ctrl, sizeof(ctrl), NULL, 0,
+			    info, &info_size);
 }
