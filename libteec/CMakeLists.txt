@@ -16,7 +16,7 @@ endif()
 option (CFG_TEE_BENCHMARK "Build with benchmark support" OFF)
 
 set (CFG_TEE_CLIENT_LOG_LEVEL "1" CACHE STRING "libteec log level")
-set (CFG_TEE_CLIENT_LOG_FILE "/data/teec.log" CACHE STRING "Location of libteec log")
+set (CFG_TEE_CLIENT_LOG_FILE "/data/tee/logs/teec.log" CACHE STRING "Location of libteec log")
 
 ################################################################################
 # Source files
@@ -46,7 +46,7 @@ set_target_properties (teec PROPERTIES
 target_compile_definitions (teec
 	PRIVATE -D_GNU_SOURCE
 	PRIVATE -DCFG_TEE_CLIENT_LOG_LEVEL=${CFG_TEE_CLIENT_LOG_LEVEL}
-	PRIVATE -DCFG_TEE_CLIENT_LOG_FILE="${CFG_TEE_CLIENT_LOG_FILE}"
+	PRIVATE -DTEEC_LOG_FILE="${CFG_TEE_CLIENT_LOG_FILE}"
 	PRIVATE -DBINARY_PREFIX="LT"
 )
 

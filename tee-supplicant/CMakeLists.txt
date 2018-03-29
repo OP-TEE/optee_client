@@ -7,7 +7,6 @@ option (CFG_TA_TEST_PATH "Enable tee-supplicant to load from test/debug path" ON
 option (CFG_TA_GPROF_SUPPORT "Enabled tee-supplicant profiling support" OFF)
 
 set (CFG_TEE_SUPP_LOG_LEVEL "1" CACHE STRING "tee-supplicant log level")
-set (CFG_TEE_SUPP_LOG_FILE "/data/teesupp.log" CACHE STRING "Location of tee-supplicant log")
 # FIXME: Question is, is this really needed? Should just use defaults from # GNUInstallDirs?
 set (CFG_TEE_CLIENT_LOAD_PATH "/lib" CACHE STRING "Location of libteec.so")
 set (CFG_TEE_FS_PARENT_PATH "/data" CACHE STRING "Location of TEE filesystem (secure storage)")
@@ -45,7 +44,6 @@ add_executable (${PROJECT_NAME} ${SRC})
 ################################################################################
 target_compile_definitions (${PROJECT_NAME}
 	PRIVATE -DCFG_TEE_SUPP_LOG_LEVEL=${CFG_TEE_SUPP_LOG_LEVEL}
-	PRIVATE -DCFG_TEE_SUPP_LOG_FILE="${CFG_TEE_SUPP_LOG_FILE}"
 	PRIVATE -DTEEC_LOAD_PATH="${CFG_TEE_CLIENT_LOAD_PATH}"
 	PRIVATE -DTEE_FS_PARENT_PATH="${CFG_TEE_FS_PARENT_PATH}"
 	PRIVATE -DBINARY_PREFIX="TSUP"
