@@ -20,13 +20,18 @@ export CFG_TEE_CLIENT_LOG_LEVEL
 CFG_TEE_SUPP_LOG_LEVEL?=1
 export CFG_TEE_SUPP_LOG_LEVEL
 
+# CFG_TEE_DATA_PATH
+#   Specify the root path for the TEE data directory.
+CFG_TEE_DATA_PATH ?= /data/tee
+
+# CFG_TEE_LOGS_PATH
+#   Specify the root path for the TEE logs directory.
+#   Normally it will be the logs directory under $(CFG_TEE_DATA_PATH)
+CFG_TEE_LOGS_PATH ?= $(CFG_TEE_DATA_PATH)/logs
+
 # CFG_TEE_CLIENT_LOG_FILE
 # The location of the client log file when logging to file is enabled.
-CFG_TEE_CLIENT_LOG_FILE ?= \"/data/teec.log\"
-
-# CFG_TEE_SUPP_LOG_FILE
-# The location of the supplicant log file when logging to file is enabled.
-CFG_TEE_SUPP_LOG_FILE ?= \"/data/teesupp.log\"
+CFG_TEE_CLIENT_LOG_FILE ?= $(CFG_TEE_LOGS_PATH)/teec.log
 
 # CFG_TEE_CLIENT_LOAD_PATH
 # The location of the client library file.

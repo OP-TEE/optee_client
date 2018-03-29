@@ -6,6 +6,9 @@ LOCAL_PATH := $(call my-dir)
 # set CFG_TEE_CLIENT_LOAD_PATH before include config.mk
 CFG_TEE_CLIENT_LOAD_PATH ?= /system/lib
 
+# set CFG_TEE_DATA_PATH before include config.mk
+CFG_TEE_DATA_PATH ?= /data/tee
+
 ################################################################################
 # Include optee-client common config and flags                                 #
 ################################################################################
@@ -21,7 +24,7 @@ include $(CLEAR_VARS)
 LOCAL_CFLAGS += $(optee_CFLAGS)
 
 ifneq ($(CFG_TEE_CLIENT_LOG_FILE),)
-LOCAL_CFLAGS += -DTEEC_LOG_FILE=$(CFG_TEE_CLIENT_LOG_FILE)
+LOCAL_CFLAGS += -DTEEC_LOG_FILE=\"$(CFG_TEE_CLIENT_LOG_FILE)\"
 endif
 
 LOCAL_CFLAGS += -DDEBUGLEVEL_$(CFG_TEE_CLIENT_LOG_LEVEL)
