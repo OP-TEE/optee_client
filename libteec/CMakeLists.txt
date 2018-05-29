@@ -37,7 +37,7 @@ add_library (teec SHARED ${SRC})
 
 set_target_properties (teec PROPERTIES
 	VERSION ${PROJECT_VERSION}
-	SOVERSION ${PROJECT_NAME}
+	SOVERSION 1
 )
 
 ################################################################################
