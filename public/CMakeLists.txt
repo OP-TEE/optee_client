@@ -1,6 +1,11 @@
 project (optee-client-headers C)
 
 ################################################################################
+# Header files to be exported
+################################################################################
+FILE(GLOB INSTALL_HEADERS "*.h")
+
+################################################################################
 # Built library
 ################################################################################
 add_library(${PROJECT_NAME} INTERFACE)
@@ -13,5 +18,4 @@ target_include_directories(teec PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 ################################################################################
 # Install targets
 ################################################################################
-install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
-	   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install (FILES ${INSTALL_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
