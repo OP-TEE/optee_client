@@ -10,10 +10,6 @@
 extern "C" {
 #endif
 
-#ifndef BIT
-#define BIT(x)			(1ul << (x))
-#endif
-
 /*
  * PKCS#11 Cryptoki API v2.40-errata01, See specification from:
  * http://docs.oasis-open.org/pkcs11/pkcs11-base/v2.40/errata01/os/pkcs11-base-v2.40-errata01-os-complete.html
@@ -89,8 +85,8 @@ struct CK_ATTRIBUTE {
  *
  * This does not cover the full PKCS#11 IDs.
  */
-#define CKF_ARRAY_ATTRIBUTE		BIT(30)
-#define CKA_VENDOR_DEFINED		BIT(31)
+#define CKF_ARRAY_ATTRIBUTE		(1U << 30)
+#define CKA_VENDOR_DEFINED		(1U << 31)
 #define CKA_CLASS			0x0000
 #define CKA_TOKEN			0x0001
 #define CKA_PRIVATE			0x0002
@@ -200,7 +196,7 @@ typedef CK_ULONG		CK_OBJECT_CLASS;
 typedef CK_OBJECT_CLASS *	CK_OBJECT_CLASS_PTR;
 
 /* Values for type CK_OBJECT_CLASS */
-#define CKO_VENDOR_DEFINED		BIT(31)
+#define CKO_VENDOR_DEFINED		(1U << 31)
 #define CKO_DATA			0x0
 #define CKO_CERTIFICATE			0x1
 #define CKO_PUBLIC_KEY			0x2
@@ -220,7 +216,7 @@ typedef CK_KEY_TYPE *		CK_KEY_TYPE_PTR;
  *
  * This does not cover the full PKCS#11 IDs.
  */
-#define CKK_VENDOR_DEFINED		BIT(31)
+#define CKK_VENDOR_DEFINED		(1U << 31)
 #define CKK_RSA				0x000
 #define CKK_DSA				0x001
 #define CKK_DH				0x002
@@ -253,7 +249,7 @@ typedef CK_MECHANISM_TYPE *	CK_MECHANISM_TYPE_PTR;
  *
  * This does not cover the full PKCS#11 IDs.
  */
-#define CKM_VENDOR_DEFINED		BIT(31)
+#define CKM_VENDOR_DEFINED		(1U << 31)
 #define CKM_RSA_PKCS_KEY_PAIR_GEN	0x00000
 #define CKM_RSA_PKCS			0x00001
 #define CKM_RSA_9796			0x00002
@@ -354,26 +350,26 @@ struct CK_MECHANISM_INFO {
 };
 
 /* Flags for field flags of struct ck_mechanism_info */
-#define CKF_HW				BIT(0)
-#define CKF_ENCRYPT			BIT(8)
-#define CKF_DECRYPT			BIT(9)
-#define CKF_DIGEST			BIT(10)
-#define CKF_SIGN			BIT(11)
-#define CKF_SIGN_RECOVER		BIT(12)
-#define CKF_VERIFY			BIT(13)
-#define CKF_VERIFY_RECOVER		BIT(14)
-#define CKF_GENERATE			BIT(15)
-#define CKF_GENERATE_KEY_PAIR		BIT(16)
-#define CKF_WRAP			BIT(17)
-#define CKF_UNWRAP			BIT(18)
-#define CKF_DERIVE			BIT(19)
-#define CKF_EC_F_P			BIT(20)
-#define CKF_EC_F_2M			BIT(21)
-#define CKF_EC_ECPARAMETERS		BIT(22)
-#define CKF_EC_NAMEDCURVE		BIT(23)
-#define CKF_EC_UNCOMPRESS		BIT(24)
-#define CKF_EC_COMPRESS			BIT(25)
-#define CKF_EXTENSION			BIT(31)
+#define CKF_HW				(1U << 0)
+#define CKF_ENCRYPT			(1U << 8)
+#define CKF_DECRYPT			(1U << 9)
+#define CKF_DIGEST			(1U << 10)
+#define CKF_SIGN			(1U << 11)
+#define CKF_SIGN_RECOVER		(1U << 12)
+#define CKF_VERIFY			(1U << 13)
+#define CKF_VERIFY_RECOVER		(1U << 14)
+#define CKF_GENERATE			(1U << 15)
+#define CKF_GENERATE_KEY_PAIR		(1U << 16)
+#define CKF_WRAP			(1U << 17)
+#define CKF_UNWRAP			(1U << 18)
+#define CKF_DERIVE			(1U << 19)
+#define CKF_EC_F_P			(1U << 20)
+#define CKF_EC_F_2M			(1U << 21)
+#define CKF_EC_ECPARAMETERS		(1U << 22)
+#define CKF_EC_NAMEDCURVE		(1U << 23)
+#define CKF_EC_UNCOMPRESS		(1U << 24)
+#define CKF_EC_COMPRESS			(1U << 25)
+#define CKF_EXTENSION			(1U << 31)
 
 /*
  * Mechanism parameter structures
@@ -447,7 +443,7 @@ struct CK_CCM_PARAMS {
 typedef CK_ULONG			CK_RV;
 
 /* Values for type CK_RV */
-#define CKR_VENDOR_DEFINED			BIT(31)
+#define CKR_VENDOR_DEFINED			(1U << 31)
 #define CKR_OK					0x0000
 #define CKR_CANCEL				0x0001
 #define CKR_HOST_MEMORY				0x0002
@@ -572,9 +568,9 @@ struct CK_SLOT_INFO {
 };
 
 /* Values for field flags of struct ck_slot_info */
-#define CKF_TOKEN_PRESENT	BIT(0)
-#define CKF_REMOVABLE_DEVICE	BIT(1)
-#define CKF_HW_SLOT		BIT(2)
+#define CKF_TOKEN_PRESENT	(1U << 0)
+#define CKF_REMOVABLE_DEVICE	(1U << 1)
+#define CKF_HW_SLOT		(1U << 2)
 
 /* Argument for C_GetTokenInfo */
 typedef struct CK_TOKEN_INFO	CK_TOKEN_INFO;
@@ -602,25 +598,25 @@ struct CK_TOKEN_INFO {
 };
 
 /* Values for field flags of struct ck_token_info */
-#define CKF_RNG					BIT(0)
-#define CKF_WRITE_PROTECTED			BIT(1)
-#define CKF_LOGIN_REQUIRED			BIT(2)
-#define CKF_USER_PIN_INITIALIZED		BIT(3)
-#define CKF_RESTORE_KEY_NOT_NEEDED		BIT(5)
-#define CKF_CLOCK_ON_TOKEN			BIT(6)
-#define CKF_PROTECTED_AUTHENTICATION_PATH	BIT(8)
-#define CKF_DUAL_CRYPTO_OPERATIONS		BIT(9)
-#define CKF_TOKEN_INITIALIZED			BIT(10)
-#define CKF_SECONDARY_AUTHENTICATION		BIT(11)
-#define CKF_USER_PIN_COUNT_LOW			BIT(16)
-#define CKF_USER_PIN_FINAL_TRY			BIT(17)
-#define CKF_USER_PIN_LOCKED			BIT(18)
-#define CKF_USER_PIN_TO_BE_CHANGED		BIT(19)
-#define CKF_SO_PIN_COUNT_LOW			BIT(20)
-#define CKF_SO_PIN_FINAL_TRY			BIT(21)
-#define CKF_SO_PIN_LOCKED			BIT(22)
-#define CKF_SO_PIN_TO_BE_CHANGED		BIT(23)
-#define CKF_ERROR_STATE				BIT(24)
+#define CKF_RNG					(1U << 0)
+#define CKF_WRITE_PROTECTED			(1U << 1)
+#define CKF_LOGIN_REQUIRED			(1U << 2)
+#define CKF_USER_PIN_INITIALIZED		(1U << 3)
+#define CKF_RESTORE_KEY_NOT_NEEDED		(1U << 5)
+#define CKF_CLOCK_ON_TOKEN			(1U << 6)
+#define CKF_PROTECTED_AUTHENTICATION_PATH	(1U << 8)
+#define CKF_DUAL_CRYPTO_OPERATIONS		(1U << 9)
+#define CKF_TOKEN_INITIALIZED			(1U << 10)
+#define CKF_SECONDARY_AUTHENTICATION		(1U << 11)
+#define CKF_USER_PIN_COUNT_LOW			(1U << 16)
+#define CKF_USER_PIN_FINAL_TRY			(1U << 17)
+#define CKF_USER_PIN_LOCKED			(1U << 18)
+#define CKF_USER_PIN_TO_BE_CHANGED		(1U << 19)
+#define CKF_SO_PIN_COUNT_LOW			(1U << 20)
+#define CKF_SO_PIN_FINAL_TRY			(1U << 21)
+#define CKF_SO_PIN_LOCKED			(1U << 22)
+#define CKF_SO_PIN_TO_BE_CHANGED		(1U << 23)
+#define CKF_ERROR_STATE				(1U << 24)
 
 /* Argument for C_GetSessionInfo */
 typedef struct CK_SESSION_INFO		CK_SESSION_INFO;
@@ -643,8 +639,8 @@ struct CK_SESSION_INFO {
 };
 
 /* Values for field flags of struct ck_session_info */
-#define CKF_RW_SESSION			BIT(1)
-#define CKF_SERIAL_SESSION		BIT(2)
+#define CKF_RW_SESSION			(1U << 1)
+#define CKF_SERIAL_SESSION		(1U << 2)
 
 /* Argument for C_Login */
 typedef CK_ULONG		CK_USER_TYPE;
@@ -999,8 +995,8 @@ struct CK_C_INITIALIZE_ARGS {
 };
 
 /* Flags for field flags of struct ck_c_initialize_args */
-#define CKF_LIBRARY_CANT_CREATE_OS_THREADS	BIT(0)
-#define CKF_OS_LOCKING_OK			BIT(1)
+#define CKF_LIBRARY_CANT_CREATE_OS_THREADS	(1U << 0)
+#define CKF_OS_LOCKING_OK			(1U << 1)
 
 CK_RV C_Initialize(
 		CK_VOID_PTR init_args);
