@@ -3,12 +3,12 @@ include ../config.mk
 
 OUT_DIR := $(OO)/libsks
 
-.PHONY: all liboptee_cryptoki clean
+.PHONY: all libsks clean
 
-all: liboptee_cryptoki
-install: liboptee_cryptoki
+all: libsks
+install: libsks
 
-LIB_NAME	:= liboptee_cryptoki
+LIB_NAME	:= libsks
 MAJOR_VERSION	:= 0
 MINOR_VERSION	:= 0
 
@@ -35,20 +35,20 @@ $(LIBSKS_OBJ_DIR)/%.o: ${LIBSKS_SRC_DIR}/%.c
 	@echo "  CC      $<"
 	$(VPREFIX)$(CC) $(LIBSKS_CFLAGS) -c $< -o $@
 
-liboptee_cryptoki: $(OUT_DIR)/$(LIBSKS_SO_LIBRARY)
+libsks: $(OUT_DIR)/$(LIBSKS_SO_LIBRARY)
 
 $(OUT_DIR)/$(LIBSKS_SO_LIBRARY): $(LIBSKS_OBJS)
 	@echo "  LINK    $@"
 	$(VPREFIX)$(CC) -shared -Wl,-soname,$(LIBSKS_SO_LIBRARY) $(LIBSKS_LFLAGS) -o $@ $+
 	@echo ""
 
-liboptee_cryptoki: $(OUT_DIR)/$(LIBSKS_AR_LIBRARY)
+libsks: $(OUT_DIR)/$(LIBSKS_AR_LIBRARY)
 
 $(OUT_DIR)/$(LIBSKS_AR_LIBRARY): $(LIBSKS_OBJS)
 	@echo "  AR      $@"
 	$(VPREFIX)$(AR) rcs $@ $+
 
-liboptee_cryptoki: 
+libsks:
 	$(VPREFIX)ln -sf $(LIB_MAJ_MIN) $(OUT_DIR)/$(LIB_MAJOR)
 	$(VPREFIX)ln -sf $(LIB_MAJOR) $(OUT_DIR)/$(LIB_NAME).so
 

@@ -40,7 +40,7 @@ build-tee-supplicant: build-libteec
 build: build-libteec build-tee-supplicant build-libsks
 
 build-libsks:
-	@echo "Building liboptee_cryptoki.so"
+	@echo "Building libsks.so"
 	@$(MAKE) --directory=libsks --no-print-directory --no-builtin-variables
 
 install: copy_export
@@ -138,5 +138,5 @@ copy_export: build
 	cp ${O}/tee-supplicant/tee-supplicant $(DESTDIR)$(BINDIR)
 	cp public/*.h $(DESTDIR)$(INCLUDEDIR)
 	cp libsks/include/*.h $(DESTDIR)$(INCLUDEDIR)
-	cp -a ${O}/libsks/liboptee_cryptoki.so* $(DESTDIR)$(LIBDIR)
-	cp -a ${O}/libsks/liboptee_cryptoki.a $(DESTDIR)$(LIBDIR)
+	cp -a ${O}/libsks/libsks.so* $(DESTDIR)$(LIBDIR)
+	cp -a ${O}/libsks/libsks.a $(DESTDIR)$(LIBDIR)

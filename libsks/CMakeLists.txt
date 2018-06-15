@@ -1,4 +1,4 @@
-project(liboptee_cryptoki C)
+project(sks C)
 
 set(PROJECT_VERSION "1.0.0")
 
@@ -22,9 +22,9 @@ set (SRC
 ################################################################################
 # Built library
 ################################################################################
-add_library (optee_cryptoki SHARED ${SRC})
+add_library (sks SHARED ${SRC})
 
-set_target_properties (optee_cryptoki PROPERTIES
+set_target_properties (sks PROPERTIES
 	VERSION ${PROJECT_VERSION}
 	SOVERSION ${PROJECT_NAME}
 )
@@ -32,7 +32,7 @@ set_target_properties (optee_cryptoki PROPERTIES
 ################################################################################
 # Flags always set
 ################################################################################
-target_compile_definitions (optee_cryptoki
+target_compile_definitions (sks
 	PRIVATE -D_GNU_SOURCE
 	PRIVATE -DBINARY_PREFIX="LT"
 )
@@ -44,7 +44,7 @@ target_compile_definitions (optee_cryptoki
 ################################################################################
 # Public and private header and library dependencies
 ################################################################################
-target_include_directories(optee_cryptoki
+target_include_directories(sks
 	PUBLIC include
 	PRIVATE src
 )
@@ -53,7 +53,7 @@ target_include_directories(teec
 	PUBLIC include
 )
 
-target_link_libraries (optee_cryptoki
+target_link_libraries (sks
 	PRIVATE pthread
 	PRIVATE teec
 	PRIVATE m
@@ -62,7 +62,7 @@ target_link_libraries (optee_cryptoki
 ################################################################################
 # Install targets
 ################################################################################
-install (TARGETS optee_cryptoki
+install (TARGETS sks
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
