@@ -181,7 +181,8 @@ CK_RV C_InitToken(CK_SLOT_ID slot,
 	(void)pin_len;
 	(void)label;
 
-	sanity_lib_init();
+	if (sanity_lib_init())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -206,7 +207,8 @@ CK_RV C_GetMechanismList(CK_SLOT_ID slot,
 	(void)mechanisms;
 	(void)count;
 
-	sanity_lib_init();
+	if (sanity_lib_init())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -797,6 +799,10 @@ CK_RV C_VerifyInit(CK_SESSION_HANDLE session,
 	(void)session;
 	(void)mechanism;
 	(void)key;
+
+	if (sanity_lib_init())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
