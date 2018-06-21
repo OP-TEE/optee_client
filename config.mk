@@ -22,7 +22,7 @@ export CFG_TEE_SUPP_LOG_LEVEL
 
 # CFG_TEE_DATA_PATH
 #   Specify the root path for the TEE data directory.
-CFG_TEE_DATA_PATH ?= /data/tee
+CFG_TEE_DATA_PATH ?= /data/vendor/tee
 
 # CFG_TEE_LOGS_PATH
 #   Specify the root path for the TEE logs directory.
