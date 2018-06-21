@@ -45,7 +45,7 @@
 #ifdef CFG_TA_TEST_PATH
 # ifndef TEEC_TEST_LOAD_PATH
 #  ifdef __ANDROID__
-#   define TEEC_TEST_LOAD_PATH "/data/tee"
+#   define TEEC_TEST_LOAD_PATH "/data/vendor/tee"
 #  else
 #   define TEEC_TEST_LOAD_PATH "/tmp"
 #  endif
