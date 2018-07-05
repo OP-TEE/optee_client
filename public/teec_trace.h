@@ -91,12 +91,12 @@ extern "C" {
 #define __PRINTFLIKE(__fmt, __varargs) __attribute__\
 	((__format__(__printf__, __fmt, __varargs)))
 
-int _dprintf(const char *function, int flen, int line, int level,
-	     const char *prefix, const char *fmt, ...) __PRINTFLIKE(6, 7);
+void _dprintf(const char *function, int line, int level, const char *prefix,
+	      const char *fmt, ...) __PRINTFLIKE(5, 6);
 
 #define dprintf(level, x...) do { \
 		if ((level) <= DEBUGLEVEL) { \
-			_dprintf(__func__, strlen(__func__), __LINE__, level, \
+			_dprintf(__func__, __LINE__, level, \
 				 BINARY_PREFIX, x); \
 		} \
 	} while (0)
@@ -118,7 +118,7 @@ int _dprintf(const char *function, int flen, int line, int level,
 
 #define dprintf_raw(level, x...) do { \
 		if ((level) <= DEBUGLEVEL) \
-			_dprintf(0, 0, 0, (level), BINARY_PREFIX, x); \
+			_dprintf(0, 0, (level), BINARY_PREFIX, x); \
 	} while (0)
 
 #define EMSG_RAW(fmt, ...)   dprintf_raw(TRACE_ERROR, fmt, ##__VA_ARGS__)

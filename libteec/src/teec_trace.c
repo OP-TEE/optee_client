@@ -47,7 +47,6 @@
  * PPPP: MMMMM [FFFFFFFFFFFFFFF : LLLLL]
  */
 #define MAX_PRINT_SIZE 256
-#define MAX_FUNC_PRINT_SIZE 32
 
 #ifdef TEEC_LOG_FILE
 static void log_to_file(const char *buffer)
@@ -69,57 +68,33 @@ static const char * const trace_level_strings[] = {
 	"", "ERR", "INF", "DBG", "FLW"
 };
 
-int _dprintf(const char *function, int flen, int line, int level,
-	     const char *prefix, const char *fmt, ...)
+void _dprintf(const char *function, int line, int level, const char *prefix,
+	      const char *fmt, ...)
 {
-	char raw[MAX_PRINT_SIZE];
-	char prefixed[MAX_PRINT_SIZE];
-	char *to_print = NULL;
-	const char *func;
-	int err;
+	char msg[MAX_PRINT_SIZE];
+	int n = 0;
 	va_list ap;
 
-	va_start(ap, fmt);
-	err = vsnprintf(raw, sizeof(raw), fmt, ap);
-	va_end(ap);
-
 	if (function) {
-#ifdef TRACE_FUNC_LENGTH_CST
-		char func_buf[MAX_FUNC_PRINT_SIZE];
-		/* Limit the function name to MAX_FUNC_PRINT_SIZE characters. */
-		strncpy(func_buf, function, flen > MAX_FUNC_PRINT_SIZE ?
-			(MAX_FUNC_PRINT_SIZE - 1) : flen);
-		if (flen < (MAX_FUNC_PRINT_SIZE - 1)) {
-			memset(func_buf + flen, 0x20,
-			       (MAX_FUNC_PRINT_SIZE - flen));
-		}
-		func_buf[MAX_FUNC_PRINT_SIZE - 1] = '\0';
-		func = func_buf;
-#else
-		(void)flen;
-		func = function;
-#endif
+		int thread_id = syscall(SYS_gettid);
 
-		/*
-		 * pthread_self returns the POSIX tid which is different from
-		 * the kernel id
-		 */
-		int thread_id = syscall(SYS_gettid);	/* perf issue ? */
-
-		snprintf(prefixed, MAX_PRINT_SIZE,
-			 "%s [%d] %s:%s:%d: %s",
-			 trace_level_strings[level], thread_id, prefix, func,
-			 line, raw);
-		to_print = prefixed;
-	} else {
-		to_print = raw;
+		n = snprintf(msg, sizeof(msg), "%s [%d] %s:%s:%d: ",
+			trace_level_strings[level], thread_id, prefix,
+			function, line);
+		if (n < 0)
+			return;
 	}
 
-	fprintf(stdout, "%s", to_print);
+	if ((size_t)n < sizeof(msg)) {
+		va_start(ap, fmt);
+		n = vsnprintf(msg + n, sizeof(msg) - n, fmt, ap);
+		va_end(ap);
+		if (n < 0)
+			return;
+	}
 
-	log_to_file(to_print);
-
-	return err;
+	fprintf(stdout, "%s", msg);
+	log_to_file(msg);
 }
 
 #if (defined(DEBUGLEVEL_3) || defined(DEBUGLEVEL_true) || defined(DEBUGLEVEL_4))
