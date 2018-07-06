@@ -9,7 +9,10 @@ CFLAGS          := -Wall -Wbad-function-cast -Wcast-align \
 		   -Wmissing-noreturn -Wmissing-prototypes -Wnested-externs \
 		   -Wpointer-arith -Wshadow -Wstrict-prototypes \
 		   -Wswitch-default \
-		   -Wwrite-strings -Werror
+		   -Wwrite-strings
+ifeq ($(CFG_WERROR),y)
+CFLAGS		+= -Werror
+endif
 CFLAGS          += -c -fPIC
 
 DEBUG       ?= 0

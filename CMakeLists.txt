@@ -4,6 +4,8 @@ project (optee_client C)
 # https://cmake.org/Wiki/CMake_Useful_Variables
 set (CMAKE_TOOLCHAIN_FILE CMakeToolchain.txt)
 
+set (CFG_WERROR 1 CACHE BOOL "Build with -Werror")
+
 include(GNUInstallDirs)
 
 ################################################################################
@@ -19,8 +21,11 @@ add_compile_options (
 	-Wmissing-noreturn -Wmissing-prototypes -Wnested-externs
 	-Wpointer-arith -Wshadow -Wstrict-prototypes
 	-Wswitch-default -Wunsafe-loop-optimizations
-	-Wwrite-strings -Werror -fPIC
+	-Wwrite-strings -fPIC
 )
+if(CFG_WERROR)
+    add_compile_options(-Werror)
+endif(CFG_WERROR)
 
 find_program(CCACHE_FOUND ccache)
 if(CCACHE_FOUND)
