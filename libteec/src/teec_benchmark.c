@@ -117,16 +117,16 @@ static TEEC_Result benchmark_get_bench_buf_paddr(uint64_t *paddr_ts_buf,
 static void *mmap_paddr(intptr_t paddr, uint64_t size)
 {
 	int   devmem;
-	off_t offset = 0;
+	off_t offset;
 	off_t page_addr;
-	intptr_t *hw_addr = (intptr_t *)paddr;
+	intptr_t *hw_addr;
 
 	devmem = open("/dev/mem", O_RDWR);
 	if (!devmem)
 		return NULL;
 
-	offset = (off_t)(uintptr_t)hw_addr % getpagesize();
-	page_addr = (off_t)(uintptr_t)(hw_addr - offset);
+	offset = (off_t)paddr % getpagesize();
+	page_addr = (off_t)(paddr - offset);
 
 	hw_addr = (intptr_t *)mmap(0, size, PROT_READ|PROT_WRITE,
 					MAP_SHARED, devmem, page_addr);
