@@ -455,10 +455,12 @@ static int get_dev_fd(uint32_t *gen_caps)
 	return -1;
 }
 
-static int usage(void)
+static int usage(int status)
 {
-	fprintf(stderr, "usage: tee-supplicant [<device-name>]");
-	return EXIT_FAILURE;
+	fprintf(stderr, "Usage: tee-supplicant [-d] [<device-name>]\n");
+	fprintf(stderr, "       -d: run as a daemon (fork after successful "
+			"initialization)\n");
+	return status;
 }
 
 static uint32_t process_rpmb(size_t num_params, struct tee_ioctl_param *params)
@@ -640,7 +642,10 @@ static void *thread_main(void *a)
 int main(int argc, char *argv[])
 {
 	struct thread_arg arg = { .fd = -1 };
+	bool daemonize = false;
+	char *dev = NULL;
 	int e;
+	int i;
 
 	e = pthread_mutex_init(&arg.mutex, NULL);
 	if (e) {
@@ -649,10 +654,20 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	if (argc > 2)
-		return usage();
-	if (argc == 2) {
-		arg.fd = open_dev(argv[1], &arg.gen_caps);
+	if (argc > 3)
+		return usage(EXIT_FAILURE);
+
+	for (i = 1; i < argc; i++) {
+		if (!strcmp(argv[i], "-d"))
+			daemonize = true;
+		else if (!strcmp(argv[i], "-h"))
+			return usage(EXIT_SUCCESS);
+		else
+			dev = argv[i];
+	}
+
+	if (dev) {
+		arg.fd = open_dev(dev, &arg.gen_caps);
 		if (arg.fd < 0) {
 			EMSG("failed to open \"%s\"", argv[1]);
 			exit(EXIT_FAILURE);
@@ -667,6 +682,11 @@ int main(int argc, char *argv[])
 
 	if (tee_supp_fs_init() != 0) {
 		EMSG("error tee_supp_fs_init");
+		exit(EXIT_FAILURE);
+	}
+
+	if (daemonize && daemon(0, 0) < 0) {
+		EMSG("daemon(): %s", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 
