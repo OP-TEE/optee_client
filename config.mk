@@ -3,22 +3,20 @@
 # Developers may override these values when calling the makefile,       #
 # as for example                                                        #
 #       CFG_TEE_CLIENT_LOG_LEVEL=1 make                                 #
-# or by declaring the variable in their environement, as for example    #
-#       export CFG_TEE_CLIENT_LOG_LEVEL=1                               #
-#       make                                                            #
+# Note:                                                                 #
+#   Please do not use export to declare the variables, so that to avoid #
+#   compiling problem for android platform                              #
 #########################################################################
 
 # CFG_TEE_CLIENT_LOG_LEVEL
 #   Client (User Non Secure) log level
 #   Supported values: 0 (no traces) to 4 (all traces)
 CFG_TEE_CLIENT_LOG_LEVEL?=1
-export CFG_TEE_CLIENT_LOG_LEVEL
 
 # CFG_TEE_SUPP_LOG_LEVEL
 #   Supplicant log level
 #   Supported values: 0 (no traces) to 4 (all traces)
 CFG_TEE_SUPP_LOG_LEVEL?=1
-export CFG_TEE_SUPP_LOG_LEVEL
 
 # CFG_TEE_DATA_PATH
 #   Specify the root path for the TEE data directory.
@@ -69,7 +67,5 @@ ifdef ARM_TOOLCHAIN_DIR
 ifeq ($(wildcard ${ARM_TOOLCHAIN_DIR}/bin/${ARM_GCC_PREFIX}-gcc),)
   $(error "ARM_TOOLCHAIN_DIR wrongly setup. Is ${ARM_TOOLCHAIN_DIR}")
 endif
-export ARM_TOOLCHAIN_DIR
-export ARM_GCC_PREFIX
 endif
 
