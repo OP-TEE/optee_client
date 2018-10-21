@@ -11,9 +11,11 @@ all: libteec
 ################################################################################
 MAJOR_VERSION	:= 1
 MINOR_VERSION	:= 0
+PATCH_VERSION	:= 0
 LIB_NAME	:= libteec.so
 LIB_MAJOR	:= $(LIB_NAME).$(MAJOR_VERSION)
 LIB_MAJ_MIN	:= $(LIB_NAME).$(MAJOR_VERSION).$(MINOR_VERSION)
+LIB_MAJ_MIN_P	:= $(LIB_NAME).$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)
 
 TEEC_SRCS	:= tee_client_api.c \
 		   teec_trace.c
@@ -37,15 +39,16 @@ TEEC_CFLAGS	+= -DCFG_TEE_BENCHMARK
 endif
 
 TEEC_LFLAGS    := $(LDFLAGS) -lpthread
-TEEC_LIBRARY	:= $(OUT_DIR)/$(LIB_MAJ_MIN)
+TEEC_LIBRARY	:= $(OUT_DIR)/$(LIB_MAJ_MIN_P)
 
 libteec: $(TEEC_LIBRARY) $(OUT_DIR)/libteec.a
-	$(VPREFIX)ln -sf $(LIB_MAJ_MIN) $(OUT_DIR)/$(LIB_MAJOR)
+	$(VPREFIX)ln -sf $(LIB_MAJ_MIN_P) $(OUT_DIR)/$(LIB_MAJOR)
+	$(VPREFIX)ln -sf $(LIB_MAJ_MIN_P) $(OUT_DIR)/$(LIB_MAJ_MIN)
 	$(VPREFIX)ln -sf $(LIB_MAJOR) $(OUT_DIR)/$(LIB_NAME)
 
 $(TEEC_LIBRARY): $(TEEC_OBJS)
 	@echo "  LINK    $@"
-	$(VPREFIX)$(CC) -shared -Wl,-soname,$(LIB_MAJ_MIN) $(TEEC_LFLAGS) -o $@ $+
+	$(VPREFIX)$(CC) -shared -Wl,-soname,$(LIB_MAJOR) $(TEEC_LFLAGS) -o $@ $+
 	@echo ""
 
 $(OUT_DIR)/libteec.a: $(TEEC_OBJS)
@@ -61,6 +64,7 @@ $(TEEC_OBJ_DIR)/%.o: ${TEEC_SRC_DIR}/%.c
 # Cleaning up configuration
 ################################################################################
 clean:
-	$(RM) $(TEEC_OBJS) $(TEEC_LIBRARY) $(OUT_DIR)/$(LIB_MAJOR) $(OUT_DIR)/$(LIB_NAME)
+	$(RM) $(TEEC_OBJS) $(TEEC_LIBRARY) $(OUT_DIR)/$(LIB_MAJOR) \
+		$(OUT_DIR)/$(LIB_MAJ_MIN) $(OUT_DIR)/$(LIB_NAME)
 	$(RM) $(OUT_DIR)/libteec.a
 	$(call rmdir,$(OUT_DIR))
