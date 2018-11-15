@@ -94,6 +94,8 @@ TEEC_Result gprof_process(size_t num_params, struct tee_ioctl_param *params)
 			 * id == 1 is file 0 (no suffix), id == 2 is file .1
 			 * etc.
 			 */
+			if (id > 100)
+				id = 100; /* Avoid GCC truncation warning */
 			snprintf(vers, sizeof(vers), ".%d", id - 1);
 		}
 		n = snprintf(path, sizeof(path),
