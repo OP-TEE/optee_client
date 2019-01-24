@@ -151,6 +151,7 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *ctx)
 		if (fd >= 0) {
 			ctx->fd = fd;
 			ctx->reg_mem = gen_caps & TEE_GEN_CAP_REG_MEM;
+			ctx->memref_null = gen_caps & TEE_GEN_CAP_MEMREF_NULL;
 			return TEEC_SUCCESS;
 		}
 	}
@@ -190,13 +191,23 @@ static TEEC_Result teec_pre_process_tmpref(TEEC_Context *ctx,
 	}
 	shm->size = tmpref->size;
 
-	res = TEEC_AllocateSharedMemory(ctx, shm);
-	if (res != TEEC_SUCCESS)
-		return res;
+	if (!tmpref->buffer && ctx->memref_null) {
+		if (tmpref->size)
+			return TEEC_ERROR_BAD_PARAMETERS;
 
-	memcpy(shm->buffer, tmpref->buffer, tmpref->size);
+		/* Null pointer, indicate no shared memory attached */
+		param->u.memref.shm_id = TEE_MEMREF_NULL;
+		shm->id = -1;
+	} else {
+		res = TEEC_AllocateSharedMemory(ctx, shm);
+		if (res != TEEC_SUCCESS)
+			return res;
+
+		memcpy(shm->buffer, tmpref->buffer, tmpref->size);
+		param->u.memref.shm_id = shm->id;
+	}
+
 	param->u.memref.size = tmpref->size;
-	param->u.memref.shm_id = shm->id;
 	return TEEC_SUCCESS;
 }
 

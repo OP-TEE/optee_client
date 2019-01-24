@@ -48,8 +48,11 @@
 
 #define TEE_MAX_ARG_SIZE	1024
 
-#define TEE_GEN_CAP_GP		(1 << 0)/* GlobalPlatform compliant TEE */
-#define TEE_GEN_CAP_REG_MEM	(1 << 2)/* Supports registering shared memory */
+#define TEE_GEN_CAP_GP		(1 << 0) /* GlobalPlatform compliant TEE */
+#define TEE_GEN_CAP_REG_MEM	(1 << 2) /* Support registering shared memory */
+#define TEE_GEN_CAP_MEMREF_NULL	(1 << 3) /* Support NULL MemRef */
+
+#define TEE_MEMREF_NULL		((__u64)-1) /* NULL MemRef Buffer */
 
 /*
  * TEE Implementation ID
@@ -242,6 +245,14 @@ struct tee_ioctl_buf_data {
  * a part of a shared memory by specifying an offset (@shm_offs) and @size
  * of the object. To supply the entire shared memory object set @shm_offs
  * to 0 and @size to the previously returned size of the object.
+ *
+ * As per GlobalPlatform Client API v1.0 specification, a client can present
+ * a NULL shared memory reference when querying an output (or in/out) shared
+ * memory size.
+ *
+ * If a null reference is passed to a TA in the TEE, the field @c of
+ * structure tee_ioctl_param_value must be set to TEE_MEMREF_NULL indicating
+ * a NULL memory reference.
  */
 struct tee_ioctl_param_memref {
 	__u64 shm_offs;
