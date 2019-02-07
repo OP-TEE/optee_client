@@ -12,9 +12,9 @@ export VPREFIX
 
 EXPORT_DIR ?= $(O)/export
 DESTDIR ?= $(EXPORT_DIR)
-LIBDIR ?= /lib
-INCLUDEDIR ?= /include
 SBINDIR ?= /usr/sbin
+LIBDIR ?= /usr/lib
+INCLUDEDIR ?= /usr/include
 
 CFG_TA_GPROF_SUPPORT ?= n
 
