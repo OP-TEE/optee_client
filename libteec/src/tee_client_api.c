@@ -140,7 +140,7 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *ctx)
 		return TEEC_ERROR_BAD_PARAMETERS;
 
 	for (n = 0; n < TEEC_MAX_DEV_SEQ; n++) {
-		uint32_t gen_caps;
+		uint32_t gen_caps = 0;
 
 		snprintf(devname, sizeof(devname), "/dev/tee%zu", n);
 		fd = teec_open_dev(devname, name, &gen_caps);
@@ -504,7 +504,7 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *ctx, TEEC_Session *session,
 	buf_data.buf_ptr = (uintptr_t)buf;
 	buf_data.buf_len = sizeof(buf);
 
-	arg = (struct tee_ioctl_open_session_arg *)buf;
+	arg = (struct tee_ioctl_open_session_arg *)(void *)buf;
 	arg->num_params = TEEC_CONFIG_PAYLOAD_REF_COUNT;
 	params = (struct tee_ioctl_param *)(arg + 1);
 
@@ -578,7 +578,7 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t cmd_id,
 	buf_data.buf_ptr = (uintptr_t)buf;
 	buf_data.buf_len = sizeof(buf);
 
-	arg = (struct tee_ioctl_invoke_arg *)buf;
+	arg = (struct tee_ioctl_invoke_arg *)(void *)buf;
 	arg->num_params = TEEC_CONFIG_PAYLOAD_REF_COUNT;
 	params = (struct tee_ioctl_param *)(arg + 1);
 
