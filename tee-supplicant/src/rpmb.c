@@ -150,7 +150,7 @@ static int mmc_rpmb_fd(uint16_t dev_id)
 {
 	static int id;
 	static int fd = -1;
-	char path[PATH_MAX];
+	char path[PATH_MAX] = { 0 };
 
 	if (fd < 0) {
 #ifdef __ANDROID__
@@ -175,8 +175,8 @@ static int mmc_rpmb_fd(uint16_t dev_id)
 /* Open eMMC device dev_id */
 static int mmc_fd(uint16_t dev_id)
 {
-	int fd;
-	char path[PATH_MAX];
+	int fd = 0;
+	char path[PATH_MAX] = { 0 };
 
 #ifdef __ANDROID__
 	snprintf(path, sizeof(path), "/dev/block/mmcblk%u", dev_id);
@@ -198,12 +198,12 @@ static void close_mmc_fd(int fd)
 /* Device Identification (CID) register is 16 bytes. It is read from sysfs. */
 static uint32_t read_cid(uint16_t dev_id, uint8_t *cid)
 {
-	TEEC_Result res;
-	char path[48];
-	char hex[3] = { 0, };
-	int st;
-	int fd;
-	int i;
+	TEEC_Result res = TEEC_ERROR_GENERIC;
+	char path[48] = { 0 };
+	char hex[3] = { 0 };
+	int st = 0;
+	int fd = 0;
+	int i = 0;
 
 	snprintf(path, sizeof(path),
 		 "/sys/class/mmc_host/mmc%u/mmc%u:0001/cid", dev_id, dev_id);
@@ -275,8 +275,8 @@ static struct rpmb_emu *mem_for_fd(int fd)
 static void dump_blocks(size_t startblk, size_t numblk, uint8_t *ptr,
 			bool to_mmc)
 {
-	char msg[100];
-	size_t i;
+	char msg[100] = { 0 };
+	size_t i = 0;
 
 	for (i = 0; i < numblk; i++) {
 		snprintf(msg, sizeof(msg), "%s MMC block %zu",
@@ -311,9 +311,9 @@ static void hmac_update_frm(hmac_sha256_ctx *ctx, struct rpmb_data_frame *frm)
 static bool is_hmac_valid(struct rpmb_emu *mem, struct rpmb_data_frame *frm,
 		   size_t nfrm)
 {
-	hmac_sha256_ctx ctx;
-	uint8_t mac[32];
-	size_t i;
+	hmac_sha256_ctx ctx = { 0 };
+	uint8_t mac[32] = { 0 };
+	size_t i = 0;
 
 	if (!mem->key_set) {
 		EMSG("Cannot check MAC (key not set)");
@@ -336,8 +336,8 @@ static bool is_hmac_valid(struct rpmb_emu *mem, struct rpmb_data_frame *frm,
 static uint16_t compute_hmac(struct rpmb_emu *mem, struct rpmb_data_frame *frm,
 			     size_t nfrm)
 {
-	hmac_sha256_ctx ctx;
-	size_t i;
+	hmac_sha256_ctx ctx = { 0 };
+	size_t i = 0;
 
 	if (!mem->key_set) {
 		EMSG("Cannot compute MAC (key not set)");
@@ -359,8 +359,8 @@ static uint16_t ioctl_emu_mem_transfer(struct rpmb_emu *mem,
 {
 	size_t start = mem->last_op.address * 256;
 	size_t size = nfrm * 256;
-	size_t i;
-	uint8_t *memptr;
+	size_t i = 0;
+	uint8_t *memptr = NULL;
 
 	if (start > mem->size || start + size > mem->size) {
 		EMSG("Transfer bounds exceeed emulated memory");
@@ -479,9 +479,9 @@ static void ioctl_emu_set_ext_csd(uint8_t *ext_csd)
 /* A crude emulation of the MMC ioctls we need for RPMB */
 static int ioctl_emu(int fd, unsigned long request, ...)
 {
-	struct mmc_ioc_cmd *cmd;
-	struct rpmb_data_frame *frm;
-	uint16_t msg_type;
+	struct mmc_ioc_cmd *cmd = NULL;
+	struct rpmb_data_frame *frm = NULL;
+	uint16_t msg_type = 0;
 	struct rpmb_emu *mem = mem_for_fd(fd);
 	va_list ap;
 
@@ -593,7 +593,7 @@ static void close_mmc_fd(int fd)
  */
 static uint32_t read_ext_csd(int fd, uint8_t *ext_csd)
 {
-	int st;
+	int st = 0;
 	struct mmc_ioc_cmd cmd;
 
 	memset(&cmd, 0, sizeof(cmd));
@@ -614,8 +614,8 @@ static uint32_t rpmb_data_req(int fd, struct rpmb_data_frame *req_frm,
 			      size_t req_nfrm, struct rpmb_data_frame *rsp_frm,
 			      size_t rsp_nfrm)
 {
-	int st;
-	size_t i;
+	int st = 0;
+	size_t i = 0;
 	uint16_t msg_type = ntohs(req_frm->msg_type);
 	struct mmc_ioc_cmd cmd;
 
@@ -719,9 +719,9 @@ static uint32_t rpmb_data_req(int fd, struct rpmb_data_frame *req_frm,
 
 static uint32_t rpmb_get_dev_info(uint16_t dev_id, struct rpmb_dev_info *info)
 {
-	int fd;
-	uint32_t res;
-	uint8_t ext_csd[512];
+	int fd = 0;
+	uint32_t res = 0;
+	uint8_t ext_csd[512] = { 0 };
 
 	res = read_cid(dev_id, info->cid);
 	if (res != TEEC_SUCCESS)
@@ -753,10 +753,10 @@ static uint32_t rpmb_process_request_unlocked(void *req, size_t req_size,
 					      void *rsp, size_t rsp_size)
 {
 	struct rpmb_req *sreq = req;
-	size_t req_nfrm;
-	size_t rsp_nfrm;
-	uint32_t res;
-	int fd;
+	size_t req_nfrm = 0;
+	size_t rsp_nfrm = 0;
+	uint32_t res = 0;
+	int fd = 0;
 
 	if (req_size < sizeof(*sreq))
 		return TEEC_ERROR_BAD_PARAMETERS;
@@ -795,7 +795,7 @@ static uint32_t rpmb_process_request_unlocked(void *req, size_t req_size,
 uint32_t rpmb_process_request(void *req, size_t req_size, void *rsp,
 			      size_t rsp_size)
 {
-	uint32_t res;
+	uint32_t res = 0;
 
 	tee_supp_mutex_lock(&rpmb_mutex);
 	res = rpmb_process_request_unlocked(req, req_size, rsp, rsp_size);

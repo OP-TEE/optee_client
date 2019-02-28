@@ -81,11 +81,11 @@ static int try_load_secure_module(const char* prefix,
 				  const TEEC_UUID *destination, void *ta,
 				  size_t *ta_size)
 {
-	char fname[PATH_MAX];
+	char fname[PATH_MAX] = { 0 };
 	FILE *file = NULL;
 	bool first_try = true;
-	size_t s;
-	int n;
+	size_t s = 0;
+	int n = 0;
 
 	if (!ta_size || !destination) {
 		printf("wrong inparameter to TEECI_LoadSecureModule\n");
@@ -169,7 +169,7 @@ int TEECI_LoadSecureModule(const char* dev_path,
 			   size_t *ta_size)
 {
 #ifdef TEEC_TEST_LOAD_PATH
-	int res;
+	int res = 0;
 
 	res = try_load_secure_module(TEEC_TEST_LOAD_PATH,
 				     dev_path, destination, ta, ta_size);

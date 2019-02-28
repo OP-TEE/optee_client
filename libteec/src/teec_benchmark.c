@@ -63,8 +63,8 @@ static inline uint64_t read_ccounter(void)
 
 static TEEC_Result benchmark_pta_open(void)
 {
-	TEEC_Result res;
-	uint32_t ret_orig;
+	TEEC_Result res = TEEC_ERROR_GENERIC;
+	uint32_t ret_orig = 0;
 
 	res = TEEC_InitializeContext(NULL, &bench_ctx);
 	if (res != TEEC_SUCCESS)
@@ -90,9 +90,9 @@ static void benchmark_pta_close(void)
 static TEEC_Result benchmark_get_bench_buf_paddr(uint64_t *paddr_ts_buf,
 				uint64_t *size)
 {
-	TEEC_Result res;
+	TEEC_Result res = TEEC_ERROR_GENERIC;
 	TEEC_Operation op = { 0 };
-	uint32_t ret_orig;
+	uint32_t ret_orig = 0;
 
 	res = benchmark_pta_open();
 	if (res != TEEC_SUCCESS)
@@ -116,10 +116,10 @@ static TEEC_Result benchmark_get_bench_buf_paddr(uint64_t *paddr_ts_buf,
 
 static void *mmap_paddr(intptr_t paddr, uint64_t size)
 {
-	int   devmem;
-	off_t offset;
-	off_t page_addr;
-	intptr_t *hw_addr;
+	int devmem = 0;
+	off_t offset = 0;
+	off_t page_addr = 0;
+	intptr_t *hw_addr = NULL;
 
 	devmem = open("/dev/mem", O_RDWR);
 	if (!devmem)
@@ -163,14 +163,14 @@ static bool benchmark_check_mode(void)
 /* Adding timestamp to buffer */
 void bm_timestamp(void)
 {
-	cpu_set_t cpu_set_old;
-	cpu_set_t cpu_set_tmp;
-	struct tee_ts_cpu_buf *cpu_buf;
-	struct tee_time_st ts_data;
-	uint64_t ts_i;
-	void *ret_addr;
-	uint32_t cur_cpu;
-	int ret;
+	cpu_set_t cpu_set_old = { 0 };
+	cpu_set_t cpu_set_tmp = { 0 };
+	struct tee_ts_cpu_buf *cpu_buf = NULL;
+	struct tee_time_st ts_data = { 0 };
+	uint64_t ts_i = 0;
+	void *ret_addr = NULL;
+	uint32_t cur_cpu = 0;
+	int ret = 0;
 
 	if (pthread_mutex_trylock(&teec_bench_mu))
 		return;
