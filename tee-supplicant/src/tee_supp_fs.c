@@ -78,7 +78,9 @@ static size_t tee_fs_get_absolute_filename(char *file, char *out,
 
 static int do_mkdir(const char *path, mode_t mode)
 {
-	struct stat st = { 0 };
+	struct stat st;
+
+	memset(&st, 0, sizeof(st));
 
 	if (mkdir(path, mode) != 0 && errno != EEXIST)
 		return -1;

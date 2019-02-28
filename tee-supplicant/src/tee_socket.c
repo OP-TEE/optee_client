@@ -172,15 +172,15 @@ static TEEC_Result sock_connect(uint32_t ip_vers, unsigned int protocol,
 				const char *server, uint16_t port, int *ret_fd)
 {
 	TEEC_Result r = TEEC_ERROR_GENERIC;
-	struct addrinfo hints = { 0 };
 	struct addrinfo *res0 = NULL;
 	struct addrinfo *res = NULL;
 	int fd = -1;
 	char port_name[10] = { 0 };
-
-	snprintf(port_name, sizeof(port_name), "%" PRIu16, port);
+	struct addrinfo hints;
 
 	memset(&hints, 0, sizeof(hints));
+
+	snprintf(port_name, sizeof(port_name), "%" PRIu16, port);
 
 	switch (ip_vers) {
 	case TEE_IP_VERSION_DC:
@@ -378,15 +378,20 @@ static void ts_delay_from_millis(uint32_t millis, struct timespec *res)
 static TEEC_Result poll_with_timeout(struct pollfd *pfd, nfds_t nfds,
 				     uint32_t timeout)
 {
-	struct timespec now = { 0 };
-	struct timespec until = { 0 };
+	struct timespec now;
+	struct timespec until;
 	int to = 0;
 	int r = 0;
+
+	memset(&now, 0, sizeof(now));
+	memset(&until, 0, sizeof(until));
 
 	if (timeout == OPTEE_MRC_SOCKET_TIMEOUT_BLOCKING) {
 		to = -1;
 	} else {
-		struct timespec delay = { 0 };
+		struct timespec delay;
+
+		memset(&delay, 0, sizeof(delay));
 
 		ts_delay_from_millis(timeout, &delay);
 
@@ -598,14 +603,15 @@ static TEEC_Result udp_changeaddr(int fd, int family, const char *server,
 				  uint16_t port)
 {
 	TEEC_Result r = TEE_ISOCKET_ERROR_HOSTNAME;
-	struct addrinfo hints = { 0 };
 	struct addrinfo *res0 = NULL;
 	struct addrinfo *res = NULL;
 	char port_name[10] = { 0 };
+	struct addrinfo hints;
+
+	memset(&hints, 0, sizeof(hints));
 
 	snprintf(port_name, sizeof(port_name), "%" PRIu16, port);
 
-	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = family;
 	hints.ai_socktype = SOCK_DGRAM;
 	if (getaddrinfo(server, port_name, &hints, &res0))
@@ -630,10 +636,12 @@ static TEEC_Result tee_socket_ioctl_udp(int fd, uint32_t command,
 					void *buf, size_t *blen)
 {
 	TEEC_Result res = TEEC_ERROR_GENERIC;
-	struct sockaddr_storage sass = { 0 };
+	uint16_t port = 0;
+	struct sockaddr_storage sass;
 	struct sockaddr *sa = (struct sockaddr *)&sass;
 	socklen_t len = sizeof(sass);
-	uint16_t port = 0;
+
+	memset(&sass, 0, sizeof(sass));
 
 	if (getpeername(fd, sa, &len))
 		return TEEC_ERROR_BAD_PARAMETERS;

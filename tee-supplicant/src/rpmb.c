@@ -311,9 +311,11 @@ static void hmac_update_frm(hmac_sha256_ctx *ctx, struct rpmb_data_frame *frm)
 static bool is_hmac_valid(struct rpmb_emu *mem, struct rpmb_data_frame *frm,
 		   size_t nfrm)
 {
-	hmac_sha256_ctx ctx = { 0 };
 	uint8_t mac[32] = { 0 };
 	size_t i = 0;
+	hmac_sha256_ctx ctx;
+
+	memset(&ctx, 0, sizeof(ctx));
 
 	if (!mem->key_set) {
 		EMSG("Cannot check MAC (key not set)");
@@ -336,8 +338,10 @@ static bool is_hmac_valid(struct rpmb_emu *mem, struct rpmb_data_frame *frm,
 static uint16_t compute_hmac(struct rpmb_emu *mem, struct rpmb_data_frame *frm,
 			     size_t nfrm)
 {
-	hmac_sha256_ctx ctx = { 0 };
 	size_t i = 0;
+	hmac_sha256_ctx ctx;
+
+	memset(&ctx, 0, sizeof(ctx));
 
 	if (!mem->key_set) {
 		EMSG("Cannot compute MAC (key not set)");

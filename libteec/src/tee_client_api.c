@@ -66,8 +66,10 @@ static void teec_mutex_unlock(pthread_mutex_t *mu)
 static int teec_open_dev(const char *devname, const char *capabilities,
 			 uint32_t *gen_caps)
 {
-	struct tee_ioctl_version_data vers = { 0 };
 	int fd = 0;
+	struct tee_ioctl_version_data vers;
+
+	memset(&vers, 0, sizeof(vers));
 
 	fd = open(devname, O_RDWR);
 	if (fd < 0)
@@ -104,9 +106,10 @@ err:
 static int teec_shm_alloc(int fd, size_t size, int *id)
 {
 	int shm_fd = 0;
-	struct tee_ioctl_shm_alloc_data data = { 0 };
+	struct tee_ioctl_shm_alloc_data data;
 
 	memset(&data, 0, sizeof(data));
+
 	data.size = size;
 	shm_fd = ioctl(fd, TEE_IOC_SHM_ALLOC, &data);
 	if (shm_fd < 0)
@@ -118,9 +121,10 @@ static int teec_shm_alloc(int fd, size_t size, int *id)
 static int teec_shm_register(int fd, void *buf, size_t size, int *id)
 {
 	int shm_fd = 0;
-	struct tee_ioctl_shm_register_data data = { 0 };
+	struct tee_ioctl_shm_register_data data;
 
 	memset(&data, 0, sizeof(data));
+
 	data.addr = (uintptr_t)buf;
 	data.length = size;
 	shm_fd = ioctl(fd, TEE_IOC_SHM_REGISTER, &data);
@@ -485,13 +489,16 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *ctx, TEEC_Session *session,
 			TEEC_CONFIG_PAYLOAD_REF_COUNT *
 				sizeof(struct tee_ioctl_param)) /
 			sizeof(uint64_t)] = { 0 };
-	struct tee_ioctl_buf_data buf_data = { 0 };
 	struct tee_ioctl_open_session_arg *arg = NULL;
 	struct tee_ioctl_param *params = NULL;
 	TEEC_Result res = 0;
 	uint32_t eorig = 0;
-	TEEC_SharedMemory shm[TEEC_CONFIG_PAYLOAD_REF_COUNT] = { 0 };
 	int rc = 0;
+	TEEC_SharedMemory shm[TEEC_CONFIG_PAYLOAD_REF_COUNT];
+	struct tee_ioctl_buf_data buf_data;
+
+	memset(&shm, 0, sizeof(shm));
+	memset(&buf_data, 0, sizeof(buf_data));
 
 	(void)&connection_data;
 
@@ -542,7 +549,9 @@ out:
 
 void TEEC_CloseSession(TEEC_Session *session)
 {
-	struct tee_ioctl_close_session_arg arg = { 0 };
+	struct tee_ioctl_close_session_arg arg;
+
+	memset(&arg, 0, sizeof(arg));
 
 	if (!session)
 		return;
@@ -559,13 +568,16 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t cmd_id,
 			TEEC_CONFIG_PAYLOAD_REF_COUNT *
 				sizeof(struct tee_ioctl_param)) /
 			sizeof(uint64_t)] = { 0 };
-	struct tee_ioctl_buf_data buf_data = { 0 };
 	struct tee_ioctl_invoke_arg *arg = NULL;
 	struct tee_ioctl_param *params = NULL;
 	TEEC_Result res = 0;
 	uint32_t eorig = 0;
-	TEEC_SharedMemory shm[TEEC_CONFIG_PAYLOAD_REF_COUNT] = { 0 };
 	int rc = 0;
+	struct tee_ioctl_buf_data buf_data;
+	TEEC_SharedMemory shm[TEEC_CONFIG_PAYLOAD_REF_COUNT];
+
+	memset(&buf_data, 0, sizeof(buf_data));
+	memset(&shm, 0, sizeof(shm));
 
 	if (!session) {
 		eorig = TEEC_ORIGIN_API;
@@ -621,8 +633,10 @@ out:
 
 void TEEC_RequestCancellation(TEEC_Operation *operation)
 {
-	struct tee_ioctl_cancel_arg arg = { 0 };
 	TEEC_Session *session = NULL;
+	struct tee_ioctl_cancel_arg arg;
+
+	memset(&arg, 0, sizeof(arg));
 
 	if (!operation)
 		return;
@@ -685,8 +699,10 @@ TEEC_Result TEEC_RegisterSharedMemoryFileDescriptor(TEEC_Context *ctx,
 						    TEEC_SharedMemory *shm,
 						    int fd)
 {
-	struct tee_ioctl_shm_register_fd_data data = { 0 };
 	int rfd = 0;
+	struct tee_ioctl_shm_register_fd_data data;
+
+	memset(&data, 0, sizeof(data));
 
 	if (!ctx || !shm || fd < 0)
 		return TEEC_ERROR_BAD_PARAMETERS;

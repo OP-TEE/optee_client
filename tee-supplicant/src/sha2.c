@@ -167,7 +167,9 @@ static void sha256_transf(sha256_ctx *ctx, const unsigned char *message,
 void sha256(const unsigned char *message, unsigned int len,
 	    unsigned char *digest)
 {
-    sha256_ctx ctx = { 0 };
+    sha256_ctx ctx;
+
+    memset(&ctx, 0, sizeof(ctx));
 
     sha256_init(&ctx);
     sha256_update(&ctx, message, len);

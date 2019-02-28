@@ -91,8 +91,10 @@ static TEEC_Result benchmark_get_bench_buf_paddr(uint64_t *paddr_ts_buf,
 				uint64_t *size)
 {
 	TEEC_Result res = TEEC_ERROR_GENERIC;
-	TEEC_Operation op = { 0 };
 	uint32_t ret_orig = 0;
+	TEEC_Operation op;
+
+	memset(&op, 0, sizeof(op));
 
 	res = benchmark_pta_open();
 	if (res != TEEC_SUCCESS)
@@ -163,14 +165,18 @@ static bool benchmark_check_mode(void)
 /* Adding timestamp to buffer */
 void bm_timestamp(void)
 {
-	cpu_set_t cpu_set_old = { 0 };
-	cpu_set_t cpu_set_tmp = { 0 };
 	struct tee_ts_cpu_buf *cpu_buf = NULL;
-	struct tee_time_st ts_data = { 0 };
 	uint64_t ts_i = 0;
 	void *ret_addr = NULL;
 	uint32_t cur_cpu = 0;
 	int ret = 0;
+	cpu_set_t cpu_set_old;
+	cpu_set_t cpu_set_tmp;
+	struct tee_time_st ts_data;
+
+	memset(&cpu_set_old, 0, sizeof(cpu_set_old));
+	memset(&cpu_set_tmp, 0, sizeof(cpu_set_tmp));
+	memset(&ts_data, 0, sizeof(ts_data));
 
 	if (pthread_mutex_trylock(&teec_bench_mu))
 		return;

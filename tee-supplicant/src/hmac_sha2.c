@@ -116,7 +116,9 @@ void hmac_sha256(const unsigned char *key, unsigned int key_size,
           const unsigned char *message, unsigned int message_len,
           unsigned char *mac, unsigned mac_size)
 {
-    hmac_sha256_ctx ctx = { 0 };
+    hmac_sha256_ctx ctx;
+
+    memset(&ctx, 0, sizeof(ctx));
 
     hmac_sha256_init(&ctx, key, key_size);
     hmac_sha256_update(&ctx, message, message_len);

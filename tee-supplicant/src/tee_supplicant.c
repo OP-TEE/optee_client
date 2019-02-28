@@ -255,10 +255,11 @@ static uint32_t load_ta(size_t num_params, struct tee_ioctl_param *params)
 {
 	int ta_found = 0;
 	size_t size = 0;
-	TEEC_UUID uuid = { 0 };
 	struct tee_ioctl_param_value *val_cmd = NULL;
+	TEEC_UUID uuid;
 	TEEC_SharedMemory shm_ta;
 
+	memset(&uuid, 0, sizeof(uuid));
 	memset(&shm_ta, 0, sizeof(shm_ta));
 
 	if (num_params != 2 || get_value(num_params, params, 0, &val_cmd) ||
@@ -288,8 +289,8 @@ static uint32_t load_ta(size_t num_params, struct tee_ioctl_param *params)
 
 static struct tee_shm *alloc_shm(int fd, size_t size)
 {
-	struct tee_ioctl_shm_alloc_data data;
 	struct tee_shm *shm = NULL;
+	struct tee_ioctl_shm_alloc_data data;
 
 	memset(&data, 0, sizeof(data));
 
@@ -319,9 +320,9 @@ static struct tee_shm *alloc_shm(int fd, size_t size)
 
 static struct tee_shm *register_local_shm(int fd, size_t size)
 {
-	struct tee_ioctl_shm_register_data data;
 	struct tee_shm *shm = NULL;
 	void *buf = NULL;
+	struct tee_ioctl_shm_register_data data;
 
 	memset(&data, 0, sizeof(data));
 
@@ -415,8 +416,10 @@ static uint32_t process_free(size_t num_params, struct tee_ioctl_param *params)
 
 static int open_dev(const char *devname, uint32_t *gen_caps)
 {
-	struct tee_ioctl_version_data vers = { 0 };
 	int fd = 0;
+	struct tee_ioctl_version_data vers;
+
+	memset(&vers, 0, sizeof(vers));
 
 	fd = open(devname, O_RDWR);
 	if (fd < 0)
@@ -465,8 +468,11 @@ static int usage(int status)
 
 static uint32_t process_rpmb(size_t num_params, struct tee_ioctl_param *params)
 {
-	TEEC_SharedMemory req = { 0 };
-	TEEC_SharedMemory rsp = { 0 };
+	TEEC_SharedMemory req;
+	TEEC_SharedMemory rsp;
+
+	memset(&req, 0, sizeof(req));
+	memset(&rsp, 0, sizeof(rsp));
 
 	if (get_param(num_params, params, 0, &req) ||
 	    get_param(num_params, params, 1, &rsp))
@@ -477,7 +483,9 @@ static uint32_t process_rpmb(size_t num_params, struct tee_ioctl_param *params)
 
 static bool read_request(int fd, union tee_rpc_invoke *request)
 {
-	struct tee_ioctl_buf_data data = { 0 };
+	struct tee_ioctl_buf_data data;
+
+	memset(&data, 0, sizeof(data));
 
 	data.buf_ptr = (uintptr_t)request;
 	data.buf_len = sizeof(*request);
@@ -490,7 +498,9 @@ static bool read_request(int fd, union tee_rpc_invoke *request)
 
 static bool write_response(int fd, union tee_rpc_invoke *request)
 {
-	struct tee_ioctl_buf_data data = { 0 };
+	struct tee_ioctl_buf_data data;
+
+	memset(&data, 0, sizeof(data));
 
 	data.buf_ptr = (uintptr_t)&request->send;
 	data.buf_len = sizeof(struct tee_iocl_supp_send_arg) +
@@ -535,8 +545,10 @@ static bool find_params(union tee_rpc_invoke *request, uint32_t *func,
 
 static bool spawn_thread(struct thread_arg *arg)
 {
-	pthread_t tid = { 0 };
 	int e = 0;
+	pthread_t tid;
+
+	memset(&tid, 0, sizeof(tid));
 
 	DMSG("Spawning a new thread");
 
@@ -562,12 +574,14 @@ static bool spawn_thread(struct thread_arg *arg)
 
 static bool process_one_request(struct thread_arg *arg)
 {
-	union tee_rpc_invoke request = { 0 };
 	size_t num_params = 0;
 	size_t num_meta = 0;
 	struct tee_ioctl_param *params = NULL;
 	uint32_t func = 0;
 	uint32_t ret = 0;
+	union tee_rpc_invoke request;
+
+	memset(&request, 0, sizeof(request));
 
 	DMSG("looping");
 	memset(&request, 0, sizeof(request));

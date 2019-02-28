@@ -43,7 +43,7 @@
 
 TEEC_Result gprof_process(size_t num_params, struct tee_ioctl_param *params)
 {
-	char vers[5] = { 0 };
+	char vers[5] = "";
 	char path[255] = { 0 };
 	size_t bufsize = 0;
 	TEEC_UUID *u = NULL;
