@@ -33,7 +33,7 @@ endif()
 ################################################################################
 # Built library
 ################################################################################
-add_library (teec SHARED ${SRC})
+add_library (teec ${SRC})
 
 set_target_properties (teec PROPERTIES
 	VERSION ${PROJECT_VERSION}
@@ -71,4 +71,5 @@ target_link_libraries (teec
 ################################################################################
 # FIXME: This should in someway harmonize with CFG_TEE_CLIENT_LOAD_PATH
 # FIXME: Should we change this to /usr/local/lib?
-install (TARGETS teec DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install (TARGETS teec LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+                      ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
