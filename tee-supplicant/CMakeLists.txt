@@ -85,4 +85,4 @@ target_link_libraries (${PROJECT_NAME}
 ################################################################################
 # Install targets
 ################################################################################
-install (TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_SBINDIR})
+install (TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_SBINDIR})
