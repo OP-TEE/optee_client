@@ -485,20 +485,23 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *ctx, TEEC_Session *session,
 			uint32_t connection_method, const void *connection_data,
 			TEEC_Operation *operation, uint32_t *ret_origin)
 {
-	uint64_t buf[(sizeof(struct tee_ioctl_open_session_arg) +
-			TEEC_CONFIG_PAYLOAD_REF_COUNT *
-				sizeof(struct tee_ioctl_param)) /
-			sizeof(uint64_t)] = { 0 };
-	struct tee_ioctl_open_session_arg *arg = NULL;
 	struct tee_ioctl_param *params = NULL;
 	TEEC_Result res = 0;
 	uint32_t eorig = 0;
 	int rc = 0;
+	size_t par_sz = TEEC_CONFIG_PAYLOAD_REF_COUNT *
+			sizeof(struct tee_ioctl_param);
+	union {
+	    struct tee_ioctl_open_session_arg arg;
+	    uint8_t data[sizeof(struct tee_ioctl_open_session_arg) + par_sz];
+	} buf;
+	struct tee_ioctl_open_session_arg *arg = NULL;
 	TEEC_SharedMemory shm[TEEC_CONFIG_PAYLOAD_REF_COUNT];
 	struct tee_ioctl_buf_data buf_data;
 
 	memset(&shm, 0, sizeof(shm));
 	memset(&buf_data, 0, sizeof(buf_data));
+	memset(&buf, 0, sizeof(buf));
 
 	(void)&connection_data;
 
@@ -508,10 +511,10 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *ctx, TEEC_Session *session,
 		goto out;
 	}
 
-	buf_data.buf_ptr = (uintptr_t)buf;
+	buf_data.buf_ptr = (uintptr_t)&buf;
 	buf_data.buf_len = sizeof(buf);
 
-	arg = (struct tee_ioctl_open_session_arg *)(void *)buf;
+	arg = &buf.arg;
 	arg->num_params = TEEC_CONFIG_PAYLOAD_REF_COUNT;
 	params = (struct tee_ioctl_param *)(arg + 1);
 
@@ -564,20 +567,23 @@ void TEEC_CloseSession(TEEC_Session *session)
 TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t cmd_id,
 			TEEC_Operation *operation, uint32_t *error_origin)
 {
-	uint64_t buf[(sizeof(struct tee_ioctl_invoke_arg) +
-			TEEC_CONFIG_PAYLOAD_REF_COUNT *
-				sizeof(struct tee_ioctl_param)) /
-			sizeof(uint64_t)] = { 0 };
-	struct tee_ioctl_invoke_arg *arg = NULL;
 	struct tee_ioctl_param *params = NULL;
 	TEEC_Result res = 0;
 	uint32_t eorig = 0;
 	int rc = 0;
+	size_t par_sz = TEEC_CONFIG_PAYLOAD_REF_COUNT *
+			sizeof(struct tee_ioctl_param);
+	union {
+	    struct tee_ioctl_invoke_arg arg;
+	    uint8_t data[sizeof(struct tee_ioctl_invoke_arg) + par_sz];
+	} buf;
+	struct tee_ioctl_invoke_arg *arg = NULL;
 	struct tee_ioctl_buf_data buf_data;
 	TEEC_SharedMemory shm[TEEC_CONFIG_PAYLOAD_REF_COUNT];
 
 	memset(&buf_data, 0, sizeof(buf_data));
 	memset(&shm, 0, sizeof(shm));
+	memset(&buf, 0, sizeof(buf));
 
 	if (!session) {
 		eorig = TEEC_ORIGIN_API;
@@ -587,10 +593,10 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t cmd_id,
 
 	bm_timestamp();
 
-	buf_data.buf_ptr = (uintptr_t)buf;
+	buf_data.buf_ptr = (uintptr_t)&buf;
 	buf_data.buf_len = sizeof(buf);
 
-	arg = (struct tee_ioctl_invoke_arg *)(void *)buf;
+	arg = &buf.arg;
 	arg->num_params = TEEC_CONFIG_PAYLOAD_REF_COUNT;
 	params = (struct tee_ioctl_param *)(arg + 1);
 
