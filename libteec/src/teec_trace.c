@@ -51,8 +51,7 @@
 #ifdef TEEC_LOG_FILE
 static void log_to_file(const char *buffer)
 {
-	FILE *log_file;
-	log_file = fopen(TEEC_LOG_FILE, "a");
+	FILE *log_file = fopen(TEEC_LOG_FILE, "a");
 
 	if (log_file != NULL) {
 		fprintf(log_file, "%s", buffer);
@@ -103,7 +102,7 @@ void dump_buffer(const char *bname, const uint8_t *buffer, size_t blen)
 	fprintf(stderr, "#### %s\n", bname);
 
 	while (blen > 0) {
-		size_t n;
+		size_t n = 0;
 
 		for (n = 0; n < 16; n++) {
 			if (n < blen)
