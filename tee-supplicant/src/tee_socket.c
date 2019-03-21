@@ -80,7 +80,7 @@ static void sock_unlock(void)
 
 static struct sock_instance *sock_instance_find(uint32_t instance_id)
 {
-	struct sock_instance *si;
+	struct sock_instance *si = NULL;
 
 	TAILQ_FOREACH(si, &sock_instances, link) {
 		if (si->id == instance_id)
@@ -91,7 +91,7 @@ static struct sock_instance *sock_instance_find(uint32_t instance_id)
 
 static void *fd_to_handle_ptr(int fd)
 {
-	uintptr_t ptr;
+	uintptr_t ptr = 0;
 
 	assert(fd >= 0);
 	ptr = fd + 1;
@@ -107,7 +107,7 @@ static int handle_ptr_to_fd(void *ptr)
 static int sock_handle_get(uint32_t instance_id, int fd)
 {
 	int handle = -1;
-	struct sock_instance *si;
+	struct sock_instance *si = NULL;
 
 	sock_lock();
 
@@ -129,7 +129,7 @@ out:
 static int sock_handle_to_fd(uint32_t instance_id, uint32_t handle)
 {
 	int fd = -1;
-	struct sock_instance *si;
+	struct sock_instance *si = NULL;
 
 	sock_lock();
 	si = sock_instance_find(instance_id);
@@ -141,7 +141,7 @@ static int sock_handle_to_fd(uint32_t instance_id, uint32_t handle)
 
 static void sock_handle_put(uint32_t instance_id, uint32_t handle)
 {
-	struct sock_instance *si;
+	struct sock_instance *si = NULL;
 
 	sock_lock();
 	si = sock_instance_find(instance_id);
@@ -157,7 +157,7 @@ static bool chk_pt(struct tee_ioctl_param *param, uint32_t type)
 
 static int fd_flags_add(int fd, int flags)
 {
-	int val;
+	int val = 0;
 
 	val = fcntl(fd, F_GETFD, 0);
 	if (val == -1)
@@ -172,15 +172,15 @@ static TEEC_Result sock_connect(uint32_t ip_vers, unsigned int protocol,
 				const char *server, uint16_t port, int *ret_fd)
 {
 	TEEC_Result r = TEEC_ERROR_GENERIC;
-	struct addrinfo hints;
-	struct addrinfo *res0;
-	struct addrinfo *res;
+	struct addrinfo *res0 = NULL;
+	struct addrinfo *res = NULL;
 	int fd = -1;
-	char port_name[10];
-
-	snprintf(port_name, sizeof(port_name), "%" PRIu16, port);
+	char port_name[10] = { 0 };
+	struct addrinfo hints;
 
 	memset(&hints, 0, sizeof(hints));
+
+	snprintf(port_name, sizeof(port_name), "%" PRIu16, port);
 
 	switch (ip_vers) {
 	case TEE_IP_VERSION_DC:
@@ -246,14 +246,14 @@ static TEEC_Result sock_connect(uint32_t ip_vers, unsigned int protocol,
 static TEEC_Result tee_socket_open(size_t num_params,
 				   struct tee_ioctl_param *params)
 {
-	TEEC_Result res;
-	int handle;
-	int fd;
-	uint32_t instance_id;
-	char *server;
-	uint32_t ip_vers;
-	uint16_t port;
-	uint32_t protocol;
+	TEEC_Result res = TEEC_ERROR_GENERIC;
+	int handle = 0;
+	int fd = 0;
+	uint32_t instance_id = 0;
+	char *server = NULL;
+	uint32_t ip_vers = 0;
+	uint16_t port = 0;
+	uint32_t protocol = 0;
 
 	if (num_params != 4 ||
 	    !chk_pt(params + 0, TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT) ||
@@ -288,9 +288,9 @@ static TEEC_Result tee_socket_open(size_t num_params,
 static TEEC_Result tee_socket_close(size_t num_params,
 				    struct tee_ioctl_param *params)
 {
-	int handle;
-	uint32_t instance_id;
-	int fd;
+	int handle = 0;
+	uint32_t instance_id = 0;
+	int fd = 0;
 
 	if (num_params != 1 ||
 	    !chk_pt(params + 0, TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT))
@@ -322,8 +322,8 @@ static void sock_close_cb(int handle, void *ptr, void *arg)
 static TEEC_Result tee_socket_close_all(size_t num_params,
 					struct tee_ioctl_param *params)
 {
-	uint32_t instance_id;
-	struct sock_instance *si;
+	uint32_t instance_id = 0;
+	struct sock_instance *si = NULL;
 
 	if (num_params != 1 ||
 	    !chk_pt(params + 0, TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT))
@@ -357,6 +357,8 @@ static int ts_diff_to_polltimeout(const struct timespec *a,
 {
 	struct timespec diff;
 
+	memset(&diff, 0, sizeof(diff));
+
 	diff.tv_sec = a->tv_sec - b->tv_sec;
 	diff.tv_nsec = a->tv_nsec - b->tv_nsec;
 	if (a->tv_nsec < b->tv_nsec) {
@@ -378,15 +380,20 @@ static void ts_delay_from_millis(uint32_t millis, struct timespec *res)
 static TEEC_Result poll_with_timeout(struct pollfd *pfd, nfds_t nfds,
 				     uint32_t timeout)
 {
-	struct timespec now;
-	struct timespec until = { 0, 0 }; /* gcc warning */
 	int to = 0;
-	int r;
+	int r = 0;
+	struct timespec now;
+	struct timespec until;
+
+	memset(&now, 0, sizeof(now));
+	memset(&until, 0, sizeof(until));
 
 	if (timeout == OPTEE_MRC_SOCKET_TIMEOUT_BLOCKING) {
 		to = -1;
 	} else {
 		struct timespec delay;
+
+		memset(&delay, 0, sizeof(delay));
 
 		ts_delay_from_millis(timeout, &delay);
 
@@ -424,9 +431,9 @@ static TEEC_Result poll_with_timeout(struct pollfd *pfd, nfds_t nfds,
 static TEEC_Result write_with_timeout(int fd, const void *buf, size_t *blen,
 				      uint32_t timeout)
 {
-	TEEC_Result res;
+	TEEC_Result res = TEEC_ERROR_GENERIC;
 	struct pollfd pfd = { .fd = fd, .events = POLLOUT };
-	ssize_t r;
+	ssize_t r = 0;
 
 	res = poll_with_timeout(&pfd, 1, timeout);
 	if (res != TEEC_SUCCESS)
@@ -445,12 +452,12 @@ static TEEC_Result write_with_timeout(int fd, const void *buf, size_t *blen,
 static TEEC_Result tee_socket_send(size_t num_params,
 				   struct tee_ioctl_param *params)
 {
-	TEEC_Result res;
-	int handle;
-	int fd;
-	uint32_t instance_id;
-	void *buf;
-	size_t bytes;
+	TEEC_Result res = TEEC_ERROR_GENERIC;
+	int handle = 0;
+	int fd = 0;
+	uint32_t instance_id = 0;
+	void *buf = NULL;
+	size_t bytes = 0;
 
 	if (num_params != 3 ||
 	    !chk_pt(params + 0, TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT) ||
@@ -475,9 +482,9 @@ static TEEC_Result tee_socket_send(size_t num_params,
 static TEEC_Result read_with_timeout(int fd, void *buf, size_t *blen,
 				     uint32_t timeout)
 {
-	TEEC_Result res;
+	TEEC_Result res = TEEC_ERROR_GENERIC;
 	struct pollfd pfd = { .fd = fd, .events = POLLIN };
-	ssize_t r;
+	ssize_t r = 0;
 
 	res = poll_with_timeout(&pfd, 1, timeout);
 	if (res != TEEC_SUCCESS)
@@ -496,12 +503,12 @@ static TEEC_Result read_with_timeout(int fd, void *buf, size_t *blen,
 static TEEC_Result tee_socket_recv(size_t num_params,
 				   struct tee_ioctl_param *params)
 {
-	TEEC_Result res;
-	int handle;
-	int fd;
-	uint32_t instance_id;
-	void *buf;
-	size_t bytes;
+	TEEC_Result res = TEEC_ERROR_GENERIC;
+	int handle = 0;
+	int fd = 0;
+	uint32_t instance_id = 0;
+	void *buf = NULL;
+	size_t bytes = 0;
 
 	if (num_params != 3 ||
 	    !chk_pt(params + 0, TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT) ||
@@ -598,14 +605,15 @@ static TEEC_Result udp_changeaddr(int fd, int family, const char *server,
 				  uint16_t port)
 {
 	TEEC_Result r = TEE_ISOCKET_ERROR_HOSTNAME;
+	struct addrinfo *res0 = NULL;
+	struct addrinfo *res = NULL;
+	char port_name[10] = { 0 };
 	struct addrinfo hints;
-	struct addrinfo *res0;
-	struct addrinfo *res;
-	char port_name[10];
+
+	memset(&hints, 0, sizeof(hints));
 
 	snprintf(port_name, sizeof(port_name), "%" PRIu16, port);
 
-	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = family;
 	hints.ai_socktype = SOCK_DGRAM;
 	if (getaddrinfo(server, port_name, &hints, &res0))
@@ -629,11 +637,13 @@ static TEEC_Result udp_changeaddr(int fd, int family, const char *server,
 static TEEC_Result tee_socket_ioctl_udp(int fd, uint32_t command,
 					void *buf, size_t *blen)
 {
-	TEEC_Result res;
+	TEEC_Result res = TEEC_ERROR_GENERIC;
+	uint16_t port = 0;
 	struct sockaddr_storage sass;
 	struct sockaddr *sa = (struct sockaddr *)&sass;
 	socklen_t len = sizeof(sass);
-	uint16_t port;
+
+	memset(&sass, 0, sizeof(sass));
 
 	if (getpeername(fd, sa, &len))
 		return TEEC_ERROR_BAD_PARAMETERS;
@@ -666,15 +676,15 @@ static TEEC_Result tee_socket_ioctl_udp(int fd, uint32_t command,
 static TEEC_Result tee_socket_ioctl(size_t num_params,
 				    struct tee_ioctl_param *params)
 {
-	TEEC_Result res;
-	int handle;
-	int fd;
-	uint32_t instance_id;
-	uint32_t command;
-	void *buf;
-	int socktype;
-	socklen_t l;
-	size_t sz;
+	TEEC_Result res = TEEC_ERROR_GENERIC;
+	int handle = 0;
+	int fd = 0;
+	uint32_t instance_id = 0;
+	uint32_t command = 0;
+	void *buf = NULL;
+	int socktype = 0;
+	socklen_t l = 0;
+	size_t sz = 0;
 
 	if (num_params != 3 ||
 	    !chk_pt(params + 0, TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT) ||
