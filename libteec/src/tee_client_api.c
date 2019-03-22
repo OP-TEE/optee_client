@@ -490,11 +490,12 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *ctx, TEEC_Session *session,
 	TEEC_Result res = 0;
 	uint32_t eorig = 0;
 	int rc = 0;
-	size_t p_sz = TEEC_CONFIG_PAYLOAD_REF_COUNT *
-		      sizeof(struct tee_ioctl_param);
+	const size_t arg_size = sizeof(struct tee_ioctl_open_session_arg) +
+				TEEC_CONFIG_PAYLOAD_REF_COUNT *
+					sizeof(struct tee_ioctl_param);
 	union {
 		struct tee_ioctl_open_session_arg arg;
-		uint8_t data[sizeof(struct tee_ioctl_open_session_arg) + p_sz];
+		uint8_t data[arg_size];
 	} buf;
 	struct tee_ioctl_buf_data buf_data;
 	TEEC_SharedMemory shm[TEEC_CONFIG_PAYLOAD_REF_COUNT];
@@ -572,11 +573,12 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t cmd_id,
 	TEEC_Result res = 0;
 	uint32_t eorig = 0;
 	int rc = 0;
-	size_t p_sz = TEEC_CONFIG_PAYLOAD_REF_COUNT *
-		      sizeof(struct tee_ioctl_param);
+	const size_t arg_size = sizeof(struct tee_ioctl_invoke_arg) +
+				TEEC_CONFIG_PAYLOAD_REF_COUNT *
+					sizeof(struct tee_ioctl_param);
 	union {
 		struct tee_ioctl_invoke_arg arg;
-		uint8_t data[sizeof(struct tee_ioctl_invoke_arg) + p_sz];
+		uint8_t data[arg_size];
 	} buf;
 	struct tee_ioctl_buf_data buf_data;
 	TEEC_SharedMemory shm[TEEC_CONFIG_PAYLOAD_REF_COUNT];
