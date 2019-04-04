@@ -487,7 +487,7 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *ctx, TEEC_Session *session,
 {
 	struct tee_ioctl_open_session_arg *arg = NULL;
 	struct tee_ioctl_param *params = NULL;
-	TEEC_Result res = 0;
+	TEEC_Result res = TEEC_ERROR_GENERIC;
 	uint32_t eorig = 0;
 	int rc = 0;
 	const size_t arg_size = sizeof(struct tee_ioctl_open_session_arg) +
@@ -570,7 +570,7 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t cmd_id,
 {
 	struct tee_ioctl_invoke_arg *arg = NULL;
 	struct tee_ioctl_param *params = NULL;
-	TEEC_Result res = 0;
+	TEEC_Result res = TEEC_ERROR_GENERIC;
 	uint32_t eorig = 0;
 	int rc = 0;
 	const size_t arg_size = sizeof(struct tee_ioctl_invoke_arg) +
@@ -718,7 +718,6 @@ TEEC_Result TEEC_RegisterSharedMemoryFileDescriptor(TEEC_Context *ctx,
 	if (!shm->flags || (shm->flags & ~(TEEC_MEM_INPUT | TEEC_MEM_OUTPUT)))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	memset(&data, 0, sizeof(data));
 	data.fd = fd;
 	rfd = ioctl(ctx->fd, TEE_IOC_SHM_REGISTER_FD, &data);
 	if (rfd < 0)
