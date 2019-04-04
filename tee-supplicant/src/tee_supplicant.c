@@ -584,7 +584,6 @@ static bool process_one_request(struct thread_arg *arg)
 	memset(&request, 0, sizeof(request));
 
 	DMSG("looping");
-	memset(&request, 0, sizeof(request));
 	request.recv.num_params = RPC_NUM_PARAMS;
 
 	/* Let it be known that we can deal with meta parameters */

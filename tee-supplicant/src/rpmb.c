@@ -598,13 +598,13 @@ static void close_mmc_fd(int fd)
 static uint32_t read_ext_csd(int fd, uint8_t *ext_csd)
 {
 	int st = 0;
-	struct mmc_ioc_cmd cmd;
+	struct mmc_ioc_cmd cmd = {
+		.blksz = 512,
+		.blocks = 1,
+		.flags = MMC_RSP_R1 | MMC_CMD_ADTC,
+		.opcode = MMC_SEND_EXT_CSD,
+	};
 
-	memset(&cmd, 0, sizeof(cmd));
-	cmd.blksz = 512;
-	cmd.blocks = 1;
-	cmd.flags = MMC_RSP_R1 | MMC_CMD_ADTC;
-	cmd.opcode = MMC_SEND_EXT_CSD;
 	mmc_ioc_cmd_set_data(cmd, ext_csd);
 
 	st = IOCTL(fd, MMC_IOC_CMD, &cmd);
@@ -621,15 +621,14 @@ static uint32_t rpmb_data_req(int fd, struct rpmb_data_frame *req_frm,
 	int st = 0;
 	size_t i = 0;
 	uint16_t msg_type = ntohs(req_frm->msg_type);
-	struct mmc_ioc_cmd cmd;
-
-	memset(&cmd, 0, sizeof(cmd));
-	cmd.blksz = 512;
-	cmd.blocks = req_nfrm;
-	cmd.data_ptr = (uintptr_t)req_frm;
-	cmd.flags = MMC_RSP_R1 | MMC_CMD_ADTC;
-	cmd.opcode = MMC_WRITE_MULTIPLE_BLOCK;
-	cmd.write_flag = 1;
+	struct mmc_ioc_cmd cmd = {
+		.blksz = 512,
+		.blocks = req_nfrm,
+		.data_ptr = (uintptr_t)req_frm,
+		.flags = MMC_RSP_R1 | MMC_CMD_ADTC,
+		.opcode = MMC_WRITE_MULTIPLE_BLOCK,
+		.write_flag = 1,
+	};
 
 	for (i = 1; i < req_nfrm; i++) {
 		if (req_frm[i].msg_type != msg_type) {
