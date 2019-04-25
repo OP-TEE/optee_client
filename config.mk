@@ -49,7 +49,7 @@ CFG_TEE_CLIENT_LOAD_PATH ?= /lib
 #   Enable the tee test path.  When enabled, the supplicant will try
 #   loading from a debug path before the regular path.  This allows test
 #   such as 1008.5 that test loading of corrupt TAs.
-CFG_TA_TEST_PATH ?= y
+CFG_TA_TEST_PATH ?= n
 
 # CFG_GP_SOCKETS
 #   Enable Global Platform Sockets support
