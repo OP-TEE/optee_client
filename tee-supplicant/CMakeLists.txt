@@ -3,7 +3,7 @@ project (tee-supplicant C)
 ################################################################################
 # Configuration flags always included
 ################################################################################
-option (CFG_TA_TEST_PATH "Enable tee-supplicant to load from test/debug path" ON)
+option (CFG_TA_TEST_PATH "Enable tee-supplicant to load from test/debug path" OFF)
 option (RPMB_EMU "Enable tee-supplicant to emulate RPMB" ON)
 option (CFG_TA_GPROF_SUPPORT "Enabled tee-supplicant profiling support" OFF)
 
