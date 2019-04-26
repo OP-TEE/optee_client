@@ -693,11 +693,6 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (tee_supp_fs_init() != 0) {
-		EMSG("error tee_supp_fs_init");
-		exit(EXIT_FAILURE);
-	}
-
 	if (daemonize && daemon(0, 0) < 0) {
 		EMSG("daemon(): %s", strerror(errno));
 		exit(EXIT_FAILURE);
