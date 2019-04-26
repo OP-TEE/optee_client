@@ -116,7 +116,7 @@ static int mkpath(const char *path, mode_t mode)
 	return status;
 }
 
-int tee_supp_fs_init(void)
+static int tee_supp_fs_init(void)
 {
 	size_t n = 0;
 	mode_t mode = 0700;
@@ -609,6 +609,15 @@ TEEC_Result tee_supp_fs_process(size_t num_params,
 {
 	if (!num_params || !tee_supp_param_is_value(params))
 		return TEEC_ERROR_BAD_PARAMETERS;
+
+	if (strlen(tee_fs_root) == 0) {
+		if (tee_supp_fs_init() != 0) {
+			EMSG("error tee_supp_fs_init: failed to create %s/tee/",
+				TEE_FS_PARENT_PATH);
+			memset(tee_fs_root, 0, sizeof(tee_fs_root));
+			return TEEC_ERROR_STORAGE_NOT_AVAILABLE;
+		}
+	}
 
 	switch (params->u.value.a) {
 	case OPTEE_MRF_OPEN:
