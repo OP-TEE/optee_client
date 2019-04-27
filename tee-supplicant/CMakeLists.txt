@@ -63,7 +63,7 @@ if (CFG_TA_TEST_PATH)
 		PRIVATE -DCFG_TA_TEST_PATH=${CFG_TA_TEST_PATH})
 endif()
 
-if (CFG_TA_TEST_PATH)
+if (RPMB_EMU)
 	target_compile_definitions (${PROJECT_NAME}
 		PRIVATE -DRPMB_EMU=1)
 endif()
