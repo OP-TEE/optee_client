@@ -20,11 +20,16 @@ CFG_TEE_SUPP_LOG_LEVEL?=1
 
 # CFG_TEE_FS_PARENT_PATH
 #   Path to folder that will contain TEE filesystem.
-#   This folder should be created before tee-supplicant start.
+#   This folder can be created with the required permission in an init
+#   script during boot, else it will be created by the tee-supplicant on
+#   first REE FS access.
 CFG_TEE_FS_PARENT_PATH ?= /data
 
 # CFG_TEE_DATA_PATH
 #   Specify the root path for the TEE data directory.
+#   This folder can be created with the required permission in an init
+#   script during boot, else it wil be created by the tee-supplicant on
+#   first REE FS access.
 CFG_TEE_DATA_PATH ?= /data/vendor/tee
 
 # CFG_TEE_LOGS_PATH
