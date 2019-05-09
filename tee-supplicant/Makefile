@@ -18,7 +18,9 @@ TEES_SRCS	:= tee_supplicant.c \
 		   teec_ta_load.c \
 		   tee_supp_fs.c \
 		   rpmb.c \
-		   handle.c
+		   handle.c	\
+		   tee_service.c \
+		   tee_service_handle.c
 
 
 ifeq ($(CFG_GP_SOCKETS),y)
@@ -55,7 +57,7 @@ ifeq ($(CFG_TA_TEST_PATH),y)
 TEES_CFLAGS	+= -DCFG_TA_TEST_PATH=1
 endif
 TEES_FILE	:= $(OUT_DIR)/$(PACKAGE_NAME)
-TEES_LFLAGS    := $(LDFLAGS) -L$(OUT_DIR)/../libteec -lteec
+TEES_LFLAGS    := $(LDFLAGS) -L$(OUT_DIR)/../libteec -lteec -ldl
 
 ifeq ($(CFG_TA_GPROF_SUPPORT),y)
 TEES_CFLAGS	+= -DCFG_TA_GPROF_SUPPORT

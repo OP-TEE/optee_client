@@ -183,6 +183,7 @@
  */
 #define OPTEE_MSG_RPC_CMD_FTRACE	11
 
+#define OPTEE_MSG_RPC_CMD_GENERIC	30
 
 /*
  * Define protocol for messages with .cmd == OPTEE_MSG_RPC_CMD_SOCKET
@@ -258,5 +259,26 @@
 /*
  * End of definitions for messages with .cmd == OPTEE_MSG_RPC_CMD_SOCKET
  */
+
+/*
+ * Define protocol for messages with .cmd == OPTEE_MSG_RPC_CMD_GENERIC
+ */
+
+/*
+ * Open REE Service
+ *
+ * [in]     param[0].u.value.a  OPTEE_MRC_GENERIC_OPEN
+ * [in]     param[0].u.value.b  TA instance id
+ * [out]    param[1].u.value.c  service handle
+ */
+#define OPTEE_MRC_GENERIC_OPEN		1
+
+/*
+ * Close REE Service
+ *
+ * [in]     param[0].u.value.a  OPTEE_MRC_GENERIC_CLOSE
+ * [in]     param[0].u.value.b  TA instance id
+ */
+#define OPTEE_MRC_GENERIC_CLOSE		2
 
 #endif /*__OPTEE_MSG_SUPPLICANT_H*/

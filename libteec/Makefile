@@ -18,7 +18,8 @@ LIB_MAJ_MIN	:= $(LIB_NAME).$(MAJOR_VERSION).$(MINOR_VERSION)
 LIB_MAJ_MIN_P	:= $(LIB_NAME).$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)
 
 TEEC_SRCS	:= tee_client_api.c \
-		   teec_trace.c
+		   teec_trace.c \
+		   ree_service_api.c
 ifeq ($(CFG_TEE_BENCHMARK),y)
 TEEC_SRCS	+= teec_benchmark.c
 endif

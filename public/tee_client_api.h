@@ -270,6 +270,8 @@ typedef struct {
 	uint8_t clockSeqAndNode[8];
 } TEEC_UUID;
 
+typedef TEEC_UUID REEC_UUID;
+
 /**
  * struct TEEC_SharedMemory - Memory to transfer data between a client
  * application and trusted code.

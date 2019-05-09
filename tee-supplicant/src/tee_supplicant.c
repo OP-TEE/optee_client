@@ -49,6 +49,7 @@
 #include <teec_ta_load.h>
 #include <teec_trace.h>
 #include <tee_socket.h>
+#include <tee_service.h>
 #include <tee_supp_fs.h>
 #include <tee_supplicant.h>
 #include <unistd.h>
@@ -625,6 +626,9 @@ static bool process_one_request(struct thread_arg *arg)
 		break;
 	case OPTEE_MSG_RPC_CMD_FTRACE:
 		ret = prof_process(num_params, params, "ftrace-");
+		break;
+	case OPTEE_MSG_RPC_CMD_GENERIC:
+		ret = tee_service_process(num_params, params);
 		break;
 	default:
 		EMSG("Cmd [0x%" PRIx32 "] not supported", func);

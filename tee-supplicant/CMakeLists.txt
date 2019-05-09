@@ -26,6 +26,8 @@ set (SRC
 	src/tee_supp_fs.c
 	src/tee_supplicant.c
 	src/teec_ta_load.c
+	src/tee_service.c
+	src/tee_service_handle.c
 )
 
 if (CFG_GP_SOCKETS)
@@ -86,6 +88,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE src)
 
 target_link_libraries (${PROJECT_NAME}
 	PRIVATE teec
+	PRIVATE dl
 	PRIVATE optee-client-headers)
 
 ################################################################################

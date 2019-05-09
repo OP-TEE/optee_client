@@ -24,6 +24,7 @@ set (CFG_TEE_CLIENT_LOG_FILE "/data/tee/teec.log" CACHE STRING "Location of libt
 set (SRC
 	src/tee_client_api.c
 	src/teec_trace.c
+	src/ree_service_api.c
 )
 
 if (CFG_TEE_BENCHMARK)
