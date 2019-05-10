@@ -121,7 +121,7 @@ static int tee_supp_fs_init(void)
 	size_t n = 0;
 	mode_t mode = 0700;
 
-	n = snprintf(tee_fs_root, sizeof(tee_fs_root), "%s/tee/", TEE_FS_PARENT_PATH);
+	n = snprintf(tee_fs_root, sizeof(tee_fs_root), "%s/", TEE_FS_PARENT_PATH);
 	if (n >= sizeof(tee_fs_root))
 		return -1;
 
@@ -612,7 +612,7 @@ TEEC_Result tee_supp_fs_process(size_t num_params,
 
 	if (strlen(tee_fs_root) == 0) {
 		if (tee_supp_fs_init() != 0) {
-			EMSG("error tee_supp_fs_init: failed to create %s/tee/",
+			EMSG("error tee_supp_fs_init: failed to create %s/",
 				TEE_FS_PARENT_PATH);
 			memset(tee_fs_root, 0, sizeof(tee_fs_root));
 			return TEEC_ERROR_STORAGE_NOT_AVAILABLE;
