@@ -34,14 +34,15 @@
 #include <fcntl.h>
 #include <tee_client_api.h>
 #include <tee_supplicant.h>
-#include "gprof.h"
+#include "prof.h"
 
 #ifndef __aligned
 #define __aligned(x) __attribute__((__aligned__(x)))
 #endif
 #include <linux/tee.h>
 
-TEEC_Result gprof_process(size_t num_params, struct tee_ioctl_param *params)
+TEEC_Result prof_process(size_t num_params, struct tee_ioctl_param *params,
+			 const char *prefix)
 {
 	char vers[5] = "";
 	char path[255] = { 0 };
@@ -60,7 +61,7 @@ TEEC_Result gprof_process(size_t num_params, struct tee_ioctl_param *params)
 	    (params[1].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
 		TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INPUT ||
 	    (params[2].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
-                TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INPUT)
+		TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INPUT)
 		return TEEC_ERROR_BAD_PARAMETERS;
 
 	id = params[0].u.value.a;
@@ -99,16 +100,17 @@ TEEC_Result gprof_process(size_t num_params, struct tee_ioctl_param *params)
 			snprintf(vers, sizeof(vers), ".%d", id - 1);
 		}
 		n = snprintf(path, sizeof(path),
-			"/tmp/gmon-"
+			"/tmp/%s"
 			"%08x-%04x-%04x-%02x%02x%02x%02x%02x%02x%02x%02x"
 			"%s.out",
+			prefix,
 			u->timeLow, u->timeMid, u->timeHiAndVersion,
 			u->clockSeqAndNode[0], u->clockSeqAndNode[1],
 			u->clockSeqAndNode[2], u->clockSeqAndNode[3],
 			u->clockSeqAndNode[4], u->clockSeqAndNode[5],
 			u->clockSeqAndNode[6], u->clockSeqAndNode[7],
 			vers);
-	        if ((n < 0) || (n >= (int)sizeof(path)))
+		if ((n < 0) || (n >= (int)sizeof(path)))
 			break;
 		fd = open(path, flags, 0600);
 		if (fd >= 0) {
@@ -127,7 +129,7 @@ TEEC_Result gprof_process(size_t num_params, struct tee_ioctl_param *params)
 			break;
 	}
 
-	/* An error occured */
+	/* An error occurred */
 	return TEEC_ERROR_GENERIC;
 
 success:
