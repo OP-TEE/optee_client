@@ -25,27 +25,30 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPROF_H
-#define GPROF_H
+#ifndef PROF_H
+#define PROF_H
 
 #include <tee_client_api.h>
 
 struct tee_ioctl_param;
 
-#if defined(CFG_TA_GPROF_SUPPORT)
+#if defined(CFG_TA_GPROF_SUPPORT) || defined(CFG_TA_FTRACE_SUPPORT)
 
-TEEC_Result gprof_process(size_t num_params, struct tee_ioctl_param *params);
+TEEC_Result prof_process(size_t num_params, struct tee_ioctl_param *params,
+			 const char *prefix);
 
 #else
 
-static inline TEEC_Result gprof_process(size_t num_params,
-					struct tee_ioctl_param *params)
+static inline TEEC_Result prof_process(size_t num_params,
+				       struct tee_ioctl_param *params,
+				       const char *prefix)
 {
 	(void)num_params;
 	(void)params;
+	(void)prefix;
 
 	return TEEC_ERROR_NOT_SUPPORTED;
 }
 
-#endif /* CFG_TA_GPROF_SUPPORT */
-#endif /* GPROF_H */
+#endif /* CFG_TA_GPROF_SUPPORT || CFG_TA_FTRACE_SUPPORT */
+#endif /* PROF_H */

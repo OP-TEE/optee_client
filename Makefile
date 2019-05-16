@@ -17,6 +17,7 @@ LIBDIR ?= /usr/lib
 INCLUDEDIR ?= /usr/include
 
 CFG_TA_GPROF_SUPPORT ?= n
+CFG_TA_FTRACE_SUPPORT ?= n
 
 .PHONY: all build build-libteec install copy_export \
 	clean cscope clean-cscope \

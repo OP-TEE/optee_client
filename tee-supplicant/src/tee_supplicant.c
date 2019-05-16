@@ -31,8 +31,8 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <gprof.h>
 #include <inttypes.h>
+#include <prof.h>
 #include <pthread.h>
 #include <rpmb.h>
 #include <stdbool.h>
@@ -618,10 +618,13 @@ static bool process_one_request(struct thread_arg *arg)
 		ret = process_free(num_params, params);
 		break;
 	case OPTEE_MSG_RPC_CMD_GPROF:
-		ret = gprof_process(num_params, params);
+		ret = prof_process(num_params, params, "gmon-");
 		break;
 	case OPTEE_MSG_RPC_CMD_SOCKET:
 		ret = tee_socket_process(num_params, params);
+		break;
+	case OPTEE_MSG_RPC_CMD_FTRACE:
+		ret = prof_process(num_params, params, "ftrace-");
 		break;
 	default:
 		EMSG("Cmd [0x%" PRIx32 "] not supported", func);

@@ -178,6 +178,11 @@
  */
 #define OPTEE_MSG_RPC_CMD_SOCKET	10
 
+/*
+ * Function tracing support management commands
+ */
+#define OPTEE_MSG_RPC_CMD_FTRACE	11
+
 
 /*
  * Define protocol for messages with .cmd == OPTEE_MSG_RPC_CMD_SOCKET

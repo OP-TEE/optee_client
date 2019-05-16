@@ -28,8 +28,8 @@ endif
 ifeq ($(RPMB_EMU),1)
 TEES_SRCS	+= sha2.c hmac_sha2.c
 endif
-ifeq ($(CFG_TA_GPROF_SUPPORT),y)
-TEES_SRCS	+= gprof.c
+ifneq (,$(filter y,$(CFG_TA_GPROF_SUPPORT) $(CFG_TA_FTRACE_SUPPORT)))
+TEES_SRCS	+= prof.c
 endif
 
 TEES_SRC_DIR	:= src
@@ -59,6 +59,10 @@ TEES_LFLAGS    := $(LDFLAGS) -L$(OUT_DIR)/../libteec -lteec
 
 ifeq ($(CFG_TA_GPROF_SUPPORT),y)
 TEES_CFLAGS	+= -DCFG_TA_GPROF_SUPPORT
+endif
+
+ifeq ($(CFG_TA_FTRACE_SUPPORT),y)
+TEES_CFLAGS	+= -DCFG_TA_FTRACE_SUPPORT
 endif
 
 TEES_LFLAGS	+= -lpthread
