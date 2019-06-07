@@ -112,7 +112,7 @@ TEEC_Result prof_process(size_t num_params, struct tee_ioctl_param *params,
 			vers);
 		if ((n < 0) || (n >= (int)sizeof(path)))
 			break;
-		fd = open(path, flags, 0600);
+		fd = open(path, flags, 0644);
 		if (fd >= 0) {
 			do {
 				st = write(fd, buf, bufsize);
