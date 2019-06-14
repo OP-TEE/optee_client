@@ -25,14 +25,9 @@ CFG_TEE_SUPP_LOG_LEVEL?=1
 #   first REE FS access.
 CFG_TEE_FS_PARENT_PATH ?= /data/tee
 
-# CFG_TEE_LOGS_PATH
-#   Specify the root path for the TEE logs directory.
-#   Normally it will be the logs directory under $(CFG_TEE_FS_PARENT_PATH)
-CFG_TEE_LOGS_PATH ?= $(CFG_TEE_FS_PARENT_PATH)/logs
-
 # CFG_TEE_CLIENT_LOG_FILE
 #   The location of the client log file when logging to file is enabled.
-CFG_TEE_CLIENT_LOG_FILE ?= $(CFG_TEE_LOGS_PATH)/teec.log
+CFG_TEE_CLIENT_LOG_FILE ?= $(CFG_TEE_FS_PARENT_PATH)/teec.log
 
 # CFG_TEE_CLIENT_LOAD_PATH
 #   The location of the client library file.
