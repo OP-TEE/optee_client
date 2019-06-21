@@ -441,7 +441,6 @@ static void ioctl_emu_read_ctr(struct rpmb_emu *mem,
 	frm->msg_type = htons(RPMB_MSG_TYPE_RESP_WRITE_COUNTER_VAL_READ);
 	frm->write_counter = htonl(mem->write_counter);
 	memcpy(frm->nonce, mem->nonce, 16);
-	frm->op_result = RPMB_RESULT_OK;
 	frm->op_result = compute_hmac(mem, frm, 1);
 }
 
