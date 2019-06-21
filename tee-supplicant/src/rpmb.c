@@ -346,7 +346,7 @@ static uint16_t compute_hmac(struct rpmb_emu *mem, struct rpmb_data_frame *frm,
 
 	if (!mem->key_set) {
 		EMSG("Cannot compute MAC (key not set)");
-		return RPMB_RESULT_GENERAL_FAILURE;
+		return RPMB_RESULT_AUTH_KEY_NOT_PROGRAMMED;
 	}
 
 	hmac_sha256_init(&ctx, mem->key, sizeof(mem->key));
