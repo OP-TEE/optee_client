@@ -236,7 +236,7 @@ err:
 /* Emulated rel_wr_sec_c value (reliable write size, *256 bytes) */
 #define EMU_RPMB_REL_WR_SEC_C	1
 /* Emulated rpmb_size_mult value (RPMB size, *128 kB) */
-#define EMU_RPMB_SIZE_MULT	1
+#define EMU_RPMB_SIZE_MULT	2
 
 #define EMU_RPMB_SIZE_BYTES	(EMU_RPMB_SIZE_MULT * 128 * 1024)
 
