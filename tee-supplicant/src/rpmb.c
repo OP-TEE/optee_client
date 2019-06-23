@@ -336,6 +336,11 @@ static bool is_hmac_valid(struct rpmb_emu *mem, struct rpmb_data_frame *frm,
 	return true;
 }
 
+static uint16_t gen_msb1st_result(uint8_t byte)
+{
+	return (uint16_t)byte << 8;
+}
+
 static uint16_t compute_hmac(struct rpmb_emu *mem, struct rpmb_data_frame *frm,
 			     size_t nfrm)
 {
@@ -346,7 +351,7 @@ static uint16_t compute_hmac(struct rpmb_emu *mem, struct rpmb_data_frame *frm,
 
 	if (!mem->key_set) {
 		EMSG("Cannot compute MAC (key not set)");
-		return RPMB_RESULT_AUTH_KEY_NOT_PROGRAMMED;
+		return gen_msb1st_result(RPMB_RESULT_AUTH_KEY_NOT_PROGRAMMED);
 	}
 
 	hmac_sha256_init(&ctx, mem->key, sizeof(mem->key));
@@ -355,7 +360,7 @@ static uint16_t compute_hmac(struct rpmb_emu *mem, struct rpmb_data_frame *frm,
 	frm--;
 	hmac_sha256_final(&ctx, frm->key_mac, 32);
 
-	return RPMB_RESULT_OK;
+	return gen_msb1st_result(RPMB_RESULT_OK);
 }
 
 static uint16_t ioctl_emu_mem_transfer(struct rpmb_emu *mem,
@@ -369,10 +374,10 @@ static uint16_t ioctl_emu_mem_transfer(struct rpmb_emu *mem,
 
 	if (start > mem->size || start + size > mem->size) {
 		EMSG("Transfer bounds exceeed emulated memory");
-		return RPMB_RESULT_ADDRESS_FAILURE;
+		return gen_msb1st_result(RPMB_RESULT_ADDRESS_FAILURE);
 	}
 	if (to_mmc && !is_hmac_valid(mem, frm, nfrm))
-		return RPMB_RESULT_AUTH_FAILURE;
+		return gen_msb1st_result(RPMB_RESULT_AUTH_FAILURE);
 
 	DMSG("Transferring %zu 256-byte data block%s %s MMC (block offset=%zu)",
 	     nfrm, (nfrm > 1) ? "s" : "", to_mmc ? "to" : "from", start / 256);
@@ -392,14 +397,14 @@ static uint16_t ioctl_emu_mem_transfer(struct rpmb_emu *mem,
 			frm[i].block_count = nfrm;
 			memcpy(frm[i].nonce, mem->nonce, 16);
 		}
-		frm[i].op_result = RPMB_RESULT_OK;
+		frm[i].op_result = gen_msb1st_result(RPMB_RESULT_OK);
 	}
 	dump_blocks(mem->last_op.address, nfrm, mem->buf + start, to_mmc);
 
 	if (!to_mmc)
 		compute_hmac(mem, frm, nfrm);
 
-	return RPMB_RESULT_OK;
+	return gen_msb1st_result(RPMB_RESULT_OK);
 }
 
 static void ioctl_emu_get_write_result(struct rpmb_emu *mem,
@@ -417,13 +422,13 @@ static uint16_t ioctl_emu_setkey(struct rpmb_emu *mem,
 {
 	if (mem->key_set) {
 		EMSG("Key already set");
-		return RPMB_RESULT_GENERAL_FAILURE;
+		return gen_msb1st_result(RPMB_RESULT_GENERAL_FAILURE);
 	}
 	dump_buffer("Setting key", frm->key_mac, 32);
 	memcpy(mem->key, frm->key_mac, 32);
 	mem->key_set = true;
 
-	return RPMB_RESULT_OK;
+	return gen_msb1st_result(RPMB_RESULT_OK);
 }
 
 static void ioctl_emu_get_keyprog_result(struct rpmb_emu *mem,
