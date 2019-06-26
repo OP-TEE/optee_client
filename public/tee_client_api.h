@@ -346,7 +346,7 @@ typedef struct {
  *
  * @param a  The first integer value.
  *
- * @param b  The second second value.
+ * @param b  The second value.
  */
 typedef struct {
 	uint32_t a;
