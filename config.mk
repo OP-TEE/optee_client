@@ -43,6 +43,16 @@ CFG_TA_TEST_PATH ?= n
 #   Enable Global Platform Sockets support
 CFG_GP_SOCKETS ?= y
 
+# CFG_TA_GPROF_SUPPORT
+#   Enable dumping gprof data, not used unless secure world decides
+#   to dump something
+CFG_TA_GPROF_SUPPORT ?= y
+
+# CFG_TA_FTRACE_SUPPORT
+#   Enable dumping ftrace data, not used unless secure world decides
+#   to dump something
+CFG_TA_FTRACE_SUPPORT ?= y
+
 # Default output directory.
 # May be absolute, or relative to the optee_client source directory.
 O               ?= out
