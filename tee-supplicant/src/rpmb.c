@@ -155,7 +155,7 @@ static int mmc_rpmb_fd(uint16_t dev_id)
 
 	if (fd < 0) {
 #ifdef __ANDROID__
-		snprintf(path, sizeof(path), "/dev/block/mmcblk%urpmb", dev_id);
+		snprintf(path, sizeof(path), "/dev/mmcblk%urpmb", dev_id);
 #else
 		snprintf(path, sizeof(path), "/dev/mmcblk%urpmb", dev_id);
 #endif
