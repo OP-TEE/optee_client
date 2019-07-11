@@ -153,6 +153,7 @@ static int mmc_rpmb_fd(uint16_t dev_id)
 	static int fd = -1;
 	char path[PATH_MAX] = { 0 };
 
+	DMSG("dev_id = %u", dev_id);
 	if (fd < 0) {
 #ifdef __ANDROID__
 		snprintf(path, sizeof(path), "/dev/mmcblk%urpmb", dev_id);
@@ -179,6 +180,7 @@ static int mmc_fd(uint16_t dev_id)
 	int fd = 0;
 	char path[PATH_MAX] = { 0 };
 
+	DMSG("dev_id = %u", dev_id);
 #ifdef __ANDROID__
 	snprintf(path, sizeof(path), "/dev/block/mmcblk%u", dev_id);
 #else
