@@ -276,12 +276,16 @@ static TEEC_Result process_dll_params(void *dll, size_t num_params,
 					struct tee_ioctl_param *params)
 {
 	size_t i;
-	TEEC_Result res = TEEC_SUCCESS;
-	TEEC_Result (*process_tee_params)(size_t num_params,
-					struct tee_params *params);
 	struct tee_params tee_params[4];
+	TEEC_Result res = TEEC_SUCCESS;
+	/*
+	 * Mimics the signature of process_tee_params. We cannot have 2 same
+	 * declarations
+	 */
+	TEEC_Result (*dll_func)(size_t num_params,
+					struct tee_params *params);
 
-	process_tee_params = dlsym(dll, "process_tee_params");
+	dll_func = dlsym(dll, "process_tee_params");
 	if (dlerror() != NULL) {
 		EMSG("no params handling implementation found");
 		res = TEEC_ERROR_NOT_IMPLEMENTED;
@@ -335,7 +339,7 @@ static TEEC_Result process_dll_params(void *dll, size_t num_params,
 	}
 
 	/* Call the dll with the params */
-	res = process_tee_params(num_params, tee_params);
+	res = dll_func(num_params, tee_params);
 	if (res != TEEC_SUCCESS) {
 		EMSG("failed to handle the tee params");
 		res = TEEC_ERROR_GENERIC;
@@ -465,7 +469,7 @@ err:
  * This functions finds the service for tee based on UUID
  * based on either message queue or dynamic lib.
  * o Message queue is useful when we want to directly pass
- *   some date to CA.
+ *   some data to CA.
  * o Dynamic library interface is useful when we want some
  *   non-CA specific functionality like network library,
  *   which is likely not relevant for the TA/CA state machine.

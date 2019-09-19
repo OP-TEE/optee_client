@@ -71,6 +71,9 @@ TEEC_Result ree_service_rcv(void *service, size_t *num_params,
 TEEC_Result ree_service_snd(void *service, size_t num_params,
 				struct tee_params *params, int32_t error);
 
+/* This has to be implemented by REE service who wants to create a .so */
+TEEC_Result process_tee_params(size_t num_params, struct tee_params *params);
+
 /*
  * Start REE Service
  *
