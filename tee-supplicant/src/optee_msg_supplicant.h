@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2016-2017, Linaro Limited
  * All rights reserved.
+ * Copyright (C) 2019 Intel Corporation All Rights Reserved
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -183,7 +184,7 @@
  */
 #define OPTEE_MSG_RPC_CMD_FTRACE	11
 
-#define OPTEE_MSG_RPC_CMD_GENERIC	30
+#define OPTEE_MSG_RPC_CMD_REE_SERVICE	30
 
 /*
  * Define protocol for messages with .cmd == OPTEE_MSG_RPC_CMD_SOCKET
@@ -265,20 +266,20 @@
  */
 
 /*
- * Open REE Service
+ * Open REE Service: To be handled by tee-supplicant
  *
  * [in]     param[0].u.value.a  OPTEE_MRC_GENERIC_OPEN
  * [in]     param[0].u.value.b  TA instance id
  * [out]    param[1].u.value.c  service handle
  */
-#define OPTEE_MRC_GENERIC_OPEN		1
+#define OPTEE_MRC_REE_SERVICE_OPEN		0xFFFFFFF0
 
 /*
- * Close REE Service
+ * Close REE Service: To be handled by tee-supplicant
  *
  * [in]     param[0].u.value.a  OPTEE_MRC_GENERIC_CLOSE
  * [in]     param[0].u.value.b  TA instance id
  */
-#define OPTEE_MRC_GENERIC_CLOSE		2
+#define OPTEE_MRC_REE_SERVICE_CLOSE		0xFFFFFFF1
 
 #endif /*__OPTEE_MSG_SUPPLICANT_H*/

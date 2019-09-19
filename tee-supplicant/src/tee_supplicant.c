@@ -3,6 +3,7 @@
  * All rights reserved.
  * Copyright (c) 2015, Linaro Limited
  * All rights reserved.
+ * Copyright (C) 2019 Intel Corporation All Rights Reserved
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -627,7 +628,7 @@ static bool process_one_request(struct thread_arg *arg)
 	case OPTEE_MSG_RPC_CMD_FTRACE:
 		ret = prof_process(num_params, params, "ftrace-");
 		break;
-	case OPTEE_MSG_RPC_CMD_GENERIC:
+	case OPTEE_MSG_RPC_CMD_REE_SERVICE:
 		ret = tee_service_process(num_params, params);
 		break;
 	default:

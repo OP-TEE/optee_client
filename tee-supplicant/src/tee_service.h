@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2019 Intel Corporation All Rights Reserved
+ */
+
 #ifndef __TEE_SERVICE_H__
 #define __TEE_SERVICE_H__
 

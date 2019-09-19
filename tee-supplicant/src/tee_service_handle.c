@@ -1,4 +1,6 @@
-/* FIXME: Copyright */
+/*
+ * Copyright (C) 2019 Intel Corporation All Rights Reserved
+ */
 
 #include <stdint.h>
 #include <sys/queue.h>

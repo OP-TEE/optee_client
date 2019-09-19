@@ -3,6 +3,7 @@
  * All rights reserved.
  * Copyright (c) 2015, Linaro Limited
  * All rights reserved.
+ * Copyright (C) 2019 Intel Corporation All Rights Reserved
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -269,8 +270,6 @@ typedef struct {
 	uint16_t timeHiAndVersion;
 	uint8_t clockSeqAndNode[8];
 } TEEC_UUID;
-
-typedef TEEC_UUID REEC_UUID;
 
 /**
  * struct TEEC_SharedMemory - Memory to transfer data between a client
