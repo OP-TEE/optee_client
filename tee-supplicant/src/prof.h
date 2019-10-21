@@ -32,7 +32,7 @@
 
 struct tee_ioctl_param;
 
-#if defined(CFG_TA_GPROF_SUPPORT) || defined(CFG_TA_FTRACE_SUPPORT)
+#if defined(CFG_TA_GPROF_SUPPORT) || defined(CFG_FTRACE_SUPPORT)
 
 TEEC_Result prof_process(size_t num_params, struct tee_ioctl_param *params,
 			 const char *prefix);
@@ -50,5 +50,5 @@ static inline TEEC_Result prof_process(size_t num_params,
 	return TEEC_ERROR_NOT_SUPPORTED;
 }
 
-#endif /* CFG_TA_GPROF_SUPPORT || CFG_TA_FTRACE_SUPPORT */
+#endif /* CFG_TA_GPROF_SUPPORT || CFG_FTRACE_SUPPORT */
 #endif /* PROF_H */

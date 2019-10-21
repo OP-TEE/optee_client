@@ -28,7 +28,7 @@ endif
 ifeq ($(RPMB_EMU),1)
 TEES_SRCS	+= sha2.c hmac_sha2.c
 endif
-ifneq (,$(filter y,$(CFG_TA_GPROF_SUPPORT) $(CFG_TA_FTRACE_SUPPORT)))
+ifneq (,$(filter y,$(CFG_TA_GPROF_SUPPORT) $(CFG_FTRACE_SUPPORT)))
 TEES_SRCS	+= prof.c
 endif
 
@@ -61,8 +61,8 @@ ifeq ($(CFG_TA_GPROF_SUPPORT),y)
 TEES_CFLAGS	+= -DCFG_TA_GPROF_SUPPORT
 endif
 
-ifeq ($(CFG_TA_FTRACE_SUPPORT),y)
-TEES_CFLAGS	+= -DCFG_TA_FTRACE_SUPPORT
+ifeq ($(CFG_FTRACE_SUPPORT),y)
+TEES_CFLAGS	+= -DCFG_FTRACE_SUPPORT
 endif
 
 TEES_LFLAGS	+= -lpthread

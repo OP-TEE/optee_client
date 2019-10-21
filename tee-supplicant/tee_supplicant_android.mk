@@ -36,7 +36,7 @@ LOCAL_SRC_FILES += src/sha2.c src/hmac_sha2.c
 LOCAL_CFLAGS += -DRPMB_EMU=1
 endif
 
-ifneq (,$(filter y,$(CFG_TA_GPROF_SUPPORT) $(CFG_TA_FTRACE_SUPPORT)))
+ifneq (,$(filter y,$(CFG_TA_GPROF_SUPPORT) $(CFG_FTRACE_SUPPORT)))
 LOCAL_SRC_FILES += src/prof.c
 endif
 
@@ -44,8 +44,8 @@ ifeq ($(CFG_TA_GPROF_SUPPORT),y)
 LOCAL_CFLAGS += -DCFG_TA_GPROF_SUPPORT
 endif
 
-ifeq ($(CFG_TA_FTRACE_SUPPORT),y)
-LOCAL_CFLAGS += -DCFG_TA_FTRACE_SUPPORT
+ifeq ($(CFG_FTRACE_SUPPORT),y)
+LOCAL_CFLAGS += -DCFG_FTRACE_SUPPORT
 endif
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/../public \
