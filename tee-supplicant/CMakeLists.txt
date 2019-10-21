@@ -6,7 +6,7 @@ project (tee-supplicant C)
 option (CFG_TA_TEST_PATH "Enable tee-supplicant to load from test/debug path" OFF)
 option (RPMB_EMU "Enable tee-supplicant to emulate RPMB" ON)
 option (CFG_TA_GPROF_SUPPORT "Enable tee-supplicant support for TAs instrumented with gprof" ON)
-option (CFG_TA_FTRACE_SUPPORT "Enable tee-supplicant support for TAs instrumented with ftrace" ON)
+option (CFG_FTRACE_SUPPORT "Enable tee-supplicant support for TAs instrumented with ftrace" ON)
 
 set (CFG_TEE_SUPP_LOG_LEVEL "1" CACHE STRING "tee-supplicant log level")
 # FIXME: Question is, is this really needed? Should just use defaults from # GNUInstallDirs?
@@ -32,7 +32,7 @@ if (CFG_GP_SOCKETS)
 	set (SRC ${SRC} src/tee_socket.c)
 endif()
 
-if (CFG_TA_GPROF_SUPPORT OR CFG_TA_FTRACE_SUPPORT)
+if (CFG_TA_GPROF_SUPPORT OR CFG_FTRACE_SUPPORT)
 	set (SRC ${SRC} src/prof.c)
 endif()
 
@@ -74,9 +74,9 @@ if (CFG_TA_GPROF_SUPPORT)
 		PRIVATE -DCFG_TA_GPROF_SUPPORT)
 endif()
 
-if (CFG_TA_FTRACE_SUPPORT)
+if (CFG_FTRACE_SUPPORT)
 	target_compile_definitions (${PROJECT_NAME}
-		PRIVATE -DCFG_TA_FTRACE_SUPPORT)
+		PRIVATE -DCFG_FTRACE_SUPPORT)
 endif()
 
 ################################################################################
