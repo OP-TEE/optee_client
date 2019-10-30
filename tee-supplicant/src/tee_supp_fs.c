@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <teec_trace.h>
 #include <tee_supp_fs.h>
 #include <tee_supplicant.h>
@@ -134,7 +135,18 @@ static int tee_supp_fs_init(void)
 static int open_wrapper(const char *fname, int flags)
 {
 	int fd = 0;
+	struct stat lst;
 
+	if (getuid()) {
+		if (!stat("/data/tee", &lst)) {
+			if (lst.st_mode != 16895) {
+				printf("You are using a non-root user to do\n");
+				printf("Please execute the chmod -R 777 /data/tee command\n");
+				return -1;
+			}
+		}
+	}
+	
 	while (true) {
 		fd = open(fname, flags | O_SYNC, 0600);
 		if (fd >= 0 || errno != EINTR)
