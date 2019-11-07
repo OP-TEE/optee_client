@@ -101,7 +101,7 @@ TEEC_Result prof_process(size_t num_params, struct tee_ioctl_param *params,
 		}
 		n = snprintf(path, sizeof(path),
 			"/tmp/%s"
-			"%08x-%04x-%04x-%02x%02x%02x%02x%02x%02x%02x%02x"
+			"%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x"
 			"%s.out",
 			prefix,
 			u->timeLow, u->timeMid, u->timeHiAndVersion,
