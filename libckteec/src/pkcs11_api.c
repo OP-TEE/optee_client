@@ -4,6 +4,17 @@
  */
 
 #include <pkcs11.h>
+#include <stddef.h>
+
+static const CK_FUNCTION_LIST libckteec_function_list = {
+	.version = {
+		.major = CK_PKCS11_VERSION_MAJOR,
+		.minor = CK_PKCS11_VERSION_MINOR,
+	},
+	.C_Initialize = C_Initialize,
+	.C_Finalize = C_Finalize,
+	.C_GetFunctionList = C_GetFunctionList,
+};
 
 CK_RV C_Initialize(CK_VOID_PTR pInitArgs)
 {
@@ -30,8 +41,13 @@ CK_RV C_GetInfo(CK_INFO_PTR pInfo)
 
 CK_RV C_GetFunctionList(CK_FUNCTION_LIST_PTR_PTR ppFunctionList)
 {
-	(void)ppFunctionList;
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	if (!ppFunctionList)
+		return CKR_ARGUMENTS_BAD;
+
+	/* Discard the const attribute when exporting the list address */
+	*ppFunctionList = (void *)&libckteec_function_list;
+
+	return CKR_OK;
 }
 
 CK_RV C_GetSlotList(CK_BBOOL tokenPresent,
