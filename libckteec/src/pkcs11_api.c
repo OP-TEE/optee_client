@@ -4,7 +4,10 @@
  */
 
 #include <pkcs11.h>
+#include <stdbool.h>
 #include <stddef.h>
+
+#include "invoke_ta.h"
 
 static const CK_FUNCTION_LIST libckteec_function_list = {
 	.version = {
@@ -16,12 +19,17 @@ static const CK_FUNCTION_LIST libckteec_function_list = {
 	.C_GetFunctionList = C_GetFunctionList,
 };
 
+static bool lib_initiated(void)
+{
+	return ckteec_invoke_initiated();
+}
+
 CK_RV C_Initialize(CK_VOID_PTR pInitArgs)
 {
 	/* Argument currently unused as per the PKCS#11 specification */
 	(void)pInitArgs;
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	return ckteec_invoke_init();
 }
 
 CK_RV C_Finalize(CK_VOID_PTR pReserved)
@@ -29,12 +37,15 @@ CK_RV C_Finalize(CK_VOID_PTR pReserved)
 	/* Argument currently unused as per the PKCS#11 specification */
 	(void)pReserved;
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	return ckteec_invoke_terminate();
 }
 
 CK_RV C_GetInfo(CK_INFO_PTR pInfo)
 {
 	(void)pInfo;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -58,6 +69,9 @@ CK_RV C_GetSlotList(CK_BBOOL tokenPresent,
 	(void)pSlotList;
 	(void)pulCount;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -66,6 +80,9 @@ CK_RV C_GetSlotInfo(CK_SLOT_ID slotID,
 {
 	(void)slotID;
 	(void)pInfo;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -80,6 +97,9 @@ CK_RV C_InitToken(CK_SLOT_ID slotID,
 	(void)ulPinLen;
 	(void)pLabel;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -88,6 +108,9 @@ CK_RV C_GetTokenInfo(CK_SLOT_ID slotID,
 {
 	(void)slotID;
 	(void)pInfo;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -100,6 +123,9 @@ CK_RV C_GetMechanismList(CK_SLOT_ID slotID,
 	(void)pMechanismList;
 	(void)pulCount;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -110,6 +136,9 @@ CK_RV C_GetMechanismInfo(CK_SLOT_ID slotID,
 	(void)slotID;
 	(void)type;
 	(void)pInfo;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -126,6 +155,9 @@ CK_RV C_OpenSession(CK_SLOT_ID slotID,
 	(void)Notify;
 	(void)phSession;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -133,12 +165,18 @@ CK_RV C_CloseSession(CK_SESSION_HANDLE hSession)
 {
 	(void)hSession;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
 CK_RV C_CloseAllSessions(CK_SLOT_ID slotID)
 {
 	(void)slotID;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -148,6 +186,9 @@ CK_RV C_GetSessionInfo(CK_SESSION_HANDLE hSession,
 {
 	(void)hSession;
 	(void)pInfo;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -159,6 +200,9 @@ CK_RV C_InitPIN(CK_SESSION_HANDLE hSession,
 	(void)hSession;
 	(void)pPin;
 	(void)ulPinLen;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -175,6 +219,9 @@ CK_RV C_SetPIN(CK_SESSION_HANDLE hSession,
 	(void)pNewPin;
 	(void)ulNewLen;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -189,12 +236,18 @@ CK_RV C_Login(CK_SESSION_HANDLE hSession,
 	(void)pPin;
 	(void)ulPinLen;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
 CK_RV C_Logout(CK_SESSION_HANDLE hSession)
 {
 	(void)hSession;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -206,6 +259,9 @@ CK_RV C_GetOperationState(CK_SESSION_HANDLE hSession,
 	(void)hSession;
 	(void)pOperationState;
 	(void)pulOperationStateLen;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -222,6 +278,9 @@ CK_RV C_SetOperationState(CK_SESSION_HANDLE hSession,
 	(void)hEncryptionKey;
 	(void)hAuthenticationKey;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -234,6 +293,9 @@ CK_RV C_CreateObject(CK_SESSION_HANDLE hSession,
 	(void)pTemplate;
 	(void)ulCount;
 	(void)phObject;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -250,6 +312,9 @@ CK_RV C_CopyObject(CK_SESSION_HANDLE hSession,
 	(void)ulCount;
 	(void)phNewObject;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -258,6 +323,9 @@ CK_RV C_DestroyObject(CK_SESSION_HANDLE hSession,
 {
 	(void)hSession;
 	(void)hObject;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -269,6 +337,9 @@ CK_RV C_GetObjectSize(CK_SESSION_HANDLE hSession,
 	(void)hSession;
 	(void)hObject;
 	(void)pulSize;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -283,6 +354,9 @@ CK_RV C_GetAttributeValue(CK_SESSION_HANDLE hSession,
 	(void)pTemplate;
 	(void)ulCount;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -296,6 +370,9 @@ CK_RV C_SetAttributeValue(CK_SESSION_HANDLE hSession,
 	(void)pTemplate;
 	(void)ulCount;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -306,6 +383,9 @@ CK_RV C_FindObjectsInit(CK_SESSION_HANDLE hSession,
 	(void)hSession;
 	(void)pTemplate;
 	(void)ulCount;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -321,12 +401,18 @@ CK_RV C_FindObjects(CK_SESSION_HANDLE hSession,
 	(void)ulMaxObjectCount;
 	(void)pulObjectCount;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
 CK_RV C_FindObjectsFinal(CK_SESSION_HANDLE hSession)
 {
 	(void)hSession;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -338,6 +424,9 @@ CK_RV C_EncryptInit(CK_SESSION_HANDLE hSession,
 	(void)hSession;
 	(void)pMechanism;
 	(void)hKey;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -354,6 +443,9 @@ CK_RV C_Encrypt(CK_SESSION_HANDLE hSession,
 	(void)pEncryptedData;
 	(void)pulEncryptedDataLen;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -369,6 +461,9 @@ CK_RV C_EncryptUpdate(CK_SESSION_HANDLE hSession,
 	(void)pEncryptedData;
 	(void)pulEncryptedDataLen;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -380,6 +475,9 @@ CK_RV C_EncryptFinal(CK_SESSION_HANDLE hSession,
 	(void)pLastEncryptedPart;
 	(void)pulLastEncryptedPartLen;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -390,6 +488,9 @@ CK_RV C_DecryptInit(CK_SESSION_HANDLE hSession,
 	(void)hSession;
 	(void)pMechanism;
 	(void)hKey;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -406,6 +507,9 @@ CK_RV C_Decrypt(CK_SESSION_HANDLE hSession,
 	(void)pData;
 	(void)pulDataLen;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -421,6 +525,9 @@ CK_RV C_DecryptUpdate(CK_SESSION_HANDLE hSession,
 	(void)pPart;
 	(void)pulPartLen;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -432,6 +539,9 @@ CK_RV C_DecryptFinal(CK_SESSION_HANDLE hSession,
 	(void)pLastPart;
 	(void)pulLastPartLen;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -440,6 +550,9 @@ CK_RV C_DigestInit(CK_SESSION_HANDLE hSession,
 {
 	(void)hSession;
 	(void)pMechanism;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -456,6 +569,9 @@ CK_RV C_Digest(CK_SESSION_HANDLE hSession,
 	(void)pDigest;
 	(void)pulDigestLen;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -467,6 +583,9 @@ CK_RV C_DigestUpdate(CK_SESSION_HANDLE hSession,
 	(void)pPart;
 	(void)ulPartLen;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -475,6 +594,9 @@ CK_RV C_DigestKey(CK_SESSION_HANDLE hSession,
 {
 	(void)hSession;
 	(void)hKey;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -487,6 +609,9 @@ CK_RV C_DigestFinal(CK_SESSION_HANDLE hSession,
 	(void)pDigest;
 	(void)pulDigestLen;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -497,6 +622,9 @@ CK_RV C_SignInit(CK_SESSION_HANDLE hSession,
 	(void)hSession;
 	(void)pMechanism;
 	(void)hKey;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -513,6 +641,9 @@ CK_RV C_Sign(CK_SESSION_HANDLE hSession,
 	(void)pSignature;
 	(void)pulSignatureLen;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -523,6 +654,9 @@ CK_RV C_SignUpdate(CK_SESSION_HANDLE hSession,
 	(void)hSession;
 	(void)pPart;
 	(void)ulPartLen;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -535,6 +669,9 @@ CK_RV C_SignFinal(CK_SESSION_HANDLE hSession,
 	(void)pSignature;
 	(void)pulSignatureLen;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -545,6 +682,9 @@ CK_RV C_SignRecoverInit(CK_SESSION_HANDLE hSession,
 	(void)hSession;
 	(void)pMechanism;
 	(void)hKey;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -561,6 +701,9 @@ CK_RV C_SignRecover(CK_SESSION_HANDLE hSession,
 	(void)pSignature;
 	(void)pulSignatureLen;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -571,6 +714,9 @@ CK_RV C_VerifyInit(CK_SESSION_HANDLE hSession,
 	(void)hSession;
 	(void)pMechanism;
 	(void)hKey;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -587,6 +733,9 @@ CK_RV C_Verify(CK_SESSION_HANDLE hSession,
 	(void)pSignature;
 	(void)ulSignatureLen;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -597,6 +746,9 @@ CK_RV C_VerifyUpdate(CK_SESSION_HANDLE hSession,
 	(void)hSession;
 	(void)pPart;
 	(void)ulPartLen;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -609,6 +761,9 @@ CK_RV C_VerifyFinal(CK_SESSION_HANDLE hSession,
 	(void)pSignature;
 	(void)ulSignatureLen;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -619,6 +774,9 @@ CK_RV C_VerifyRecoverInit(CK_SESSION_HANDLE hSession,
 	(void)hSession;
 	(void)pMechanism;
 	(void)hKey;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -635,6 +793,9 @@ CK_RV C_VerifyRecover(CK_SESSION_HANDLE hSession,
 	(void)pData;
 	(void)pulDataLen;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -649,6 +810,9 @@ CK_RV C_DigestEncryptUpdate(CK_SESSION_HANDLE hSession,
 	(void)ulPartLen;
 	(void)pEncryptedPart;
 	(void)pulEncryptedPartLen;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -665,6 +829,9 @@ CK_RV C_DecryptDigestUpdate(CK_SESSION_HANDLE hSession,
 	(void)pPart;
 	(void)pulPartLen;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -679,6 +846,9 @@ CK_RV C_SignEncryptUpdate(CK_SESSION_HANDLE hSession,
 	(void)ulPartLen;
 	(void)pEncryptedPart;
 	(void)pulEncryptedPartLen;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -695,6 +865,9 @@ CK_RV C_DecryptVerifyUpdate(CK_SESSION_HANDLE hSession,
 	(void)pPart;
 	(void)pulPartLen;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -709,6 +882,9 @@ CK_RV C_GenerateKey(CK_SESSION_HANDLE hSession,
 	(void)pTemplate;
 	(void)ulCount;
 	(void)phKey;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -731,6 +907,9 @@ CK_RV C_GenerateKeyPair(CK_SESSION_HANDLE hSession,
 	(void)phPublicKey;
 	(void)phPrivateKey;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -747,6 +926,9 @@ CK_RV C_WrapKey(CK_SESSION_HANDLE hSession,
 	(void)hKey;
 	(void)pWrappedKey;
 	(void)pulWrappedKeyLen;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -769,6 +951,9 @@ CK_RV C_UnwrapKey(CK_SESSION_HANDLE hSession,
 	(void)ulCount;
 	(void)phKey;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -786,6 +971,9 @@ CK_RV C_DeriveKey(CK_SESSION_HANDLE hSession,
 	(void)ulCount;
 	(void)phKey;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -796,6 +984,9 @@ CK_RV C_SeedRandom(CK_SESSION_HANDLE hSession,
 	(void)hSession;
 	(void)pSeed;
 	(void)ulSeedLen;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -808,6 +999,9 @@ CK_RV C_GenerateRandom(CK_SESSION_HANDLE hSession,
 	(void)pRandomData;
 	(void)ulRandomLen;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
@@ -815,12 +1009,18 @@ CK_RV C_GetFunctionStatus(CK_SESSION_HANDLE hSession)
 {
 	(void)hSession;
 
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
+
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
 
 CK_RV C_CancelFunction(CK_SESSION_HANDLE hSession)
 {
 	(void)hSession;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
@@ -832,6 +1032,9 @@ CK_RV C_WaitForSlotEvent(CK_FLAGS flags,
 	(void)flags;
 	(void)slotID;
 	(void)pReserved;
+
+	if (!lib_initiated())
+		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
 	return CKR_FUNCTION_NOT_SUPPORTED;
 }
