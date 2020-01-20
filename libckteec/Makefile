@@ -23,6 +23,7 @@ LIBCKTEEC_SRC_DIR	:= src
 
 LIBCKTEEC_SRCS		= pkcs11_api.c
 LIBCKTEEC_SRCS		+= ck_helpers.c
+LIBCKTEEC_SRCS		+= invoke_ta.c
 
 LIBCKTEEC_INCLUDES	= ${CURDIR}/include
 LIBCKTEEC_INCLUDES 	+= ${CURDIR}/../public
