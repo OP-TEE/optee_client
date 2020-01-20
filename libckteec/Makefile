@@ -22,6 +22,7 @@ LIBCKTEEC_AR_LIBRARY	:= $(LIB_NAME).a
 LIBCKTEEC_SRC_DIR	:= src
 
 LIBCKTEEC_SRCS		= pkcs11_api.c
+LIBCKTEEC_SRCS		+= ck_debug.c
 LIBCKTEEC_SRCS		+= ck_helpers.c
 LIBCKTEEC_SRCS		+= invoke_ta.c
 
