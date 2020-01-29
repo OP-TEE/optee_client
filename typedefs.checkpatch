@@ -1,0 +1,12 @@
+# Note: please keep the entries in this file sorted in reverse alphabetical
+# order (sort -r)
+TEEC_Result
+TEEC_Context
+TEEC_UUID
+TEEC_SharedMemory
+TEEC_TempMemoryReference
+TEEC_RegisteredMemoryReference
+TEEC_Value
+TEEC_Parameter
+TEEC_Session
+TEEC_Operation
