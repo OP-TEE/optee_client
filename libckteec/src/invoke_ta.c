@@ -68,6 +68,40 @@ TEEC_SharedMemory *ckteec_alloc_shm(size_t size, enum ckteec_shm_dir dir)
 	return shm;
 }
 
+TEEC_SharedMemory *ckteec_register_shm(void *buffer, size_t size,
+				       enum ckteec_shm_dir dir)
+{
+	TEEC_SharedMemory *shm;
+
+	switch (dir) {
+	case CKTEEC_SHM_IN:
+	case CKTEEC_SHM_OUT:
+	case CKTEEC_SHM_INOUT:
+		break;
+	default:
+		return NULL;
+	}
+
+	shm = calloc(1, sizeof(TEEC_SharedMemory));
+	if (!shm)
+		return NULL;
+
+	shm->buffer = buffer;
+	shm->size = size;
+
+	if (dir == CKTEEC_SHM_IN || dir == CKTEEC_SHM_INOUT)
+		shm->flags |= TEEC_MEM_INPUT;
+	if (dir == CKTEEC_SHM_OUT || dir == CKTEEC_SHM_INOUT)
+		shm->flags |= TEEC_MEM_OUTPUT;
+
+	if (TEEC_RegisterSharedMemory(&ta_ctx.context, shm)) {
+		free(shm);
+		return NULL;
+	}
+
+	return shm;
+}
+
 void ckteec_free_shm(TEEC_SharedMemory *shm)
 {
 	TEEC_ReleaseSharedMemory(shm);
