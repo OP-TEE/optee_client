@@ -8,6 +8,7 @@
 #include <stddef.h>
 
 #include "invoke_ta.h"
+#include "ck_helpers.h"
 
 static const CK_FUNCTION_LIST libckteec_function_list = {
 	.version = {
@@ -26,18 +27,36 @@ static bool lib_initiated(void)
 
 CK_RV C_Initialize(CK_VOID_PTR pInitArgs)
 {
+	CK_RV rv = 0;
+
 	/* Argument currently unused as per the PKCS#11 specification */
 	(void)pInitArgs;
 
-	return ckteec_invoke_init();
+	rv = ckteec_invoke_init();
+
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_CANT_LOCK,
+		     CKR_CRYPTOKI_ALREADY_INITIALIZED, CKR_FUNCTION_FAILED,
+		     CKR_GENERAL_ERROR, CKR_HOST_MEMORY,
+		     CKR_NEED_TO_CREATE_THREADS, CKR_OK,
+		     CKR_MUTEX_BAD);
+
+	return rv;
 }
 
 CK_RV C_Finalize(CK_VOID_PTR pReserved)
 {
+	CK_RV rv = 0;
+
 	/* Argument currently unused as per the PKCS#11 specification */
 	(void)pReserved;
 
-	return ckteec_invoke_terminate();
+	rv = ckteec_invoke_terminate();
+
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_CRYPTOKI_NOT_INITIALIZED,
+		     CKR_FUNCTION_FAILED, CKR_GENERAL_ERROR, CKR_HOST_MEMORY,
+		     CKR_OK);
+
+	return rv;
 }
 
 CK_RV C_GetInfo(CK_INFO_PTR pInfo)
