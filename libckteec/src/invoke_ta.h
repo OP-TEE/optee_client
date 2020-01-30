@@ -26,6 +26,18 @@ enum ckteec_shm_dir {
 TEEC_SharedMemory *ckteec_alloc_shm(size_t size, enum ckteec_shm_dir dir);
 
 /**
+ * ckteec_register_shm - Register memory as shared in the TEE SHM
+ *
+ * @buffer - Base address of buffer to register
+ * @size - Allocated size in byte
+ * @dir - Data direction used for the shared memory
+ *
+ * Return a shm reference or NULL on failure.
+ */
+TEEC_SharedMemory *ckteec_register_shm(void *buffer, size_t size,
+				       enum ckteec_shm_dir dir);
+
+/**
  * ckteec_free_shm - Release allocated or registered emory in the TEE SHM
  *
  * @shm - memory reference
