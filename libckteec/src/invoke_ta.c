@@ -109,15 +109,25 @@ void ckteec_free_shm(TEEC_SharedMemory *shm)
 	free(shm);
 }
 
+static bool is_output_shm(TEEC_SharedMemory *shm)
+{
+	return shm && (shm->flags & TEEC_MEM_OUTPUT);
+}
+
 CK_RV ckteec_invoke_ta(unsigned long cmd, TEEC_SharedMemory *ctrl,
-		       TEEC_SharedMemory *io1, TEEC_SharedMemory *io2,
-		       TEEC_SharedMemory *io3)
+		       TEEC_SharedMemory *io1,
+		       TEEC_SharedMemory *io2, size_t *out2_size,
+		       TEEC_SharedMemory *io3, size_t *out3_size)
 {
 	uint32_t command = (uint32_t)cmd;
 	TEEC_Operation op;
 	uint32_t origin = 0;
 	TEEC_Result res = TEEC_ERROR_GENERIC;
 	uint32_t ta_rc = PKCS11_CKR_GENERAL_ERROR;
+
+	if ((is_output_shm(io2) && !out2_size) ||
+	    (is_output_shm(io3) && !out3_size))
+		return CKR_ARGUMENTS_BAD;
 
 	memset(&op, 0, sizeof(op));
 
@@ -154,22 +164,29 @@ CK_RV ckteec_invoke_ta(unsigned long cmd, TEEC_SharedMemory *ctrl,
 	res = TEEC_InvokeCommand(&ta_ctx.session, command, &op, &origin);
 	switch (res) {
 	case TEEC_SUCCESS:
+		/* Get PKCS11 TA return value from ctrl buffer */
+		if (ctrl) {
+			if (op.params[0].memref.size == sizeof(ta_rc))
+				memcpy(&ta_rc, ctrl->buffer, sizeof(ta_rc));
+		} else {
+			if (op.params[0].tmpref.size != sizeof(ta_rc))
+				ta_rc = PKCS11_CKR_GENERAL_ERROR;
+		}
 		break;
 	case TEEC_ERROR_SHORT_BUFFER:
-		return CKR_BUFFER_TOO_SMALL;
+		ta_rc = CKR_BUFFER_TOO_SMALL;
+		break;
 	case TEEC_ERROR_OUT_OF_MEMORY:
 		return CKR_DEVICE_MEMORY;
 	default:
 		return CKR_GENERAL_ERROR;
 	}
 
-	/* Get PKCS11 TA return value from ctrl buffer */
-	if (ctrl) {
-		if (op.params[0].memref.size == sizeof(ta_rc))
-			memcpy(&ta_rc, ctrl->buffer, sizeof(ta_rc));
-	} else {
-		if (op.params[0].tmpref.size != sizeof(ta_rc))
-			ta_rc = PKCS11_CKR_GENERAL_ERROR;
+	if (ta_rc == CKR_OK || ta_rc == CKR_BUFFER_TOO_SMALL) {
+		if (is_output_shm(io2))
+			*out2_size = op.params[2].memref.size;
+		if (is_output_shm(io3))
+			*out3_size = op.params[3].memref.size;
 	}
 
 	return ta_rc;
