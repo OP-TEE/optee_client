@@ -62,6 +62,27 @@ CK_RV ckteec_invoke_ta(unsigned long cmd, TEEC_SharedMemory *ctrl,
 		       TEEC_SharedMemory *io2, size_t *out2_size,
 		       TEEC_SharedMemory *io3, size_t *out3_size);
 
+static inline CK_RV ckteec_invoke_ctrl(unsigned long cmd,
+				       TEEC_SharedMemory *ctrl)
+{
+	return ckteec_invoke_ta(cmd, ctrl, NULL, NULL, NULL, NULL, NULL);
+}
+
+static inline CK_RV ckteec_invoke_ctrl_in(unsigned long cmd,
+					  TEEC_SharedMemory *ctrl,
+					  TEEC_SharedMemory *io1)
+{
+	return ckteec_invoke_ta(cmd, ctrl, io1, NULL, NULL, NULL, NULL);
+}
+
+static inline CK_RV ckteec_invoke_ctrl_out(unsigned long cmd,
+					   TEEC_SharedMemory *ctrl,
+					   TEEC_SharedMemory *io2,
+					   size_t *out_sz)
+{
+	return ckteec_invoke_ta(cmd, ctrl, NULL, io2, out_sz, NULL, NULL);
+}
+
 /*
  * ckteec_invoke_init - Initialize TEE session with the PKCS11 TA
  *
