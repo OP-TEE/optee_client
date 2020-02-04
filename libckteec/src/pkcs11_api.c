@@ -23,6 +23,7 @@ static const CK_FUNCTION_LIST libckteec_function_list = {
 	.C_GetSlotList = C_GetSlotList,
 	.C_GetSlotInfo = C_GetSlotInfo,
 	.C_GetTokenInfo = C_GetTokenInfo,
+	.C_GetMechanismList = C_GetMechanismList,
 };
 
 static bool lib_initiated(void)
@@ -157,14 +158,18 @@ CK_RV C_GetMechanismList(CK_SLOT_ID slotID,
 			 CK_MECHANISM_TYPE_PTR pMechanismList,
 			 CK_ULONG_PTR pulCount)
 {
-	(void)slotID;
-	(void)pMechanismList;
-	(void)pulCount;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_token_mechanism_ids(slotID, pMechanismList, pulCount);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_BUFFER_TOO_SMALL, CKR_CRYPTOKI_NOT_INITIALIZED,
+		     CKR_DEVICE_ERROR, CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED,
+		     CKR_FUNCTION_FAILED, CKR_GENERAL_ERROR, CKR_HOST_MEMORY,
+		     CKR_OK, CKR_SLOT_ID_INVALID, CKR_TOKEN_NOT_PRESENT,
+		     CKR_TOKEN_NOT_RECOGNIZED, CKR_ARGUMENTS_BAD);
+
+	return rv;
 }
 
 CK_RV C_GetMechanismInfo(CK_SLOT_ID slotID,

@@ -19,4 +19,8 @@ CK_RV ck_slot_get_info(CK_SLOT_ID slot, CK_SLOT_INFO_PTR info);
 
 CK_RV ck_token_get_info(CK_SLOT_ID slot, CK_TOKEN_INFO_PTR info);
 
+CK_RV ck_token_mechanism_ids(CK_SLOT_ID slot,
+			     CK_MECHANISM_TYPE_PTR mechanisms,
+			     CK_ULONG_PTR count);
+
 #endif /*LIBCKTEEC_PKCS11_TOKEN_H*/
