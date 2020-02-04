@@ -9,6 +9,7 @@
 
 #include "invoke_ta.h"
 #include "ck_helpers.h"
+#include "pkcs11_token.h"
 
 static const CK_FUNCTION_LIST libckteec_function_list = {
 	.version = {
@@ -17,6 +18,7 @@ static const CK_FUNCTION_LIST libckteec_function_list = {
 	},
 	.C_Initialize = C_Initialize,
 	.C_Finalize = C_Finalize,
+	.C_GetInfo = C_GetInfo,
 	.C_GetFunctionList = C_GetFunctionList,
 };
 
@@ -61,12 +63,16 @@ CK_RV C_Finalize(CK_VOID_PTR pReserved)
 
 CK_RV C_GetInfo(CK_INFO_PTR pInfo)
 {
-	(void)pInfo;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_get_info(pInfo);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_CRYPTOKI_NOT_INITIALIZED,
+		     CKR_FUNCTION_FAILED, CKR_GENERAL_ERROR, CKR_HOST_MEMORY,
+		     CKR_OK);
+
+	return rv;
 }
 
 CK_RV C_GetFunctionList(CK_FUNCTION_LIST_PTR_PTR ppFunctionList)

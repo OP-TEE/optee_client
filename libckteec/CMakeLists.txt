@@ -20,6 +20,7 @@ set (SRC
 	src/ck_debug.c
 	src/ck_helpers.c
 	src/invoke_ta.c
+	src/pkcs11_token.c
 )
 
 ################################################################################
