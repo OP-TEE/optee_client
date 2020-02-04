@@ -270,3 +270,65 @@ bail:
 
 	return rv;
 }
+
+/**
+ * ck_token_mechanism_ids - Wrap C_GetMechanismList
+ */
+CK_RV ck_token_mechanism_ids(CK_SLOT_ID slot,
+			     CK_MECHANISM_TYPE_PTR mechanisms,
+			     CK_ULONG_PTR count)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	TEEC_SharedMemory *ctrl = NULL;
+	TEEC_SharedMemory *out = NULL;
+	uint32_t slot_id = slot;
+	uint32_t *mecha_ids = NULL;
+	size_t out_size = 0;
+	size_t n = 0;
+
+	if (!count || (*count && !mechanisms))
+		return CKR_ARGUMENTS_BAD;
+
+	out_size = *count * sizeof(*mecha_ids);
+
+	ctrl = ckteec_alloc_shm(sizeof(slot_id), CKTEEC_SHM_INOUT);
+	if (!ctrl) {
+		rv = CKR_HOST_MEMORY;
+		goto out;
+	}
+	memcpy(ctrl->buffer, &slot_id, sizeof(slot_id));
+
+	if (mechanisms)
+		out = ckteec_register_shm(mechanisms, out_size,
+					  CKTEEC_SHM_OUT);
+	else
+		out = ckteec_alloc_shm(out_size, CKTEEC_SHM_OUT);
+
+	if (!out) {
+		rv = CKR_HOST_MEMORY;
+		goto out;
+	}
+
+	rv = ckteec_invoke_ctrl_out(PKCS11_CMD_MECHANISM_IDS,
+				    ctrl, out, &out_size);
+
+	if (rv == CKR_OK || rv == CKR_BUFFER_TOO_SMALL)
+		*count = out_size / sizeof(*mecha_ids);
+
+	if (!mechanisms && rv == CKR_BUFFER_TOO_SMALL) {
+		rv = CKR_OK;
+		goto out;
+	}
+	if (rv)
+		goto out;
+
+	mecha_ids = out->buffer;
+	for (n = 0; n < *count; n++)
+		mechanisms[n] = mecha_ids[n];
+
+out:
+	ckteec_free_shm(ctrl);
+	ckteec_free_shm(out);
+
+	return rv;
+}
