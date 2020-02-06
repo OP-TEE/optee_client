@@ -283,11 +283,8 @@ CK_RV ckteec_invoke_init(void)
 	}
 
 	e = pthread_mutex_lock(&ta_ctx.init_mutex);
-	if (e) {
-		EMSG("pthread_mutex_lock: %s", strerror(e));
-		EMSG("terminating...");
-		exit(EXIT_FAILURE);
-	}
+	if (e)
+		return CKR_CANT_LOCK;
 
 	if (ta_ctx.initiated) {
 		rv = CKR_CRYPTOKI_ALREADY_INITIALIZED;
