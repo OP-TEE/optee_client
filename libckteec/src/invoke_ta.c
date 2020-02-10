@@ -152,8 +152,16 @@ CK_RV ckteec_invoke_ta(unsigned long cmd, TEEC_SharedMemory *ctrl,
 	}
 
 	res = TEEC_InvokeCommand(&ta_ctx.session, command, &op, &origin);
-	if (res)
-		return teec2ck_rv(res);
+	switch (res) {
+	case TEEC_SUCCESS:
+		break;
+	case TEEC_ERROR_SHORT_BUFFER:
+		return CKR_BUFFER_TOO_SMALL;
+	case TEEC_ERROR_OUT_OF_MEMORY:
+		return CKR_DEVICE_MEMORY;
+	default:
+		return CKR_GENERAL_ERROR;
+	}
 
 	/* Get PKCS11 TA return value from ctrl buffer */
 	if (ctrl) {
