@@ -36,7 +36,7 @@ build-tee-supplicant: build-libteec
 
 build: build-libteec build-tee-supplicant build-libckteec
 
-build-libckteec:
+build-libckteec: build-libteec
 	@echo "Building libckteec.so"
 	@$(MAKE) --directory=libckteec --no-print-directory --no-builtin-variables
 
