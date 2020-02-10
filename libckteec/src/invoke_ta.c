@@ -8,6 +8,7 @@
 #define BINARY_PREFIX		"ckteec"
 #endif
 
+#include <inttypes.h>
 #include <pkcs11.h>
 #include <pkcs11_ta.h>
 #include <pthread.h>
@@ -164,16 +165,14 @@ static CK_RV ping_ta(void)
 
 	if (ta_version[0] != PKCS11_TA_VERSION_MAJOR &&
 	    ta_version[1] > PKCS11_TA_VERSION_MINOR) {
-		EMSG("PKCS11 TA version mismatch: %u.%u.%u",
-		     (unsigned int)ta_version[0],
-		     (unsigned int)ta_version[1],
-		     (unsigned int)ta_version[2]);
+		EMSG("PKCS11 TA version mismatch: %"PRIu32".%"PRIu32".%"PRIu32,
+		     ta_version[0], ta_version[1], ta_version[2]);
 
 		return CKR_DEVICE_ERROR;
 	}
 
-	DMSG("PKCS11 TA version %u.%u.%u", (unsigned int)ta_version[0],
-	     (unsigned int)ta_version[1], (unsigned int)ta_version[2]);
+	DMSG("PKCS11 TA version %"PRIu32".%"PRIu32".%"PRIu32,
+	     ta_version[0], ta_version[1], ta_version[2]);
 
 	return CKR_OK;
 }
