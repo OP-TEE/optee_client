@@ -4,6 +4,7 @@
  */
 
 #include <assert.h>
+#include <ck_debug.h>
 #include <pkcs11.h>
 #include <stdio.h>
 #include <tee_client_api.h>
@@ -20,8 +21,8 @@ void ckteec_assert_expected_rv(const char *function, CK_RV rv,
 		if (rv == expected_rv[n])
 			return;
 
-	fprintf(stderr, "libckteec: unexpected return value 0x%lx for %s\n",
-		rv, function);
+	fprintf(stderr, "libckteec: %s: unexpected return value 0x%lx (%s)\n",
+		function, rv, ckr2str(rv));
 
 	assert(0);
 }
