@@ -164,3 +164,91 @@ bail:
 
 	return rv;
 }
+
+/**
+ * ck_token_get_info - Wrap C_GetTokenInfo into PKCS11_CMD_TOKEN_INFO
+ */
+CK_RV ck_token_get_info(CK_SLOT_ID slot, CK_TOKEN_INFO_PTR info)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	TEEC_SharedMemory *ctrl = NULL;
+	TEEC_SharedMemory *out_shm = NULL;
+	uint32_t slot_id = slot;
+	struct pkcs11_token_info *ta_info = NULL;
+	size_t out_size = 0;
+
+	if (!info)
+		return CKR_ARGUMENTS_BAD;
+
+	ctrl = ckteec_alloc_shm(sizeof(slot_id), CKTEEC_SHM_INOUT);
+	if (!ctrl) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
+	memcpy(ctrl->buffer, &slot_id, sizeof(slot_id));
+
+	out_shm = ckteec_alloc_shm(sizeof(*ta_info), CKTEEC_SHM_OUT);
+	if (!out_shm) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
+
+	rv = ckteec_invoke_ctrl_out(PKCS11_CMD_TOKEN_INFO, ctrl,
+				    out_shm, &out_size);
+	if (rv)
+		goto bail;
+
+	if (out_size != out_shm->size) {
+		rv = CKR_DEVICE_ERROR;
+		goto bail;
+	}
+
+	ta_info = out_shm->buffer;
+
+	COMPILE_TIME_ASSERT(sizeof(info->label) == sizeof(ta_info->label));
+	memcpy(info->label, ta_info->label, sizeof(info->label));
+
+	COMPILE_TIME_ASSERT(sizeof(info->manufacturerID) ==
+			    sizeof(ta_info->manufacturer_id));
+	memcpy(info->manufacturerID, ta_info->manufacturer_id,
+	       sizeof(info->manufacturerID));
+
+	COMPILE_TIME_ASSERT(sizeof(info->model) == sizeof(ta_info->model));
+	memcpy(info->model, ta_info->model, sizeof(info->model));
+
+	COMPILE_TIME_ASSERT(sizeof(info->serialNumber) ==
+			    sizeof(ta_info->serial_number));
+	memcpy(info->serialNumber, ta_info->serial_number,
+	       sizeof(info->serialNumber));
+
+	info->flags = ta_info->flags;
+	info->ulMaxSessionCount = ta_info->max_session_count;
+	info->ulSessionCount = ta_info->session_count;
+	info->ulMaxRwSessionCount = ta_info->max_rw_session_count;
+	info->ulRwSessionCount = ta_info->rw_session_count;
+	info->ulMaxPinLen = ta_info->max_pin_len;
+	info->ulMinPinLen = ta_info->min_pin_len;
+	info->ulTotalPublicMemory = ta_info->total_public_memory;
+	info->ulFreePublicMemory = ta_info->free_public_memory;
+	info->ulTotalPrivateMemory = ta_info->total_private_memory;
+	info->ulFreePrivateMemory = ta_info->free_private_memory;
+
+	COMPILE_TIME_ASSERT(sizeof(info->hardwareVersion) ==
+			    sizeof(ta_info->hardware_version));
+	memcpy(&info->hardwareVersion, ta_info->hardware_version,
+	       sizeof(info->hardwareVersion));
+
+	COMPILE_TIME_ASSERT(sizeof(info->firmwareVersion) ==
+			    sizeof(ta_info->firmware_version));
+	memcpy(&info->firmwareVersion, ta_info->firmware_version,
+	       sizeof(info->firmwareVersion));
+
+	COMPILE_TIME_ASSERT(sizeof(info->utcTime) == sizeof(ta_info->utc_time));
+	memcpy(&info->utcTime, ta_info->utc_time, sizeof(info->utcTime));
+
+bail:
+	ckteec_free_shm(ctrl);
+	ckteec_free_shm(out_shm);
+
+	return rv;
+}
