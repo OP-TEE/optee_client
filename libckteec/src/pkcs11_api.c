@@ -20,6 +20,7 @@ static const CK_FUNCTION_LIST libckteec_function_list = {
 	.C_Finalize = C_Finalize,
 	.C_GetInfo = C_GetInfo,
 	.C_GetFunctionList = C_GetFunctionList,
+	.C_GetSlotList = C_GetSlotList,
 };
 
 static bool lib_initiated(void)
@@ -90,14 +91,16 @@ CK_RV C_GetSlotList(CK_BBOOL tokenPresent,
 		    CK_SLOT_ID_PTR pSlotList,
 		    CK_ULONG_PTR pulCount)
 {
-	(void)tokenPresent;
-	(void)pSlotList;
-	(void)pulCount;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_slot_get_list(tokenPresent, pSlotList, pulCount);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_BUFFER_TOO_SMALL,
+		     CKR_CRYPTOKI_NOT_INITIALIZED, CKR_FUNCTION_FAILED,
+		     CKR_GENERAL_ERROR, CKR_HOST_MEMORY, CKR_OK);
+
+	return rv;
 }
 
 CK_RV C_GetSlotInfo(CK_SLOT_ID slotID,

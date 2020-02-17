@@ -55,3 +55,46 @@ CK_RV ck_get_info(CK_INFO_PTR info)
 
 	return CKR_OK;
 }
+
+/**
+ * ck_slot_get_list - Wrap C_GetSlotList into PKCS11_CMD_SLOT_LIST
+ */
+CK_RV ck_slot_get_list(CK_BBOOL present,
+		       CK_SLOT_ID_PTR slots, CK_ULONG_PTR count)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	TEEC_SharedMemory *shm = NULL;
+	uint32_t *slot_ids = NULL;
+	size_t size = 0;
+
+	/* Discard @present: all slots reported by TA are present */
+	(void)present;
+
+	if (!count || (*count && !slots))
+		return CKR_ARGUMENTS_BAD;
+
+	size = *count * sizeof(*slot_ids);
+
+	shm = ckteec_alloc_shm(size, CKTEEC_SHM_OUT);
+	if (!shm)
+		return CKR_HOST_MEMORY;
+
+	rv = ckteec_invoke_ta(PKCS11_CMD_SLOT_LIST, NULL,
+			      NULL, shm, &size, NULL, NULL);
+
+	if (rv == CKR_OK || rv == CKR_BUFFER_TOO_SMALL) {
+		*count = size / sizeof(*slot_ids);
+
+		if (rv == CKR_OK && slots) {
+			size_t n = 0;
+
+			slot_ids = shm->buffer;
+			for (n = 0; n < *count; n++)
+				slots[n] = slot_ids[n];
+		}
+	}
+
+	ckteec_free_shm(shm);
+
+	return rv;
+}
