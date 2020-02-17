@@ -23,4 +23,7 @@ CK_RV ck_token_mechanism_ids(CK_SLOT_ID slot,
 			     CK_MECHANISM_TYPE_PTR mechanisms,
 			     CK_ULONG_PTR count);
 
+CK_RV ck_token_mechanism_info(CK_SLOT_ID slot, CK_MECHANISM_TYPE type,
+			      CK_MECHANISM_INFO_PTR info);
+
 #endif /*LIBCKTEEC_PKCS11_TOKEN_H*/
