@@ -98,3 +98,69 @@ CK_RV ck_slot_get_list(CK_BBOOL present,
 
 	return rv;
 }
+
+/**
+ * ck_slot_get_info - Wrap C_GetSlotInfo into PKCS11_CMD_SLOT_INFO
+ */
+CK_RV ck_slot_get_info(CK_SLOT_ID slot, CK_SLOT_INFO_PTR info)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	TEEC_SharedMemory *ctrl = NULL;
+	TEEC_SharedMemory *out = NULL;
+	uint32_t slot_id = slot;
+	struct pkcs11_slot_info *ta_info = NULL;
+	size_t out_size = 0;
+
+	if (!info)
+		return CKR_ARGUMENTS_BAD;
+
+	ctrl = ckteec_alloc_shm(sizeof(slot_id), CKTEEC_SHM_INOUT);
+	if (!ctrl) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
+	memcpy(ctrl->buffer, &slot_id, sizeof(slot_id));
+
+	out = ckteec_alloc_shm(sizeof(*ta_info), CKTEEC_SHM_OUT);
+	if (!out) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
+
+	rv = ckteec_invoke_ctrl_out(PKCS11_CMD_SLOT_INFO, ctrl, out, &out_size);
+	if (rv != CKR_OK || out_size != out->size) {
+		if (rv == CKR_OK)
+			rv = CKR_DEVICE_ERROR;
+		goto bail;
+	}
+
+	ta_info = out->buffer;
+
+	COMPILE_TIME_ASSERT(sizeof(info->slotDescription) ==
+			    sizeof(ta_info->slot_description));
+	memcpy(info->slotDescription, ta_info->slot_description,
+	       sizeof(info->slotDescription));
+
+	COMPILE_TIME_ASSERT(sizeof(info->manufacturerID) ==
+			    sizeof(ta_info->manufacturer_id));
+	memcpy(info->manufacturerID, ta_info->manufacturer_id,
+	       sizeof(info->manufacturerID));
+
+	info->flags = ta_info->flags;
+
+	COMPILE_TIME_ASSERT(sizeof(info->hardwareVersion) ==
+			    sizeof(ta_info->hardware_version));
+	memcpy(&info->hardwareVersion, ta_info->hardware_version,
+	       sizeof(info->hardwareVersion));
+
+	COMPILE_TIME_ASSERT(sizeof(info->firmwareVersion) ==
+			    sizeof(ta_info->firmware_version));
+	memcpy(&info->firmwareVersion, ta_info->firmware_version,
+	       sizeof(info->firmwareVersion));
+
+bail:
+	ckteec_free_shm(ctrl);
+	ckteec_free_shm(out);
+
+	return rv;
+}
