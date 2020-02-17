@@ -332,3 +332,63 @@ out:
 
 	return rv;
 }
+
+/**
+ * ck_token_mechanism_info - Wrap C_GetMechanismInfo into command MECHANISM_INFO
+ */
+CK_RV ck_token_mechanism_info(CK_SLOT_ID slot, CK_MECHANISM_TYPE type,
+			      CK_MECHANISM_INFO_PTR info)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	TEEC_SharedMemory *ctrl = NULL;
+	TEEC_SharedMemory *out = NULL;
+	uint32_t slot_id = slot;
+	uint32_t mecha_type = type;
+	struct pkcs11_mechanism_info *ta_info = NULL;
+	char *buf = NULL;
+	size_t out_size = 0;
+
+	if (!info)
+		return CKR_ARGUMENTS_BAD;
+
+	ctrl = ckteec_alloc_shm(sizeof(slot_id) + sizeof(mecha_type),
+				CKTEEC_SHM_INOUT);
+	if (!ctrl) {
+		rv = CKR_HOST_MEMORY;
+		goto out;
+	}
+
+	buf = ctrl->buffer;
+
+	memcpy(buf, &slot_id, sizeof(slot_id));
+	buf += sizeof(slot_id);
+
+	memcpy(buf, &mecha_type, sizeof(mecha_type));
+
+	out = ckteec_alloc_shm(sizeof(*ta_info), CKTEEC_SHM_OUT);
+	if (!out) {
+		rv = CKR_HOST_MEMORY;
+		goto out;
+	}
+
+	rv = ckteec_invoke_ctrl_out(PKCS11_CMD_MECHANISM_INFO,
+				    ctrl, out, &out_size);
+
+	if (rv != CKR_OK || out_size != out->size) {
+		if (rv == CKR_OK)
+			rv = CKR_DEVICE_ERROR;
+		goto out;
+	}
+
+	ta_info = out->buffer;
+
+	info->ulMinKeySize = ta_info->min_key_size;
+	info->ulMaxKeySize = ta_info->max_key_size;
+	info->flags = ta_info->flags;
+
+out:
+	ckteec_free_shm(ctrl);
+	ckteec_free_shm(out);
+
+	return rv;
+}
