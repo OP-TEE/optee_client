@@ -26,9 +26,4 @@ void ckteec_assert_expected_rv(const char *function, CK_RV rv,
 #define ASSERT_CK_RV(_rv, ...)		(void)0
 #endif /*DEBUG*/
 
-/*
- * Convert IDs between PKCS11 TA and Cryptoki.
- */
-CK_RV teec2ck_rv(TEEC_Result res);
-
 #endif /*LIBCKTEEC_CK_HELPERS_H*/
