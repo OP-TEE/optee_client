@@ -65,15 +65,23 @@ CK_RV ck_slot_get_list(CK_BBOOL present,
 	CK_RV rv = CKR_GENERAL_ERROR;
 	TEEC_SharedMemory *shm = NULL;
 	uint32_t *slot_ids = NULL;
+	size_t client_count = 0;
 	size_t size = 0;
 
 	/* Discard @present: all slots reported by TA are present */
 	(void)present;
 
-	if (!count || (*count && !slots))
+	if (!count)
 		return CKR_ARGUMENTS_BAD;
 
-	size = *count * sizeof(*slot_ids);
+	/*
+	 * As per spec, if @slots is NULL, "The contents of *pulCount on
+	 * entry to C_GetSlotList has no meaning in this case (...)"
+	 */
+	if (slots)
+		client_count = *count;
+
+	size = client_count * sizeof(*slot_ids);
 
 	shm = ckteec_alloc_shm(size, CKTEEC_SHM_OUT);
 	if (!shm)
@@ -83,6 +91,16 @@ CK_RV ck_slot_get_list(CK_BBOOL present,
 			      NULL, shm, &size, NULL, NULL);
 
 	if (rv == CKR_OK || rv == CKR_BUFFER_TOO_SMALL) {
+		/*
+		 * When @slot != NULL and @count[0] == 0, library shall
+		 * return CKR_BUFFER_TOO_SMALL if provided buffer is too
+		 * small whereas TA would have returned CKR_OK since
+		 * allocating a zero sized shm instance results in a NULL
+		 * shm buffer reference.
+		 */
+		if (size && slots && !client_count)
+			rv = CKR_BUFFER_TOO_SMALL;
+
 		*count = size / sizeof(*slot_ids);
 
 		if (rv == CKR_OK && slots) {
