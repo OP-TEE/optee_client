@@ -278,3 +278,26 @@ const char *mecha_ckf2str(CK_ULONG flag)
 		return "Unknown flag";
 	}
 }
+
+const char *session_ckf2str(CK_ULONG flag)
+{
+	switch (flag) {
+	CK2STR_ENTRY(CKF_RW_SESSION);
+	CK2STR_ENTRY(CKF_SERIAL_SESSION);
+	default:
+		return "Unknown flag";
+	}
+}
+
+const char *session_cks2str(CK_ULONG flag)
+{
+	switch (flag) {
+	CK2STR_ENTRY(CKS_RO_PUBLIC_SESSION);
+	CK2STR_ENTRY(CKS_RO_USER_FUNCTIONS);
+	CK2STR_ENTRY(CKS_RW_PUBLIC_SESSION);
+	CK2STR_ENTRY(CKS_RW_USER_FUNCTIONS);
+	CK2STR_ENTRY(CKS_RW_SO_FUNCTIONS);
+	default:
+		return "Unknown flag";
+	}
+}
