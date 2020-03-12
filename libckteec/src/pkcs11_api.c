@@ -25,6 +25,10 @@ static const CK_FUNCTION_LIST libckteec_function_list = {
 	.C_GetTokenInfo = C_GetTokenInfo,
 	.C_GetMechanismList = C_GetMechanismList,
 	.C_GetMechanismInfo = C_GetMechanismInfo,
+	.C_OpenSession = C_OpenSession,
+	.C_CloseSession = C_CloseSession,
+	.C_CloseAllSessions = C_CloseAllSessions,
+	.C_GetSessionInfo = C_GetSessionInfo,
 };
 
 static bool lib_initiated(void)
@@ -197,48 +201,68 @@ CK_RV C_OpenSession(CK_SLOT_ID slotID,
 		    CK_NOTIFY Notify,
 		    CK_SESSION_HANDLE_PTR phSession)
 {
-	(void)slotID;
-	(void)flags;
-	(void)pApplication;
-	(void)Notify;
-	(void)phSession;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_open_session(slotID, flags, pApplication, Notify,
+				     phSession);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_CRYPTOKI_NOT_INITIALIZED, CKR_DEVICE_ERROR,
+		     CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED, CKR_FUNCTION_FAILED,
+		     CKR_GENERAL_ERROR, CKR_HOST_MEMORY, CKR_OK,
+		     CKR_SESSION_COUNT, CKR_SESSION_PARALLEL_NOT_SUPPORTED,
+		     CKR_SESSION_READ_WRITE_SO_EXISTS, CKR_SLOT_ID_INVALID,
+		     CKR_TOKEN_NOT_PRESENT, CKR_TOKEN_NOT_RECOGNIZED,
+		     CKR_TOKEN_WRITE_PROTECTED, CKR_ARGUMENTS_BAD);
+
+	return rv;
 }
 
 CK_RV C_CloseSession(CK_SESSION_HANDLE hSession)
 {
-	(void)hSession;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_close_session(hSession);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_CRYPTOKI_NOT_INITIALIZED, CKR_DEVICE_ERROR,
+		     CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED, CKR_FUNCTION_FAILED,
+		     CKR_GENERAL_ERROR, CKR_HOST_MEMORY, CKR_OK,
+		     CKR_SESSION_CLOSED, CKR_SESSION_HANDLE_INVALID);
+
+	return rv;
 }
 
 CK_RV C_CloseAllSessions(CK_SLOT_ID slotID)
 {
-	(void)slotID;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_close_all_sessions(slotID);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_CRYPTOKI_NOT_INITIALIZED, CKR_DEVICE_ERROR,
+		     CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED, CKR_FUNCTION_FAILED,
+		     CKR_GENERAL_ERROR, CKR_HOST_MEMORY, CKR_OK,
+		     CKR_SLOT_ID_INVALID, CKR_TOKEN_NOT_PRESENT);
+
+	return rv;
 }
 
 CK_RV C_GetSessionInfo(CK_SESSION_HANDLE hSession,
 		       CK_SESSION_INFO_PTR pInfo)
 {
-	(void)hSession;
-	(void)pInfo;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_get_session_info(hSession, pInfo);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_CRYPTOKI_NOT_INITIALIZED, CKR_DEVICE_ERROR,
+		     CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED, CKR_FUNCTION_FAILED,
+		     CKR_GENERAL_ERROR, CKR_HOST_MEMORY, CKR_OK,
+		     CKR_SESSION_CLOSED, CKR_SESSION_HANDLE_INVALID,
+		     CKR_ARGUMENTS_BAD);
+
+	return rv;
 }
 
 CK_RV C_InitPIN(CK_SESSION_HANDLE hSession,

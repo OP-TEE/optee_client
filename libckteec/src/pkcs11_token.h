@@ -26,4 +26,13 @@ CK_RV ck_token_mechanism_ids(CK_SLOT_ID slot,
 CK_RV ck_token_mechanism_info(CK_SLOT_ID slot, CK_MECHANISM_TYPE type,
 			      CK_MECHANISM_INFO_PTR info);
 
+CK_RV ck_open_session(CK_SLOT_ID slot, CK_FLAGS flags, CK_VOID_PTR cookie,
+		      CK_NOTIFY callback, CK_SESSION_HANDLE_PTR session);
+
+CK_RV ck_close_session(CK_SESSION_HANDLE session);
+
+CK_RV ck_close_all_sessions(CK_SLOT_ID slot);
+
+CK_RV ck_get_session_info(CK_SESSION_HANDLE session, CK_SESSION_INFO_PTR info);
+
 #endif /*LIBCKTEEC_PKCS11_TOKEN_H*/
