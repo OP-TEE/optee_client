@@ -392,3 +392,165 @@ out:
 
 	return rv;
 }
+
+/**
+ * ck_open_session - Wrap C_OpenSession into PKCS11_CMD_OPEN_{RW|RO}_SESSION
+ */
+CK_RV ck_open_session(CK_SLOT_ID slot, CK_FLAGS flags, CK_VOID_PTR cookie,
+		      CK_NOTIFY callback, CK_SESSION_HANDLE_PTR session)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	TEEC_SharedMemory *ctrl = NULL;
+	TEEC_SharedMemory *out = NULL;
+	uint32_t slot_id = slot;
+	uint32_t u32_flags = flags;
+	uint32_t handle = 0;
+	size_t out_size = 0;
+	uint8_t *buf;
+
+	if ((flags & ~(CKF_RW_SESSION | CKF_SERIAL_SESSION)) || !session)
+		return CKR_ARGUMENTS_BAD;
+
+	if (cookie || callback)
+		return CKR_FUNCTION_NOT_SUPPORTED;
+
+	/* Shm io0: (in/out) ctrl = [slot-id][flags] / [status] */
+	ctrl = ckteec_alloc_shm(sizeof(slot_id) + sizeof(u32_flags),
+				CKTEEC_SHM_INOUT);
+	if (!ctrl) {
+		rv = CKR_HOST_MEMORY;
+		goto out;
+	}
+	buf = (uint8_t *)ctrl->buffer;
+	memcpy(buf, &slot_id, sizeof(slot_id));
+	buf += sizeof(slot_id);
+	memcpy(buf, &u32_flags, sizeof(u32_flags));
+
+	/* Shm io2: (out) [session handle] */
+	out = ckteec_alloc_shm(sizeof(handle), CKTEEC_SHM_OUT);
+	if (!out) {
+		rv = CKR_HOST_MEMORY;
+		goto out;
+	}
+
+	rv = ckteec_invoke_ctrl_out(PKCS11_CMD_OPEN_SESSION,
+				    ctrl, out, &out_size);
+	if (rv != CKR_OK || out_size != out->size) {
+		if (rv == CKR_OK)
+			rv = CKR_DEVICE_ERROR;
+		goto out;
+	}
+
+	memcpy(&handle, out->buffer, sizeof(handle));
+	*session = handle;
+
+out:
+	ckteec_free_shm(ctrl);
+	ckteec_free_shm(out);
+
+	return rv;
+}
+
+/**
+ * ck_open_session - Wrap C_OpenSession into PKCS11_CMD_CLOSE_SESSION
+ */
+CK_RV ck_close_session(CK_SESSION_HANDLE session)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	TEEC_SharedMemory *ctrl = NULL;
+	uint32_t session_handle = session;
+
+	/* Shm io0: (in/out) ctrl = [session-handle] / [status] */
+	ctrl = ckteec_alloc_shm(sizeof(session_handle), CKTEEC_SHM_INOUT);
+	if (!ctrl) {
+		rv = CKR_HOST_MEMORY;
+		goto out;
+	}
+	memcpy(ctrl->buffer, &session_handle, sizeof(session_handle));
+
+	rv = ckteec_invoke_ctrl(PKCS11_CMD_CLOSE_SESSION, ctrl);
+
+out:
+	ckteec_free_shm(ctrl);
+
+	return rv;
+}
+
+/**
+ * ck_close_all_sessions - Wrap C_CloseAllSessions into TA command
+ */
+CK_RV ck_close_all_sessions(CK_SLOT_ID slot)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	TEEC_SharedMemory *ctrl = NULL;
+	uint32_t slot_id = slot;
+
+	/* Shm io0: (in/out) ctrl = [slot-id] / [status] */
+	ctrl = ckteec_alloc_shm(sizeof(slot_id), CKTEEC_SHM_INOUT);
+	if (!ctrl) {
+		rv = CKR_HOST_MEMORY;
+		goto out;
+	}
+	memcpy(ctrl->buffer, &slot_id, sizeof(slot_id));
+
+	rv = ckteec_invoke_ctrl(PKCS11_CMD_CLOSE_ALL_SESSIONS, ctrl);
+
+out:
+	ckteec_free_shm(ctrl);
+
+	return rv;
+}
+
+/**
+ * ck_get_session_info - Wrap C_GetSessionInfo into PKCS11_CMD_SESSION_INFO
+ */
+CK_RV ck_get_session_info(CK_SESSION_HANDLE session,
+			  CK_SESSION_INFO_PTR info)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	TEEC_SharedMemory *ctrl = NULL;
+	TEEC_SharedMemory *out = NULL;
+	uint32_t session_handle = session;
+	struct pkcs11_session_info *ta_info = NULL;
+	size_t out_size = 0;
+
+	if (!info)
+		return CKR_ARGUMENTS_BAD;
+
+	/* Shm io0: (in/out) ctrl = [session-handle] / [status] */
+	ctrl = ckteec_alloc_shm(sizeof(session_handle), CKTEEC_SHM_INOUT);
+	if (!ctrl) {
+		rv = CKR_HOST_MEMORY;
+		goto out;
+	}
+	memcpy(ctrl->buffer, &session_handle, sizeof(session_handle));
+
+	/* Shm io2: (out) [session info] */
+	out = ckteec_alloc_shm(sizeof(struct pkcs11_session_info),
+			       CKTEEC_SHM_OUT);
+	if (!out) {
+		rv = CKR_HOST_MEMORY;
+		goto out;
+	}
+
+	rv = ckteec_invoke_ctrl_out(PKCS11_CMD_SESSION_INFO,
+				    ctrl, out, &out_size);
+
+	if (rv != CKR_OK || out_size != out->size) {
+		if (rv == CKR_OK)
+			rv = CKR_DEVICE_ERROR;
+		goto out;
+	}
+
+	ta_info = (struct pkcs11_session_info *)out->buffer;
+	info->slotID = ta_info->slot_id;
+	info->state = ta_info->state;
+	info->flags = ta_info->flags;
+	info->ulDeviceError = ta_info->device_error;
+
+out:
+	ckteec_free_shm(ctrl);
+	ckteec_free_shm(out);
+
+	return rv;
+}
