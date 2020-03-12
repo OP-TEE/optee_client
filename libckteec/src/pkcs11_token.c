@@ -135,21 +135,21 @@ CK_RV ck_slot_get_info(CK_SLOT_ID slot, CK_SLOT_INFO_PTR info)
 	ctrl = ckteec_alloc_shm(sizeof(slot_id), CKTEEC_SHM_INOUT);
 	if (!ctrl) {
 		rv = CKR_HOST_MEMORY;
-		goto bail;
+		goto out;
 	}
 	memcpy(ctrl->buffer, &slot_id, sizeof(slot_id));
 
 	out = ckteec_alloc_shm(sizeof(*ta_info), CKTEEC_SHM_OUT);
 	if (!out) {
 		rv = CKR_HOST_MEMORY;
-		goto bail;
+		goto out;
 	}
 
 	rv = ckteec_invoke_ctrl_out(PKCS11_CMD_SLOT_INFO, ctrl, out, &out_size);
 	if (rv != CKR_OK || out_size != out->size) {
 		if (rv == CKR_OK)
 			rv = CKR_DEVICE_ERROR;
-		goto bail;
+		goto out;
 	}
 
 	ta_info = out->buffer;
@@ -176,7 +176,7 @@ CK_RV ck_slot_get_info(CK_SLOT_ID slot, CK_SLOT_INFO_PTR info)
 	memcpy(&info->firmwareVersion, ta_info->firmware_version,
 	       sizeof(info->firmwareVersion));
 
-bail:
+out:
 	ckteec_free_shm(ctrl);
 	ckteec_free_shm(out);
 
@@ -201,24 +201,24 @@ CK_RV ck_token_get_info(CK_SLOT_ID slot, CK_TOKEN_INFO_PTR info)
 	ctrl = ckteec_alloc_shm(sizeof(slot_id), CKTEEC_SHM_INOUT);
 	if (!ctrl) {
 		rv = CKR_HOST_MEMORY;
-		goto bail;
+		goto out;
 	}
 	memcpy(ctrl->buffer, &slot_id, sizeof(slot_id));
 
 	out_shm = ckteec_alloc_shm(sizeof(*ta_info), CKTEEC_SHM_OUT);
 	if (!out_shm) {
 		rv = CKR_HOST_MEMORY;
-		goto bail;
+		goto out;
 	}
 
 	rv = ckteec_invoke_ctrl_out(PKCS11_CMD_TOKEN_INFO, ctrl,
 				    out_shm, &out_size);
 	if (rv)
-		goto bail;
+		goto out;
 
 	if (out_size != out_shm->size) {
 		rv = CKR_DEVICE_ERROR;
-		goto bail;
+		goto out;
 	}
 
 	ta_info = out_shm->buffer;
@@ -264,7 +264,7 @@ CK_RV ck_token_get_info(CK_SLOT_ID slot, CK_TOKEN_INFO_PTR info)
 	COMPILE_TIME_ASSERT(sizeof(info->utcTime) == sizeof(ta_info->utc_time));
 	memcpy(&info->utcTime, ta_info->utc_time, sizeof(info->utcTime));
 
-bail:
+out:
 	ckteec_free_shm(ctrl);
 	ckteec_free_shm(out_shm);
 
