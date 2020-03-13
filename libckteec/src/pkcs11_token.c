@@ -23,7 +23,7 @@
 CK_RV ck_get_info(CK_INFO_PTR info)
 {
 	const CK_INFO lib_info = {
-		.cryptokiVersion =  {
+		.cryptokiVersion = {
 			CK_PKCS11_VERSION_MAJOR,
 			CK_PKCS11_VERSION_MINOR,
 		},
