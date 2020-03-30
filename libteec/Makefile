@@ -48,7 +48,7 @@ libteec: $(TEEC_LIBRARY) $(OUT_DIR)/libteec.a
 
 $(TEEC_LIBRARY): $(TEEC_OBJS)
 	@echo "  LINK    $@"
-	$(VPREFIX)$(CC) -shared -Wl,-soname,$(LIB_MAJOR) $(TEEC_LFLAGS) -o $@ $+
+	$(VPREFIX)$(CC) -shared -Wl,-soname,$(LIB_MAJOR) -o $@ $+ $(TEEC_LFLAGS)
 	@echo ""
 
 $(OUT_DIR)/libteec.a: $(TEEC_OBJS)
