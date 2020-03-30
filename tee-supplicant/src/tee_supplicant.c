@@ -505,7 +505,7 @@ static bool write_response(int fd, union tee_rpc_invoke *request)
 	data.buf_ptr = (uintptr_t)&request->send;
 	data.buf_len = sizeof(struct tee_iocl_supp_send_arg) +
 		       sizeof(struct tee_ioctl_param) *
-				request->send.num_params;
+				(__u64)request->send.num_params;
 	if (ioctl(fd, TEE_IOC_SUPPL_SEND, &data)) {
 		EMSG("TEE_IOC_SUPPL_SEND: %s", strerror(errno));
 		return false;
