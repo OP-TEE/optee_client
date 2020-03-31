@@ -568,7 +568,7 @@ void TEEC_CloseSession(TEEC_Session *session)
 
 	memset(&arg, 0, sizeof(arg));
 
-	if (!session)
+	if (!session || !session->ctx)
 		return;
 
 	arg.session = session->session_id;
@@ -598,7 +598,7 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t cmd_id,
 	memset(&buf_data, 0, sizeof(buf_data));
 	memset(&shm, 0, sizeof(shm));
 
-	if (!session) {
+	if (!session || !session->ctx) {
 		eorig = TEEC_ORIGIN_API;
 		res = TEEC_ERROR_BAD_PARAMETERS;
 		goto out;
@@ -664,7 +664,7 @@ void TEEC_RequestCancellation(TEEC_Operation *operation)
 	session = operation->session;
 	teec_mutex_unlock(&teec_mutex);
 
-	if (!session)
+	if (!session || !session->ctx)
 		return;
 
 	arg.session = session->session_id;
