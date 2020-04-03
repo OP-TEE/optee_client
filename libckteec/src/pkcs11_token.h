@@ -45,4 +45,9 @@ CK_RV ck_set_pin(CK_SESSION_HANDLE session,
 		 CK_UTF8CHAR_PTR old, CK_ULONG old_len,
 		 CK_UTF8CHAR_PTR new, CK_ULONG new_len);
 
+CK_RV ck_login(CK_SESSION_HANDLE session, CK_USER_TYPE user_type,
+	       CK_UTF8CHAR_PTR pin, CK_ULONG pin_len);
+
+CK_RV ck_logout(CK_SESSION_HANDLE session);
+
 #endif /*LIBCKTEEC_PKCS11_TOKEN_H*/

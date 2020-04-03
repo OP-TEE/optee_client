@@ -681,3 +681,72 @@ CK_RV ck_set_pin(CK_SESSION_HANDLE session,
 
 	return rv;
 }
+
+/**
+ * ck_login - Wrap C_Login into PKCS11_CMD_LOGIN
+ */
+CK_RV ck_login(CK_SESSION_HANDLE session, CK_USER_TYPE user_type,
+	       CK_UTF8CHAR_PTR pin, CK_ULONG pin_len)
+
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	TEEC_SharedMemory *ctrl = NULL;
+	uint32_t pkcs11_session = session;
+	uint32_t pkcs11_user = user_type;
+	uint32_t pkcs11_pin_len = pin_len;
+	size_t ctrl_size = 0;
+	char *buf = NULL;
+
+	if (!pin)
+		return CKR_ARGUMENTS_BAD;
+
+	/* Shm io0: (i/o) ctrl = [session][user][pin length][pin] / [status] */
+	ctrl_size = sizeof(pkcs11_session) + sizeof(pkcs11_user) +
+		    sizeof(pkcs11_pin_len) + pkcs11_pin_len;
+
+	ctrl = ckteec_alloc_shm(ctrl_size, CKTEEC_SHM_INOUT);
+	if (!ctrl)
+		return CKR_HOST_MEMORY;
+
+	buf = ctrl->buffer;
+
+	memcpy(buf, &pkcs11_session, sizeof(pkcs11_session));
+	buf += sizeof(pkcs11_session);
+
+	memcpy(buf, &pkcs11_user, sizeof(pkcs11_user));
+	buf += sizeof(pkcs11_user);
+
+	memcpy(buf, &pkcs11_pin_len, sizeof(pkcs11_pin_len));
+	buf += sizeof(pkcs11_pin_len);
+
+	memcpy(buf, pin, pkcs11_pin_len);
+
+	rv = ckteec_invoke_ctrl(PKCS11_CMD_LOGIN, ctrl);
+
+	ckteec_free_shm(ctrl);
+
+	return rv;
+}
+
+/**
+ * ck_logout - Wrap C_Logout into PKCS11_CMD_LOGOUT
+ */
+CK_RV ck_logout(CK_SESSION_HANDLE session)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	TEEC_SharedMemory *ctrl = NULL;
+	uint32_t session_handle = session;
+
+	/* io0 = [session-handle] */
+	ctrl = ckteec_alloc_shm(sizeof(session_handle), CKTEEC_SHM_INOUT);
+	if (!ctrl)
+		return CKR_HOST_MEMORY;
+
+	memcpy(ctrl->buffer, &session_handle, sizeof(session_handle));
+
+	rv = ckteec_invoke_ctrl(PKCS11_CMD_LOGOUT, ctrl);
+
+	ckteec_free_shm(ctrl);
+
+	return rv;
+}
