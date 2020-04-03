@@ -359,16 +359,21 @@ CK_RV C_SetPIN(CK_SESSION_HANDLE hSession,
 	       CK_UTF8CHAR_PTR pNewPin,
 	       CK_ULONG ulNewLen)
 {
-	(void)hSession;
-	(void)pOldPin;
-	(void)ulOldLen;
-	(void)pNewPin;
-	(void)ulNewLen;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_set_pin(hSession, pOldPin, ulOldLen, pNewPin, ulNewLen);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_CRYPTOKI_NOT_INITIALIZED, CKR_DEVICE_ERROR,
+		     CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED,
+		     CKR_FUNCTION_CANCELED, CKR_FUNCTION_FAILED,
+		     CKR_GENERAL_ERROR, CKR_HOST_MEMORY,
+		     CKR_OK, CKR_PIN_INCORRECT, CKR_PIN_INVALID,
+		     CKR_PIN_LEN_RANGE, CKR_PIN_LOCKED, CKR_SESSION_CLOSED,
+		     CKR_SESSION_HANDLE_INVALID, CKR_SESSION_READ_ONLY,
+		     CKR_TOKEN_WRITE_PROTECTED, CKR_ARGUMENTS_BAD);
+
+	return rv;
 }
 
 CK_RV C_Login(CK_SESSION_HANDLE hSession,

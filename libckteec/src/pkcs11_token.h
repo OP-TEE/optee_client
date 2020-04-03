@@ -41,4 +41,8 @@ CK_RV ck_init_token(CK_SLOT_ID slot, CK_UTF8CHAR_PTR pin,
 CK_RV ck_init_pin(CK_SESSION_HANDLE session,
 		  CK_UTF8CHAR_PTR pin, CK_ULONG pin_len);
 
+CK_RV ck_set_pin(CK_SESSION_HANDLE session,
+		 CK_UTF8CHAR_PTR old, CK_ULONG old_len,
+		 CK_UTF8CHAR_PTR new, CK_ULONG new_len);
+
 #endif /*LIBCKTEEC_PKCS11_TOKEN_H*/
