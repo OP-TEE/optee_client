@@ -177,6 +177,78 @@ enum pkcs11_ta_cmd {
 	 * This command relates to the PKCS#11 API function C_GetSessionInfo().
 	 */
 	PKCS11_CMD_SESSION_INFO = 9,
+
+	/*
+	 * PKCS11_CMD_INIT_TOKEN - Initialize PKCS#11 token
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit slot ID,
+	 *              32bit PIN length,
+	 *              byte array label[32]
+	 *              byte array PIN[PIN length],
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 *
+	 * This command relates to the PKCS#11 API function C_InitToken().
+	 */
+	PKCS11_CMD_INIT_TOKEN = 10,
+
+	/*
+	 * PKCS11_CMD_INIT_PIN - Initialize user PIN
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit session handle,
+	 *              32bit PIN byte size,
+	 *              byte array: PIN data
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 *
+	 * This command relates to the PKCS#11 API function C_InitPIN().
+	 */
+	PKCS11_CMD_INIT_PIN = 11,
+
+	/*
+	 * PKCS11_CMD_SET_PIN - Change user PIN
+	 *
+	 * [in]	 memref[0] = [
+	 *              32bit session handle,
+	 *              32bit old PIN byte size,
+	 *              32bit new PIN byte size,
+	 *              byte array: PIN data,
+	 *              byte array: new PIN data,
+	 *       ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 *
+	 * This command relates to the PKCS#11 API function C_SetPIN().
+	 */
+	PKCS11_CMD_SET_PIN = 12,
+
+	/*
+	 * PKCS11_CMD_LOGIN - Initialize user PIN
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit session handle,
+	 *              32bit user identifier, enum pkcs11_user_type
+	 *              32bit PIN byte size,
+	 *              byte array: PIN data
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 *
+	 * This command relates to the PKCS#11 API function C_Login().
+	 */
+	PKCS11_CMD_LOGIN = 13,
+
+	/*
+	 * PKCS11_CMD_LOGOUT - Log out from token
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit session handle,
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 *
+	 * This command relates to the PKCS#11 API function C_Logout().
+	 */
+	PKCS11_CMD_LOGOUT = 14,
 };
 
 /*
