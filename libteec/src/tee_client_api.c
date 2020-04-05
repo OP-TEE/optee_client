@@ -502,6 +502,59 @@ static void uuid_to_octets(uint8_t d[TEE_IOCTL_UUID_LEN], const TEEC_UUID *s)
 	memcpy(d + 8, s->clockSeqAndNode, sizeof(s->clockSeqAndNode));
 }
 
+static void setup_client_data(struct tee_ioctl_open_session_arg *arg,
+			      uint32_t connection_method,
+			      const void *connection_data)
+{
+	arg->clnt_login = connection_method;
+
+	switch (connection_method) {
+	case TEE_IOCTL_LOGIN_PUBLIC:
+		/* No connection data to pass */
+		break;
+	case TEE_IOCTL_LOGIN_USER:
+		/* Kernel auto-fills UID and forms client UUID */
+		break;
+	case TEE_IOCTL_LOGIN_GROUP:
+		/*
+		 * Connection data for group login is uint32_t and rest of
+		 * clnt_uuid is set as zero.
+		 *
+		 * Kernel verifies group membership and then forms client UUID.
+		 */
+		memcpy(arg->clnt_uuid, connection_data, sizeof(gid_t));
+		break;
+	case TEE_IOCTL_LOGIN_APPLICATION:
+		/*
+		 * Kernel auto-fills application identifier and forms client
+		 * UUID.
+		 */
+		break;
+	case TEE_IOCTL_LOGIN_USER_APPLICATION:
+		/*
+		 * Kernel auto-fills application identifier, UID and forms
+		 * client UUID.
+		 */
+		break;
+	case TEE_IOCTL_LOGIN_GROUP_APPLICATION:
+		/*
+		 * Connection data for group login is uint32_t rest of
+		 * clnt_uuid is set as zero.
+		 *
+		 * Kernel verifies group membership, auto-fills application
+		 * identifier and then forms client UUID.
+		 */
+		memcpy(arg->clnt_uuid, connection_data, sizeof(gid_t));
+		break;
+	default:
+		/*
+		 * Unknown login method, don't pass any connection data as we
+		 * don't know size.
+		 */
+		break;
+	}
+}
+
 TEEC_Result TEEC_OpenSession(TEEC_Context *ctx, TEEC_Session *session,
 			const TEEC_UUID *destination,
 			uint32_t connection_method, const void *connection_data,
@@ -526,8 +579,6 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *ctx, TEEC_Session *session,
 	memset(&shm, 0, sizeof(shm));
 	memset(&buf_data, 0, sizeof(buf_data));
 
-	(void)&connection_data;
-
 	if (!ctx || !session) {
 		eorig = TEEC_ORIGIN_API;
 		res = TEEC_ERROR_BAD_PARAMETERS;
@@ -542,7 +593,8 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *ctx, TEEC_Session *session,
 	params = (struct tee_ioctl_param *)(arg + 1);
 
 	uuid_to_octets(arg->uuid, destination);
-	arg->clnt_login = connection_method;
+
+	setup_client_data(arg, connection_method, connection_data);
 
 	res = teec_pre_process_operation(ctx, operation, params, shm);
 	if (res != TEEC_SUCCESS) {
