@@ -1091,7 +1091,7 @@ CK_RV C_GetFunctionStatus(CK_SESSION_HANDLE hSession)
 	if (!lib_initiated())
 		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	return CKR_FUNCTION_NOT_PARALLEL;
 }
 
 CK_RV C_CancelFunction(CK_SESSION_HANDLE hSession)
@@ -1101,7 +1101,7 @@ CK_RV C_CancelFunction(CK_SESSION_HANDLE hSession)
 	if (!lib_initiated())
 		return CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	return CKR_FUNCTION_NOT_PARALLEL;
 }
 
 CK_RV C_WaitForSlotEvent(CK_FLAGS flags,
