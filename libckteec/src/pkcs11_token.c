@@ -67,6 +67,7 @@ CK_RV ck_slot_get_list(CK_BBOOL present,
 	uint32_t *slot_ids = NULL;
 	size_t client_count = 0;
 	size_t size = 0;
+	size_t n = 0;
 
 	/* Discard @present: all slots reported by TA are present */
 	(void)present;
@@ -90,28 +91,21 @@ CK_RV ck_slot_get_list(CK_BBOOL present,
 	rv = ckteec_invoke_ta(PKCS11_CMD_SLOT_LIST, NULL,
 			      NULL, shm, &size, NULL, NULL);
 
-	if (rv == CKR_OK || rv == CKR_BUFFER_TOO_SMALL) {
-		/*
-		 * When @slot != NULL and @count[0] == 0, library shall
-		 * return CKR_BUFFER_TOO_SMALL if provided buffer is too
-		 * small whereas TA would have returned CKR_OK since
-		 * allocating a zero sized shm instance results in a NULL
-		 * shm buffer reference.
-		 */
-		if (size && slots && !client_count)
-			rv = CKR_BUFFER_TOO_SMALL;
-
+	if (rv == CKR_OK || rv == CKR_BUFFER_TOO_SMALL)
 		*count = size / sizeof(*slot_ids);
 
-		if (rv == CKR_OK && slots) {
-			size_t n = 0;
-
-			slot_ids = shm->buffer;
-			for (n = 0; n < *count; n++)
-				slots[n] = slot_ids[n];
-		}
+	if (!slots && rv == CKR_BUFFER_TOO_SMALL) {
+		rv = CKR_OK;
+		goto out;
 	}
+	if (rv)
+		goto out;
 
+	slot_ids = shm->buffer;
+	for (n = 0; n < *count; n++)
+		slots[n] = slot_ids[n];
+
+out:
 	ckteec_free_shm(shm);
 
 	return rv;
