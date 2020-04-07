@@ -298,12 +298,7 @@ CK_RV ck_token_mechanism_ids(CK_SLOT_ID slot,
 	}
 	memcpy(ctrl->buffer, &slot_id, sizeof(slot_id));
 
-	if (mechanisms)
-		out = ckteec_register_shm(mechanisms, out_size,
-					  CKTEEC_SHM_OUT);
-	else
-		out = ckteec_alloc_shm(out_size, CKTEEC_SHM_OUT);
-
+	out = ckteec_alloc_shm(out_size, CKTEEC_SHM_OUT);
 	if (!out) {
 		rv = CKR_HOST_MEMORY;
 		goto out;
