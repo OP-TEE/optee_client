@@ -271,6 +271,10 @@ static TEEC_Result teec_pre_process_partial(uint32_t param_type,
 	if ((shm->flags & req_shm_flags) != req_shm_flags)
 		return TEEC_ERROR_BAD_PARAMETERS;
 
+	if ((memref->offset + memref->size < memref->offset) ||
+	    (memref->offset + memref->size > shm->size))
+		return TEEC_ERROR_BAD_PARAMETERS;
+
 	/*
 	 * We're using a shadow buffer in this reference, copy the real buffer
 	 * into the shadow buffer if needed. We'll copy it back once we've
