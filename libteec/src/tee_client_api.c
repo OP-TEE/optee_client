@@ -689,6 +689,9 @@ TEEC_Result TEEC_RegisterSharedMemory(TEEC_Context *ctx, TEEC_SharedMemory *shm)
 	if (!shm->flags || (shm->flags & ~(TEEC_MEM_INPUT | TEEC_MEM_OUTPUT)))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
+	if (!shm->buffer)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
 	s = shm->size;
 	if (!s)
 		s = 8;
