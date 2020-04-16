@@ -17,6 +17,7 @@ TEEC_ContextSettingType
 TEEC_ContextSettingOCall
 TEEC_ContextSetting
 TEEC_Context
+SLIST_ENTRY\(.*\)
 CK_VOID_PTR_PTR
 CK_VOID_PTR
 CK_VERSION_PTR

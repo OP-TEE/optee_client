@@ -198,11 +198,14 @@ extern "C" {
  * TEEC_ORIGIN_TEE          The error originated within the common TEE code.
  * TEEC_ORIGIN_TRUSTED_APP  The error originated within the Trusted Application
  *                          code.
+ * TEEC_ORIGIN_CLIENT_APP   The error originated within the Client Application
+ *                          code during an OCALL.
  */
 #define TEEC_ORIGIN_API          0x00000001
 #define TEEC_ORIGIN_COMMS        0x00000002
 #define TEEC_ORIGIN_TEE          0x00000003
 #define TEEC_ORIGIN_TRUSTED_APP  0x00000004
+#define TEEC_ORIGIN_CLIENT_APP   0xF0000001
 
 /**
  * Session login methods, for use in TEEC_OpenSession() as parameter
@@ -245,6 +248,14 @@ extern "C" {
  * @param i The i-th parameter to get the type for.
  */
 #define TEEC_PARAM_TYPE_GET(p, i) (((p) >> (i * 4)) & 0xF)
+
+/**
+ * Set the i_th param type in the paramType.
+ *
+ * @param p The paramType.
+ * @param i The i-th parameter to set the type for.
+ */
+#define TEEC_PARAM_TYPE_SET(p, i) (((uint32_t)(p) & 0xF) << ((i) * 4))
 
 typedef uint32_t TEEC_Result;
 
