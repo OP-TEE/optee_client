@@ -43,6 +43,7 @@
 #define TEE_IOC_BASE	0
 
 /* Flags relating to shared memory */
+#define TEE_IOCTL_SHM_NONE	0x0	/* no flags */
 #define TEE_IOCTL_SHM_MAPPED	0x1	/* memory mapped in normal world */
 #define TEE_IOCTL_SHM_DMA_BUF	0x2	/* dma-buf handle on shared memory */
 
