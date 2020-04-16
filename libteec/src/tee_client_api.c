@@ -175,6 +175,7 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *ctx)
 			ctx->fd = fd;
 			ctx->reg_mem = gen_caps & TEE_GEN_CAP_REG_MEM;
 			ctx->memref_null = gen_caps & TEE_GEN_CAP_MEMREF_NULL;
+			ctx->ocall = gen_caps & TEE_GEN_CAP_OCALL;
 			return TEEC_SUCCESS;
 		}
 	}

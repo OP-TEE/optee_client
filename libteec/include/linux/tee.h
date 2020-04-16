@@ -53,6 +53,7 @@
 #define TEE_GEN_CAP_PRIVILEGED	(1 << 1)/* Privileged device (for supplicant) */
 #define TEE_GEN_CAP_REG_MEM	(1 << 2)/* Supports registering shared memory */
 #define TEE_GEN_CAP_MEMREF_NULL	(1 << 3) /* Support NULL MemRef */
+#define TEE_GEN_CAP_OCALL	(1 << 4) /* Supports calls from TA to CA */
 
 #define TEE_MEMREF_NULL		((__u64)-1) /* NULL MemRef Buffer */
 
