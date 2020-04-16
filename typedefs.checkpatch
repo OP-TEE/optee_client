@@ -4,6 +4,9 @@ TEEC_Value
 TEEC_UUID
 TEEC_TempMemoryReference
 TEEC_SharedMemory
+TEEC_SessionSettingType
+TEEC_SessionSettingData
+TEEC_SessionSetting
 TEEC_Session
 TEEC_Result
 TEEC_RegisteredMemoryReference

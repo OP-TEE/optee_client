@@ -697,6 +697,7 @@ TEEC_Result TEEC_OpenSession(TEEC_Context *ctx, TEEC_Session *session,
 	if (res == TEEC_SUCCESS) {
 		session->ctx = ctx;
 		session->session_id = arg->session;
+		session->data_setting.data = NULL;
 	}
 	teec_post_process_operation(operation, params, shm);
 
@@ -705,6 +706,50 @@ out_free_temp_refs:
 out:
 	if (ret_origin)
 		*ret_origin = eorig;
+	return res;
+}
+
+TEEC_Result TEEC_OpenSession2(TEEC_Context *context,
+			      TEEC_Session *session,
+			      const TEEC_UUID *destination,
+			      uint32_t connectionMethod,
+			      const void *connectionData,
+			      TEEC_Operation *operation,
+			      uint32_t *returnOrigin,
+			      const TEEC_SessionSetting *settings,
+			      uint32_t numSettings)
+{
+	uint32_t n;
+	TEEC_Result res;
+
+	if (!settings && numSettings)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	for (n = 0; n < numSettings; n++) {
+		switch (settings[n].type) {
+		case TEEC_SESSION_SETTING_DATA:
+			break;
+		default:
+			return TEEC_ERROR_BAD_PARAMETERS;
+		}
+	}
+
+	res = TEEC_OpenSession(context, session, destination, connectionMethod,
+			       connectionData, operation, returnOrigin);
+	if (res != TEEC_SUCCESS)
+		return res;
+
+	for (n = 0; n < numSettings; n++) {
+		switch (settings[n].type) {
+		case TEEC_SESSION_SETTING_DATA:
+			session->data_setting.data = settings[n].u.data->data;
+			break;
+		default:
+			/* Not reached */
+			break;
+		}
+	}
+
 	return res;
 }
 

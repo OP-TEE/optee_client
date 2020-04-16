@@ -73,6 +73,42 @@ TEEC_Result TEEC_InitializeContext2(const char *name, TEEC_Context *context,
 				    const TEEC_ContextSetting *settings,
 				    uint32_t numSettings);
 
+/**
+ * TEEC_OpenSession2() - Behaves the same way as TEEC_OpenSession allowing the
+ * caller to attach the specified settings to the resulting session.
+ *
+ * @param context           The initialized TEE context structure in which scope
+ *                          to open the session.
+ * @param session           The session to initialize.
+ * @param destination       A structure identifying the trusted application with
+ *                          which to open a session.
+ * @param connectionMethod  The connection method to use.
+ * @param connectionData    Any data necessary to connect with the chosen
+ *                          connection method. Not supported, should be set to
+ *                          NULL.
+ * @param operation         An operation structure to use in the session. May be
+ *                          set to NULL to signify no operation structure
+ *                          needed.
+ * @param returnOrigin      A parameter which will hold the error origin if this
+ *                          function returns any value other than TEEC_SUCCESS.
+ * @param settings          A list of settings to use to configure the new
+ *                          session, or NULL.
+ * @param numSettings       The number of settings, if any.
+ *
+ * @return TEEC_SUCCESS               Successfully opened a new session.
+ * @return TEEC_ERROR_BAD_PARAMETERS  One or more parameters are wrong.
+ * @return TEEC_Result                Something else failed.
+ */
+TEEC_Result TEEC_OpenSession2(TEEC_Context *context,
+			      TEEC_Session *session,
+			      const TEEC_UUID *destination,
+			      uint32_t connectionMethod,
+			      const void *connectionData,
+			      TEEC_Operation *operation,
+			      uint32_t *returnOrigin,
+			      const TEEC_SessionSetting *settings,
+			      uint32_t numSettings);
+
 #ifdef __cplusplus
 }
 #endif
