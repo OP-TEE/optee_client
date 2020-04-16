@@ -50,6 +50,29 @@ TEEC_Result TEEC_RegisterSharedMemoryFileDescriptor(TEEC_Context *context,
 						    TEEC_SharedMemory *sharedMem,
 						    int fd);
 
+/**
+ * TEEC_InitializeContext2() - Behaves the same way as TEEC_InitializeContext
+ * allowing the caller to attach the specified settings to the resulting
+ * context.
+ *
+ * @param name         A zero-terminated string identifying the TEE to connect
+ *                     to. If name is set to NULL, the default TEE is connected
+ *                     to. NULL is the only supported value in this version of
+ *                     the API implementation.
+ * @param context      The context structure which is to be initialized.
+ * @param settings     A list of settings to use to configure the new
+ *                     context, or NULL.
+ * @param numSettings  The number of settings, if any.
+ *
+ * @return TEEC_SUCCESS               The initialization was successful.
+ * @return TEEC_ERROR_BAD_PARAMETERS  One or more parameters are wrong.
+ * @return TEEC_ERROR_NOT_SUPPORTED   One or more settings are not supported.
+ * @return TEEC_Result                Something else failed.
+ */
+TEEC_Result TEEC_InitializeContext2(const char *name, TEEC_Context *context,
+				    const TEEC_ContextSetting *settings,
+				    uint32_t numSettings);
+
 #ifdef __cplusplus
 }
 #endif

@@ -249,17 +249,6 @@ extern "C" {
 typedef uint32_t TEEC_Result;
 
 /**
- * struct TEEC_Context - Represents a connection between a client application
- * and a TEE.
- */
-typedef struct {
-	/* Implementation defined */
-	int fd;
-	bool reg_mem;
-	bool memref_null;
-} TEEC_Context;
-
-/**
  * This type contains a Universally Unique Resource Identifier (UUID) type as
  * defined in RFC4122. These UUID values are used to identify Trusted
  * Applications.
@@ -376,6 +365,73 @@ typedef union {
 	TEEC_RegisteredMemoryReference memref;
 	TEEC_Value value;
 } TEEC_Parameter;
+
+/**
+ * TEEC_Result (*TEEC_OCallHandler) - Type for a CA-provided function to call
+ * when the TA requests an OCALL.
+ *
+ * @param taUUID       UUID of the TA whence the OCALL originated.
+ * @param commandID    ID of the command the TA requests the CA execute.
+ * @param paramTypes   Type of data passed by the TA in the OCALL.
+ * @param params       Array of parameters of type TEEC_Parameter.
+ * @param ctxData      Arbitrary CA-provided pointer attached to the TEE
+ *                     context.
+ * @param sessionData  Arbitrary CA-provided pointer attached to the session.
+ */
+typedef TEEC_Result
+(*TEEC_OCallHandler)(TEEC_UUID *taUUID,
+		     uint32_t commandId,
+		     uint32_t paramTypes,
+		     TEEC_Parameter params[TEEC_CONFIG_PAYLOAD_REF_COUNT],
+		     void *ctxData,
+		     void *sessionData);
+
+/**
+ * enum TEEC_ContextSettingType - List of available settings when initializing a
+ * context.
+ */
+typedef enum {
+	TEEC_CONTEXT_SETTING_OCALL = 1
+} TEEC_ContextSettingType;
+
+/**
+ * struct TEEC_ContextSettingOCall - Setting to configure the behaviour of
+ * OCALLs.
+ *
+ * @param handler  Pointer to the function to execute to handle an OCALL.
+ * @param data     Arbitrary pointer to pass to the OCALL handler function via
+ *                 @ctxData.
+ */
+typedef struct {
+	TEEC_OCallHandler handler;
+	void *data;
+} TEEC_ContextSettingOCall;
+
+/**
+ * struct TEEC_ContextSetting - A setting to be used when opening a context.
+ *
+ * @param type  The type of setting this is (i.e., how to interpret the union).
+ * @param u     Union of all possible settings.
+ */
+typedef struct {
+	TEEC_ContextSettingType type;
+	union {
+		const TEEC_ContextSettingOCall *ocall;
+	} u;
+} TEEC_ContextSetting;
+
+/**
+ * struct TEEC_Context - Represents a connection between a client application
+ * and a TEE.
+ */
+typedef struct {
+	/* Implementation defined */
+	int fd;
+	bool reg_mem;
+	bool memref_null;
+	bool ocall;
+	TEEC_ContextSettingOCall ocall_setting;
+} TEEC_Context;
 
 /**
  * struct TEEC_Session - Represents a connection between a client application

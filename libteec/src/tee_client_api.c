@@ -176,11 +176,58 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *ctx)
 			ctx->reg_mem = gen_caps & TEE_GEN_CAP_REG_MEM;
 			ctx->memref_null = gen_caps & TEE_GEN_CAP_MEMREF_NULL;
 			ctx->ocall = gen_caps & TEE_GEN_CAP_OCALL;
+			ctx->ocall_setting.handler = NULL;
+			ctx->ocall_setting.data = NULL;
 			return TEEC_SUCCESS;
 		}
 	}
 
 	return TEEC_ERROR_ITEM_NOT_FOUND;
+}
+
+TEEC_Result TEEC_InitializeContext2(const char *name, TEEC_Context *context,
+				    const TEEC_ContextSetting *settings,
+				    uint32_t numSettings)
+{
+	uint32_t n;
+	TEEC_Result res;
+
+	if (!settings && numSettings)
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	for (n = 0; n < numSettings; n++) {
+		switch (settings[n].type) {
+		case TEEC_CONTEXT_SETTING_OCALL:
+			if (!settings[n].u.ocall->handler)
+				return TEEC_ERROR_BAD_PARAMETERS;
+			break;
+		default:
+			return TEEC_ERROR_BAD_PARAMETERS;
+		}
+	}
+
+	res = TEEC_InitializeContext(name, context);
+	if (res != TEEC_SUCCESS)
+		return res;
+
+	for (n = 0; n < numSettings; n++) {
+		switch (settings[n].type) {
+		case TEEC_CONTEXT_SETTING_OCALL:
+			if (!context->ocall) {
+				TEEC_FinalizeContext(context);
+				return TEEC_ERROR_NOT_SUPPORTED;
+			}
+			context->ocall_setting.handler =
+				settings[n].u.ocall->handler;
+			context->ocall_setting.data = settings[n].u.ocall->data;
+			break;
+		default:
+			/* Not reached */
+			break;
+		}
+	}
+
+	return res;
 }
 
 void TEEC_FinalizeContext(TEEC_Context *ctx)

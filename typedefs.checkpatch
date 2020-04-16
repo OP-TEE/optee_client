@@ -9,6 +9,10 @@ TEEC_Result
 TEEC_RegisteredMemoryReference
 TEEC_Parameter
 TEEC_Operation
+TEEC_OCallHandler
+TEEC_ContextSettingType
+TEEC_ContextSettingOCall
+TEEC_ContextSetting
 TEEC_Context
 CK_VOID_PTR_PTR
 CK_VOID_PTR
