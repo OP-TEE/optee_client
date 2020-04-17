@@ -31,6 +31,11 @@
 #include <stdbool.h>
 #include <pthread.h>
 
+/* Helpers to access memref parts of a struct tee_ioctl_param */
+#define MEMREF_SHM_ID(p)	((p)->c)
+#define MEMREF_SHM_OFFS(p)	((p)->a)
+#define MEMREF_SIZE(p)		((p)->b)
+
 struct tee_ioctl_param;
 
 bool tee_supp_param_is_memref(struct tee_ioctl_param *param);

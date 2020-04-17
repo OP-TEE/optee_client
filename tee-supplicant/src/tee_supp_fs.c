@@ -177,7 +177,7 @@ static TEEC_Result ree_fs_new_open(size_t num_params,
 			return TEEC_ERROR_ITEM_NOT_FOUND;
 	}
 
-	params[2].u.value.a = fd;
+	params[2].a = fd;
 	return TEEC_SUCCESS;
 }
 
@@ -256,7 +256,7 @@ static TEEC_Result ree_fs_new_create(size_t num_params,
 	}
 
 out:
-	params[2].u.value.a = fd;
+	params[2].a = fd;
 	return TEEC_SUCCESS;
 }
 
@@ -270,7 +270,7 @@ static TEEC_Result ree_fs_new_close(size_t num_params,
 			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT)
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	fd = params[0].u.value.b;
+	fd = params[0].b;
 	while (close(fd)) {
 		if (errno != EINTR)
 			return TEEC_ERROR_GENERIC;
@@ -295,13 +295,13 @@ static TEEC_Result ree_fs_new_read(size_t num_params,
 			TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_OUTPUT)
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	fd = params[0].u.value.b;
-	offs = params[0].u.value.c;
+	fd = params[0].b;
+	offs = params[0].c;
 
 	buf = tee_supp_param_to_va(params + 1);
 	if (!buf)
 		return TEEC_ERROR_BAD_PARAMETERS;
-	len = params[1].u.memref.size;
+	len = MEMREF_SIZE(params + 1);
 
 	s = 0;
 	r = -1;
@@ -319,7 +319,7 @@ static TEEC_Result ree_fs_new_read(size_t num_params,
 		s += r;
 	}
 
-	params[1].u.memref.size = s;
+	MEMREF_SIZE(params + 1) = s;
 	return TEEC_SUCCESS;
 }
 
@@ -339,13 +339,13 @@ static TEEC_Result ree_fs_new_write(size_t num_params,
 			TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INPUT)
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	fd = params[0].u.value.b;
-	offs = params[0].u.value.c;
+	fd = params[0].b;
+	offs = params[0].c;
 
 	buf = tee_supp_param_to_va(params + 1);
 	if (!buf)
 		return TEEC_ERROR_BAD_PARAMETERS;
-	len = params[1].u.memref.size;
+	len = MEMREF_SIZE(params + 1);
 
 	while (len) {
 		r = pwrite(fd, buf, len, offs);
@@ -374,8 +374,8 @@ static TEEC_Result ree_fs_new_truncate(size_t num_params,
 			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT)
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	fd = params[0].u.value.b;
-	len = params[0].u.value.c;
+	fd = params[0].b;
+	len = params[0].c;
 
 	while (ftruncate(fd, len)) {
 		if (errno != EINTR)
@@ -445,7 +445,7 @@ static TEEC_Result ree_fs_new_rename(size_t num_params,
 			TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INPUT)
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	overwrite = !!params[0].u.value.b;
+	overwrite = !!params[0].b;
 
 	old_fname = tee_supp_param_to_va(params + 1);
 	if (!old_fname)
@@ -537,7 +537,7 @@ static TEEC_Result ree_fs_new_opendir(size_t num_params,
 		return TEEC_ERROR_OUT_OF_MEMORY;
 	}
 
-	params[2].u.value.a = handle;
+	params[2].a = handle;
 	return TEEC_SUCCESS;
 }
 
@@ -551,7 +551,7 @@ static TEEC_Result ree_fs_new_closedir(size_t num_params,
 			TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT)
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	dir = handle_put(&dir_handle_db, params[0].u.value.b);
+	dir = handle_put(&dir_handle_db, params[0].b);
 	if (!dir)
 		return TEEC_ERROR_BAD_PARAMETERS;
 
@@ -580,9 +580,9 @@ static TEEC_Result ree_fs_new_readdir(size_t num_params,
 	buf = tee_supp_param_to_va(params + 1);
 	if (!buf)
 		return TEEC_ERROR_BAD_PARAMETERS;
-	len = params[1].u.memref.size;
+	len = MEMREF_SIZE(params + 1);
 
-	dir = handle_lookup(&dir_handle_db, params[0].u.value.b);
+	dir = handle_lookup(&dir_handle_db, params[0].b);
 	if (!dir)
 		return TEEC_ERROR_BAD_PARAMETERS;
 
@@ -595,7 +595,7 @@ static TEEC_Result ree_fs_new_readdir(size_t num_params,
 	}
 
 	fname_len = strlen(dirent->d_name) + 1;
-	params[1].u.memref.size = fname_len;
+	MEMREF_SIZE(params + 1) = fname_len;
 	if (fname_len > len)
 		return TEEC_ERROR_SHORT_BUFFER;
 
@@ -619,7 +619,7 @@ TEEC_Result tee_supp_fs_process(size_t num_params,
 		}
 	}
 
-	switch (params->u.value.a) {
+	switch (params->a) {
 	case OPTEE_MRF_OPEN:
 		return ree_fs_new_open(num_params, params);
 	case OPTEE_MRF_CREATE:

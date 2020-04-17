@@ -51,6 +51,11 @@
 /* How many device sequence numbers will be tried before giving up */
 #define TEEC_MAX_DEV_SEQ	10
 
+/* Helpers to access memref parts of a struct tee_ioctl_param */
+#define MEMREF_SHM_ID(p)	((p)->c)
+#define MEMREF_SHM_OFFS(p)	((p)->a)
+#define MEMREF_SIZE(p)		((p)->b)
+
 static pthread_mutex_t teec_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void teec_mutex_lock(pthread_mutex_t *mu)
@@ -196,7 +201,7 @@ static TEEC_Result teec_pre_process_tmpref(TEEC_Context *ctx,
 			return TEEC_ERROR_BAD_PARAMETERS;
 
 		/* Null pointer, indicate no shared memory attached */
-		param->u.memref.shm_id = TEE_MEMREF_NULL;
+		MEMREF_SHM_ID(param) = TEE_MEMREF_NULL;
 		shm->id = -1;
 	} else {
 		res = TEEC_AllocateSharedMemory(ctx, shm);
@@ -204,10 +209,11 @@ static TEEC_Result teec_pre_process_tmpref(TEEC_Context *ctx,
 			return res;
 
 		memcpy(shm->buffer, tmpref->buffer, tmpref->size);
-		param->u.memref.shm_id = shm->id;
+		MEMREF_SHM_ID(param) = shm->id;
 	}
 
-	param->u.memref.size = tmpref->size;
+	MEMREF_SIZE(param) = tmpref->size;
+
 	return TEEC_SUCCESS;
 }
 
@@ -237,8 +243,9 @@ static TEEC_Result teec_pre_process_whole(
 	if (shm->shadow_buffer && (flags & TEEC_MEM_INPUT))
 		memcpy(shm->shadow_buffer, shm->buffer, shm->size);
 
-	param->u.memref.shm_id = shm->id;
-	param->u.memref.size = shm->size;
+	MEMREF_SHM_ID(param) = shm->id;
+	MEMREF_SIZE(param) = shm->size;
+
 	return TEEC_SUCCESS;
 }
 
@@ -284,9 +291,10 @@ static TEEC_Result teec_pre_process_partial(uint32_t param_type,
 		memcpy((char *)shm->shadow_buffer + memref->offset,
 		       (char *)shm->buffer + memref->offset, memref->size);
 
-	param->u.memref.shm_id = shm->id;
-	param->u.memref.shm_offs = memref->offset;
-	param->u.memref.size = memref->size;
+	MEMREF_SHM_ID(param) = shm->id;
+	MEMREF_SHM_OFFS(param) = memref->offset;
+	MEMREF_SIZE(param) = memref->size;
+
 	return TEEC_SUCCESS;
 }
 
@@ -318,8 +326,8 @@ static TEEC_Result teec_pre_process_operation(TEEC_Context *ctx,
 		case TEEC_VALUE_OUTPUT:
 		case TEEC_VALUE_INOUT:
 			params[n].attr = param_type;
-			params[n].u.value.a = operation->params[n].value.a;
-			params[n].u.value.b = operation->params[n].value.b;
+			params[n].a = operation->params[n].value.a;
+			params[n].b = operation->params[n].value.b;
 			break;
 		case TEEC_MEMREF_TEMP_INPUT:
 		case TEEC_MEMREF_TEMP_OUTPUT:
@@ -359,11 +367,10 @@ static void teec_post_process_tmpref(uint32_t param_type,
 			TEEC_SharedMemory *shm)
 {
 	if (param_type != TEEC_MEMREF_TEMP_INPUT) {
-		if (param->u.memref.size <= tmpref->size && tmpref->buffer)
-			memcpy(tmpref->buffer, shm->buffer,
-			       param->u.memref.size);
+		if (MEMREF_SIZE(param) <= tmpref->size && tmpref->buffer)
+			memcpy(tmpref->buffer, shm->buffer, MEMREF_SIZE(param));
 
-		tmpref->size = param->u.memref.size;
+		tmpref->size = MEMREF_SIZE(param);
 	}
 }
 
@@ -379,11 +386,11 @@ static void teec_post_process_whole(TEEC_RegisteredMemoryReference *memref,
 		 * the shadow buffer into the real buffer now that we've
 		 * returned from secure world.
 		 */
-		if (shm->shadow_buffer && param->u.memref.size <= shm->size)
+		if (shm->shadow_buffer && MEMREF_SIZE(param) <= shm->size)
 			memcpy(shm->buffer, shm->shadow_buffer,
-			       param->u.memref.size);
+			       MEMREF_SIZE(param));
 
-		memref->size = param->u.memref.size;
+		memref->size = MEMREF_SIZE(param);
 	}
 }
 
@@ -399,12 +406,12 @@ static void teec_post_process_partial(uint32_t param_type,
 		 * the shadow buffer into the real buffer now that we've
 		 * returned from secure world.
 		 */
-		if (shm->shadow_buffer && param->u.memref.size <= memref->size)
+		if (shm->shadow_buffer && MEMREF_SIZE(param) <= memref->size)
 			memcpy((char *)shm->buffer + memref->offset,
 			       (char *)shm->shadow_buffer + memref->offset,
-			       param->u.memref.size);
+			       MEMREF_SIZE(param));
 
-		memref->size = param->u.memref.size;
+		memref->size = MEMREF_SIZE(param);
 	}
 }
 
@@ -426,8 +433,8 @@ static void teec_post_process_operation(TEEC_Operation *operation,
 			break;
 		case TEEC_VALUE_OUTPUT:
 		case TEEC_VALUE_INOUT:
-			operation->params[n].value.a = params[n].u.value.a;
-			operation->params[n].value.b = params[n].u.value.b;
+			operation->params[n].value.a = params[n].a;
+			operation->params[n].value.b = params[n].b;
 			break;
 		case TEEC_MEMREF_TEMP_INPUT:
 		case TEEC_MEMREF_TEMP_OUTPUT:

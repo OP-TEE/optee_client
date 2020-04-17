@@ -88,6 +88,12 @@ struct thread_arg {
 	pthread_mutex_t mutex;
 };
 
+struct param_value {
+	uint64_t a;
+	uint64_t b;
+	uint64_t c;
+};
+
 static pthread_mutex_t shm_mutex = PTHREAD_MUTEX_INITIALIZER;
 static struct tee_shm *shm_head;
 
@@ -122,7 +128,7 @@ static size_t num_waiters_dec(struct thread_arg *arg)
 }
 
 static int get_value(size_t num_params, struct tee_ioctl_param *params,
-		     const uint32_t idx, struct tee_ioctl_param_value **value)
+		     const uint32_t idx, struct param_value **value)
 {
 	if (idx >= num_params)
 		return -1;
@@ -131,7 +137,7 @@ static int get_value(size_t num_params, struct tee_ioctl_param *params,
 	case TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT:
 	case TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_OUTPUT:
 	case TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INOUT:
-		*value = &params[idx].u.value;
+		*value = (void *)&params[idx].a;
 		return 0;
 	default:
 		return -1;
@@ -198,6 +204,8 @@ static int get_param(size_t num_params, struct tee_ioctl_param *params,
 		     const uint32_t idx, TEEC_SharedMemory *shm)
 {
 	struct tee_shm *tshm = NULL;
+	size_t offs = 0;
+	size_t sz = 0;
 
 	if (idx >= num_params)
 		return -1;
@@ -213,7 +221,7 @@ static int get_param(size_t num_params, struct tee_ioctl_param *params,
 
 	memset(shm, 0, sizeof(*shm));
 
-	tshm = find_tshm(params[idx].u.memref.shm_id);
+	tshm = find_tshm(MEMREF_SHM_ID(params + idx));
 	if (!tshm) {
 		/*
 		 * It doesn't make sense to query required size of an
@@ -229,17 +237,19 @@ static int get_param(size_t num_params, struct tee_ioctl_param *params,
 		 */
 		return 0;
 	}
-	if ((params[idx].u.memref.size + params[idx].u.memref.shm_offs) <
-	    params[idx].u.memref.size)
+
+	sz = MEMREF_SIZE(params + idx);
+	offs = MEMREF_SHM_OFFS(params + idx);
+	if ((sz + offs) < sz)
 		return -1;
-	if ((params[idx].u.memref.size + params[idx].u.memref.shm_offs) >
-	    tshm->size)
+	if ((sz + offs) > tshm->size)
 		return -1;
 
 	shm->flags = TEEC_MEM_INPUT | TEEC_MEM_OUTPUT;
-	shm->size = params[idx].u.memref.size - params[idx].u.memref.shm_offs;
-	shm->id = params[idx].u.memref.shm_id;
-	shm->buffer = (uint8_t *)tshm->p + params[idx].u.memref.shm_offs;
+	shm->size = sz - offs;
+	shm->id = MEMREF_SHM_ID(params + idx);
+	shm->buffer = (uint8_t *)tshm->p + offs;
+
 	return 0;
 }
 
@@ -255,7 +265,7 @@ static uint32_t load_ta(size_t num_params, struct tee_ioctl_param *params)
 {
 	int ta_found = 0;
 	size_t size = 0;
-	struct tee_ioctl_param_value *val_cmd = NULL;
+	struct param_value *val_cmd = NULL;
 	TEEC_UUID uuid;
 	TEEC_SharedMemory shm_ta;
 
@@ -275,7 +285,7 @@ static uint32_t load_ta(size_t num_params, struct tee_ioctl_param *params)
 		return TEEC_ERROR_ITEM_NOT_FOUND;
 	}
 
-	params[1].u.memref.size = size;
+	MEMREF_SIZE(params + 1) = size;
 
 	/*
 	 * If a buffer wasn't provided, just tell which size it should be.
@@ -356,7 +366,7 @@ static struct tee_shm *register_local_shm(int fd, size_t size)
 static uint32_t process_alloc(struct thread_arg *arg, size_t num_params,
 			      struct tee_ioctl_param *params)
 {
-	struct tee_ioctl_param_value *val = NULL;
+	struct param_value *val = NULL;
 	struct tee_shm *shm = NULL;
 
 	if (num_params != 1 || get_value(num_params, params, 0, &val))
@@ -379,7 +389,7 @@ static uint32_t process_alloc(struct thread_arg *arg, size_t num_params,
 
 static uint32_t process_free(size_t num_params, struct tee_ioctl_param *params)
 {
-	struct tee_ioctl_param_value *val = NULL;
+	struct param_value *val = NULL;
 	struct tee_shm *shm = NULL;
 	int id = 0;
 
@@ -743,19 +753,18 @@ void *tee_supp_param_to_va(struct tee_ioctl_param *param)
 	if (!tee_supp_param_is_memref(param))
 		return NULL;
 
-	end_offs = param->u.memref.size + param->u.memref.shm_offs;
-	if (end_offs < param->u.memref.size ||
-	    end_offs < param->u.memref.shm_offs)
+	end_offs = MEMREF_SIZE(param) + MEMREF_SHM_OFFS(param);
+	if (end_offs < MEMREF_SIZE(param) || end_offs < MEMREF_SHM_OFFS(param))
 		return NULL;
 
-	tshm = find_tshm(param->u.memref.shm_id);
+	tshm = find_tshm(MEMREF_SHM_ID(param));
 	if (!tshm)
 		return NULL;
 
 	if (end_offs > tshm->size)
 		return NULL;
 
-	return (uint8_t *)tshm->p + param->u.memref.shm_offs;
+	return (uint8_t *)tshm->p + MEMREF_SHM_OFFS(param);
 }
 
 void tee_supp_mutex_lock(pthread_mutex_t *mu)
