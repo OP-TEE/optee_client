@@ -64,9 +64,9 @@ TEEC_Result prof_process(size_t num_params, struct tee_ioctl_param *params,
 		TEE_IOCTL_PARAM_ATTR_TYPE_MEMREF_INPUT)
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	id = params[0].u.value.a;
+	id = params[0].a;
 
-	if (params[1].u.memref.size != sizeof(TEEC_UUID))
+	if (MEMREF_SIZE(params + 1) != sizeof(TEEC_UUID))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
 	u = tee_supp_param_to_va(params + 1);
@@ -77,7 +77,7 @@ TEEC_Result prof_process(size_t num_params, struct tee_ioctl_param *params,
 	if (!buf)
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	bufsize = params[2].u.memref.size;
+	bufsize = MEMREF_SIZE(params + 2);
 
 	if (id < 0 || id > 100)
 		return TEEC_ERROR_BAD_PARAMETERS;
@@ -120,7 +120,7 @@ TEEC_Result prof_process(size_t num_params, struct tee_ioctl_param *params,
 			close(fd);
 			if (st < 0 || st != (int)bufsize)
 				break;
-			params[0].u.value.a = id;
+			params[0].a = id;
 			goto success;
 		}
 		if (errno != EEXIST)

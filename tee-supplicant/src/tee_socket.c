@@ -262,13 +262,13 @@ static TEEC_Result tee_socket_open(size_t num_params,
 	    !chk_pt(params + 3, TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_OUTPUT))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	instance_id = params[0].u.value.b;
-	port = params[1].u.value.a;
-	protocol = params[1].u.value.b;
-	ip_vers = params[1].u.value.c;
+	instance_id = params[0].b;
+	port = params[1].a;
+	protocol = params[1].b;
+	ip_vers = params[1].c;
 
 	server = tee_supp_param_to_va(params + 2);
-	if (!server || server[params[2].u.memref.size - 1] != '\0')
+	if (!server || server[MEMREF_SIZE(params + 2) - 1] != '\0')
 		return TEE_ISOCKET_ERROR_HOSTNAME;
 
 	res = sock_connect(ip_vers, protocol, server, port, &fd);
@@ -281,7 +281,7 @@ static TEEC_Result tee_socket_open(size_t num_params,
 		return TEEC_ERROR_OUT_OF_MEMORY;
 	}
 
-	params[3].u.value.a = handle;
+	params[3].a = handle;
 	return TEEC_SUCCESS;
 }
 
@@ -296,8 +296,8 @@ static TEEC_Result tee_socket_close(size_t num_params,
 	    !chk_pt(params + 0, TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	instance_id = params[0].u.value.b;
-	handle = params[0].u.value.c;
+	instance_id = params[0].b;
+	handle = params[0].c;
 	fd = sock_handle_to_fd(instance_id, handle);
 	if (fd < 0)
 		return TEEC_ERROR_BAD_PARAMETERS;
@@ -329,7 +329,7 @@ static TEEC_Result tee_socket_close_all(size_t num_params,
 	    !chk_pt(params + 0, TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	instance_id = params[0].u.value.b;
+	instance_id = params[0].b;
 	sock_lock();
 	si = sock_instance_find(instance_id);
 	if (si)
@@ -465,17 +465,17 @@ static TEEC_Result tee_socket_send(size_t num_params,
 	    !chk_pt(params + 2, TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INOUT))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	instance_id = params[0].u.value.b;
-	handle = params[0].u.value.c;
+	instance_id = params[0].b;
+	handle = params[0].c;
 	fd = sock_handle_to_fd(instance_id, handle);
 	if (fd < 0)
 		return TEEC_ERROR_BAD_PARAMETERS;
 
 	buf = tee_supp_param_to_va(params + 1);
-	bytes = params[1].u.memref.size;
-	res = write_with_timeout(fd, buf, &bytes, params[2].u.value.a);
+	bytes = MEMREF_SIZE(params + 1);
+	res = write_with_timeout(fd, buf, &bytes, params[2].a);
 	if (res == TEEC_SUCCESS)
-		params[2].u.value.b = bytes;
+		params[2].b = bytes;
 	return res;
 }
 
@@ -516,18 +516,18 @@ static TEEC_Result tee_socket_recv(size_t num_params,
 	    !chk_pt(params + 2, TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	instance_id = params[0].u.value.b;
-	handle = params[0].u.value.c;
+	instance_id = params[0].b;
+	handle = params[0].c;
 	fd = sock_handle_to_fd(instance_id, handle);
 	if (fd < 0)
 		return TEEC_ERROR_BAD_PARAMETERS;
 
 	buf = tee_supp_param_to_va(params + 1);
 
-	bytes = params[1].u.memref.size;
-	res = read_with_timeout(fd, buf, &bytes, params[2].u.value.a);
+	bytes = MEMREF_SIZE(params + 1);
+	res = read_with_timeout(fd, buf, &bytes, params[2].a);
 	if (res == TEEC_SUCCESS)
-		params[1].u.memref.size = bytes;
+		MEMREF_SIZE(params + 1) = bytes;
 
 	return res;
 }
@@ -692,9 +692,9 @@ static TEEC_Result tee_socket_ioctl(size_t num_params,
 	    !chk_pt(params + 2, TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	instance_id = params[0].u.value.b;
-	handle = params[0].u.value.c;
-	command = params[2].u.value.a;
+	instance_id = params[0].b;
+	handle = params[0].c;
+	command = params[2].a;
 	fd = sock_handle_to_fd(instance_id, handle);
 	if (fd < 0)
 		return TEEC_ERROR_BAD_PARAMETERS;
@@ -707,14 +707,14 @@ static TEEC_Result tee_socket_ioctl(size_t num_params,
 
 	switch (socktype) {
 	case SOCK_STREAM:
-		sz = params[1].u.memref.size;
+		sz = MEMREF_SIZE(params + 1);
 		res = tee_socket_ioctl_tcp(fd, command, buf, &sz);
-		params[1].u.memref.size = sz;
+		MEMREF_SIZE(params + 1) = sz;
 		return res;
 	case SOCK_DGRAM:
-		sz = params[1].u.memref.size;
+		sz = MEMREF_SIZE(params + 1);
 		res = tee_socket_ioctl_udp(fd, command, buf, &sz);
-		params[1].u.memref.size = sz;
+		MEMREF_SIZE(params + 1) = sz;
 		return res;
 	default:
 		return TEEC_ERROR_BAD_PARAMETERS;
@@ -727,7 +727,7 @@ TEEC_Result tee_socket_process(size_t num_params,
 	if (!num_params || !tee_supp_param_is_value(params))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	switch (params->u.value.a) {
+	switch (params->a) {
 	case OPTEE_MRC_SOCKET_OPEN:
 		return tee_socket_open(num_params, params);
 	case OPTEE_MRC_SOCKET_CLOSE:

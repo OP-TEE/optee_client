@@ -48,8 +48,9 @@
 
 #define TEE_MAX_ARG_SIZE	1024
 
-#define TEE_GEN_CAP_GP		(1 << 0) /* GlobalPlatform compliant TEE */
-#define TEE_GEN_CAP_REG_MEM	(1 << 2) /* Support registering shared memory */
+#define TEE_GEN_CAP_GP		(1 << 0)/* GlobalPlatform compliant TEE */
+#define TEE_GEN_CAP_PRIVILEGED	(1 << 1)/* Privileged device (for supplicant) */
+#define TEE_GEN_CAP_REG_MEM	(1 << 2)/* Supports registering shared memory */
 #define TEE_GEN_CAP_MEMREF_NULL	(1 << 3) /* Support NULL MemRef */
 
 #define TEE_MEMREF_NULL		((__u64)-1) /* NULL MemRef Buffer */
@@ -58,6 +59,7 @@
  * TEE Implementation ID
  */
 #define TEE_IMPL_ID_OPTEE	1
+#define TEE_IMPL_ID_AMDTEE	2
 
 /*
  * OP-TEE specific capabilities
@@ -137,60 +139,6 @@ struct tee_ioctl_shm_register_fd_data {
 	__s32 id;
 } __aligned(8);
 
-/**
- * TEE_IOC_SHM_REGISTER_FD - register a shared memory from a file descriptor
- *
- * Returns a file descriptor on success or < 0 on failure
- *
- * The returned file descriptor refers to the shared memory object in kernel
- * land. The shared memory is freed when the descriptor is closed.
- */
-#define TEE_IOC_SHM_REGISTER_FD	_IOWR(TEE_IOC_MAGIC, TEE_IOC_BASE + 8, \
-				     struct tee_ioctl_shm_register_fd_data)
-
-/**
- * struct tee_ioctl_shm_register_data - Shared memory register argument
- * @addr:      [in] Start address of shared memory to register
- * @length:    [in/out] Length of shared memory to register
- * @flags:     [in/out] Flags to/from registration.
- * @id:                [out] Identifier of the shared memory
- *
- * The flags field should currently be zero as input. Updated by the call
- * with actual flags as defined by TEE_IOCTL_SHM_* above.
- * This structure is used as argument for TEE_IOC_SHM_REGISTER below.
- */
-struct tee_ioctl_shm_register_data {
-	__u64 addr;
-	__u64 length;
-	__u32 flags;
-	__s32 id;
-};
-
-/**
- * TEE_IOC_SHM_REGISTER - Register shared memory
- *
- * Registers shared memory between the user space process and secure OS.
- *
- * Returns a file descriptor on success or < 0 on failure
- *
- * The shared memory is unregisterred when the descriptor is closed.
- */
-#define TEE_IOC_SHM_REGISTER   _IOWR(TEE_IOC_MAGIC, TEE_IOC_BASE + 9, \
-				     struct tee_ioctl_shm_register_data)
-
-/**
- * struct tee_ioctl_buf_data - Variable sized buffer
- * @buf_ptr:	[in] A __user pointer to a buffer
- * @buf_len:	[in] Length of the buffer above
- *
- * Used as argument for TEE_IOC_OPEN_SESSION, TEE_IOC_INVOKE,
- * TEE_IOC_SUPPL_RECV, and TEE_IOC_SUPPL_SEND below.
- */
-struct tee_ioctl_buf_data {
-	__u64 buf_ptr;
-	__u64 buf_len;
-};
-
 /*
  * Attributes for struct tee_ioctl_param, selects field in the union
  */
@@ -235,62 +183,28 @@ struct tee_ioctl_buf_data {
 #define TEE_IOCTL_LOGIN_GROUP_APPLICATION	6
 
 /**
- * struct tee_ioctl_param_memref - memory reference
- * @shm_offs:	Offset into the shared memory object
- * @size:	Size of the buffer
- * @shm_id:	Shared memory identifier
- *
- * Shared memory is allocated with TEE_IOC_SHM_ALLOC which returns an
- * identifier representing the shared memory object. A memref can reference
- * a part of a shared memory by specifying an offset (@shm_offs) and @size
- * of the object. To supply the entire shared memory object set @shm_offs
- * to 0 and @size to the previously returned size of the object.
- *
- * As per GlobalPlatform Client API v1.0 specification, a client can present
- * a NULL shared memory reference when querying an output (or in/out) shared
- * memory size.
- *
- * If a null reference is passed to a TA in the TEE, the field @c of
- * structure tee_ioctl_param_value must be set to TEE_MEMREF_NULL indicating
- * a NULL memory reference.
- */
-struct tee_ioctl_param_memref {
-	__u64 shm_offs;
-	__u64 size;
-	__s64 shm_id;
-};
-
-/**
- * struct tee_ioctl_param_value - values
- * @a: first value
- * @b: second value
- * @c: third value
- *
- * Value parameters are passed unchecked to the destination
- */
-struct tee_ioctl_param_value {
-	__u64 a;
-	__u64 b;
-	__u64 c;
-};
-
-/**
  * struct tee_ioctl_param - parameter
  * @attr: attributes
- * @memref: a memory reference
- * @value: a value
+ * @a: if a memref, offset into the shared memory object, else a value parameter
+ * @b: if a memref, size of the buffer, else a value parameter
+ * @c: if a memref, shared memory identifier, else a value parameter
  *
  * @attr & TEE_PARAM_ATTR_TYPE_MASK indicates if memref or value is used in
  * the union. TEE_PARAM_ATTR_TYPE_VALUE_* indicates value and
  * TEE_PARAM_ATTR_TYPE_MEMREF_* indicates memref. TEE_PARAM_ATTR_TYPE_NONE
  * indicates that none of the members are used.
+ *
+ * Shared memory is allocated with TEE_IOC_SHM_ALLOC which returns an
+ * identifier representing the shared memory object. A memref can reference
+ * a part of a shared memory by specifying an offset (@a) and size (@b) of
+ * the object. To supply the entire shared memory object set the offset
+ * (@a) to 0 and size (@b) to the previously returned size of the object.
  */
 struct tee_ioctl_param {
 	__u64 attr;
-	union {
-		struct tee_ioctl_param_memref memref;
-		struct tee_ioctl_param_value value;
-	} u;
+	__u64 a;
+	__u64 b;
+	__u64 c;
 };
 
 #define TEE_IOCTL_UUID_LEN		16
@@ -315,17 +229,9 @@ struct tee_ioctl_open_session_arg {
 	__u32 ret;
 	__u32 ret_origin;
 	__u32 num_params;
-	/*
-	 * this struct is 8 byte aligned since the 'struct tee_ioctl_param'
-	 * which follows requires 8 byte alignment.
-	 *
-	 * Commented out element used to visualize the layout dynamic part
-	 * of the struct. This field is not available at all if
-	 * num_params == 0.
-	 *
-	 * struct tee_ioctl_param params[num_params];
-	 */
-} __aligned(8);
+	/* num_params tells the actual number of element in params */
+	struct tee_ioctl_param params[];
+};
 
 /**
  * TEE_IOC_OPEN_SESSION - opens a session to a Trusted Application
@@ -354,17 +260,9 @@ struct tee_ioctl_invoke_arg {
 	__u32 ret;
 	__u32 ret_origin;
 	__u32 num_params;
-	/*
-	 * this struct is 8 byte aligned since the 'struct tee_ioctl_param'
-	 * which follows requires 8 byte alignment.
-	 *
-	 * Commented out element used to visualize the layout dynamic part
-	 * of the struct. This field is not available at all if
-	 * num_params == 0.
-	 *
-	 * struct tee_ioctl_param params[num_params];
-	 */
-} __aligned(8);
+	/* num_params tells the actual number of element in params */
+	struct tee_ioctl_param params[];
+};
 
 /**
  * TEE_IOC_INVOKE - Invokes a function in a Trusted Application
@@ -417,17 +315,9 @@ struct tee_ioctl_close_session_arg {
 struct tee_iocl_supp_recv_arg {
 	__u32 func;
 	__u32 num_params;
-	/*
-	 * this struct is 8 byte aligned since the 'struct tee_ioctl_param'
-	 * which follows requires 8 byte alignment.
-	 *
-	 * Commented out element used to visualize the layout dynamic part
-	 * of the struct. This field is not available at all if
-	 * num_params == 0.
-	 *
-	 * struct tee_ioctl_param params[num_params];
-	 */
-} __aligned(8);
+	/* num_params tells the actual number of element in params */
+	struct tee_ioctl_param params[];
+};
 
 /**
  * TEE_IOC_SUPPL_RECV - Receive a request for a supplicant function
@@ -446,17 +336,10 @@ struct tee_iocl_supp_recv_arg {
 struct tee_iocl_supp_send_arg {
 	__u32 ret;
 	__u32 num_params;
-	/*
-	 * this struct is 8 byte aligned since the 'struct tee_ioctl_param'
-	 * which follows requires 8 byte alignment.
-	 *
-	 * Commented out element used to visualize the layout dynamic part
-	 * of the struct. This field is not available at all if
-	 * num_params == 0.
-	 *
-	 * struct tee_ioctl_param params[num_params];
-	 */
-} __aligned(8);
+	/* num_params tells the actual number of element in params */
+	struct tee_ioctl_param params[];
+};
+
 /**
  * TEE_IOC_SUPPL_SEND - Receive a request for a supplicant function
  *
@@ -466,6 +349,59 @@ struct tee_iocl_supp_send_arg {
 #define TEE_IOC_SUPPL_SEND	_IOR(TEE_IOC_MAGIC, TEE_IOC_BASE + 7, \
 				     struct tee_ioctl_buf_data)
 
+/**
+ * struct tee_ioctl_shm_register_data - Shared memory register argument
+ * @addr:      [in] Start address of shared memory to register
+ * @length:    [in/out] Length of shared memory to register
+ * @flags:     [in/out] Flags to/from registration.
+ * @id:                [out] Identifier of the shared memory
+ *
+ * The flags field should currently be zero as input. Updated by the call
+ * with actual flags as defined by TEE_IOCTL_SHM_* above.
+ * This structure is used as argument for TEE_IOC_SHM_REGISTER below.
+ */
+struct tee_ioctl_shm_register_data {
+	__u64 addr;
+	__u64 length;
+	__u32 flags;
+	__s32 id;
+};
+
+/**
+ * TEE_IOC_SHM_REGISTER_FD - register a shared memory from a file descriptor
+ *
+ * Returns a file descriptor on success or < 0 on failure
+ *
+ * The returned file descriptor refers to the shared memory object in kernel
+ * land. The shared memory is freed when the descriptor is closed.
+ */
+#define TEE_IOC_SHM_REGISTER_FD	_IOWR(TEE_IOC_MAGIC, TEE_IOC_BASE + 8, \
+				     struct tee_ioctl_shm_register_fd_data)
+
+/**
+ * struct tee_ioctl_buf_data - Variable sized buffer
+ * @buf_ptr:	[in] A __user pointer to a buffer
+ * @buf_len:	[in] Length of the buffer above
+ *
+ * Used as argument for TEE_IOC_OPEN_SESSION, TEE_IOC_INVOKE,
+ * TEE_IOC_SUPPL_RECV, and TEE_IOC_SUPPL_SEND below.
+ */
+struct tee_ioctl_buf_data {
+	__u64 buf_ptr;
+	__u64 buf_len;
+};
+
+/**
+ * TEE_IOC_SHM_REGISTER - Register shared memory argument
+ *
+ * Registers shared memory between the user space process and secure OS.
+ *
+ * Returns a file descriptor on success or < 0 on failure
+ *
+ * The shared memory is unregisterred when the descriptor is closed.
+ */
+#define TEE_IOC_SHM_REGISTER   _IOWR(TEE_IOC_MAGIC, TEE_IOC_BASE + 9, \
+				     struct tee_ioctl_shm_register_data)
 /*
  * Five syscalls are used when communicating with the TEE driver.
  * open(): opens the device associated with the driver
