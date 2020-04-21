@@ -26,6 +26,7 @@ LIBCKTEEC_SRCS		+= ck_debug.c
 LIBCKTEEC_SRCS		+= ck_helpers.c
 LIBCKTEEC_SRCS		+= invoke_ta.c
 LIBCKTEEC_SRCS		+= pkcs11_token.c
+LIBCKTEEC_SRCS		+= serializer.c
 
 LIBCKTEEC_INCLUDES	= ${CURDIR}/include
 LIBCKTEEC_INCLUDES 	+= ${CURDIR}/../public
