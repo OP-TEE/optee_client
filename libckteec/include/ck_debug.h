@@ -26,7 +26,7 @@ const char *mecha_ckf2str(CK_ULONG flag);
 /* session_ckf2str - Return string buffer "CKF_xxx\0" for a session flag */
 const char *session_ckf2str(CK_ULONG flag);
 
-/* mecha_ckf2str - Return string buffer "CKS_xxx\0" for a session state */
+/* session_cks2str - Return string buffer "CKS_xxx\0" for a session state */
 const char *session_cks2str(CK_ULONG flag);
 
 /* Return a pointer to a string buffer of "CKA_xxx\0" attribute ID */

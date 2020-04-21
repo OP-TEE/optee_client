@@ -4,7 +4,7 @@
  */
 
 #include <ck_debug.h>
-#include <pkcs11_ta.h>
+#include <pkcs11.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -13,9 +13,6 @@
 
 #define CK2STR_ENTRY(id)	case id: return #id
 
-/*
- * ckr2str - Return a pointer to a string buffer of "CKR_xxx\0" return value ID
- */
 const char *ckr2str(CK_RV id)
 {
 	switch (id) {
