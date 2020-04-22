@@ -94,11 +94,9 @@ CK_RV ck_slot_get_list(CK_BBOOL present,
 	if (rv == CKR_OK || rv == CKR_BUFFER_TOO_SMALL)
 		*count = size / sizeof(*slot_ids);
 
-	if (!slots && rv == CKR_BUFFER_TOO_SMALL) {
+	if (!slots && rv == CKR_BUFFER_TOO_SMALL)
 		rv = CKR_OK;
-		goto out;
-	}
-	if (rv)
+	if (!slots || rv)
 		goto out;
 
 	slot_ids = shm->buffer;
