@@ -304,11 +304,9 @@ CK_RV ck_token_mechanism_ids(CK_SLOT_ID slot,
 	if (rv == CKR_OK || rv == CKR_BUFFER_TOO_SMALL)
 		*count = out_size / sizeof(*mecha_ids);
 
-	if (!mechanisms && rv == CKR_BUFFER_TOO_SMALL) {
+	if (!mechanisms && rv == CKR_BUFFER_TOO_SMALL)
 		rv = CKR_OK;
-		goto out;
-	}
-	if (rv)
+	if (!mechanisms || rv)
 		goto out;
 
 	mecha_ids = out->buffer;
