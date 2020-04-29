@@ -1,15 +1,15 @@
 # Note: please keep the entries in this file sorted in reverse alphabetical
 # order (sort -r)
-TEEC_Result
-TEEC_Context
-TEEC_UUID
-TEEC_SharedMemory
-TEEC_TempMemoryReference
-TEEC_RegisteredMemoryReference
 TEEC_Value
-TEEC_Parameter
+TEEC_UUID
+TEEC_TempMemoryReference
+TEEC_SharedMemory
 TEEC_Session
+TEEC_Result
+TEEC_RegisteredMemoryReference
+TEEC_Parameter
 TEEC_Operation
+TEEC_Context
 CK_VOID_PTR_PTR
 CK_VOID_PTR
 CK_VERSION_PTR
@@ -61,9 +61,9 @@ CK_FLAGS
 CK_DESTROYMUTEX
 CK_DATE_PTR
 CK_DATE
-CK_CREATEMUTEX
 CK_C_INITIALIZE_ARGS_PTR
 CK_C_INITIALIZE_ARGS
+CK_CREATEMUTEX
 CK_CHAR_PTR
 CK_CHAR
 CK_CCM_PARAMS_PTR
