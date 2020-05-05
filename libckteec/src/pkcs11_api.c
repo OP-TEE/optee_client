@@ -9,6 +9,7 @@
 
 #include "invoke_ta.h"
 #include "ck_helpers.h"
+#include "pkcs11_processing.h"
 #include "pkcs11_token.h"
 
 static const CK_FUNCTION_LIST libckteec_function_list = {
@@ -455,15 +456,23 @@ CK_RV C_CreateObject(CK_SESSION_HANDLE hSession,
 		     CK_ULONG ulCount,
 		     CK_OBJECT_HANDLE_PTR phObject)
 {
-	(void)hSession;
-	(void)pTemplate;
-	(void)ulCount;
-	(void)phObject;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_create_object(hSession, pTemplate, ulCount, phObject);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_ATTRIBUTE_READ_ONLY,
+		     CKR_ATTRIBUTE_TYPE_INVALID, CKR_ATTRIBUTE_VALUE_INVALID,
+		     CKR_CRYPTOKI_NOT_INITIALIZED, CKR_CURVE_NOT_SUPPORTED,
+		     CKR_DEVICE_ERROR, CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED,
+		     CKR_DOMAIN_PARAMS_INVALID, CKR_FUNCTION_FAILED,
+		     CKR_GENERAL_ERROR, CKR_HOST_MEMORY,
+		     CKR_OK, CKR_PIN_EXPIRED, CKR_SESSION_CLOSED,
+		     CKR_SESSION_HANDLE_INVALID, CKR_SESSION_READ_ONLY,
+		     CKR_TEMPLATE_INCOMPLETE, CKR_TEMPLATE_INCONSISTENT,
+		     CKR_TOKEN_WRITE_PROTECTED, CKR_USER_NOT_LOGGED_IN);
+
+	return rv;
 }
 
 CK_RV C_CopyObject(CK_SESSION_HANDLE hSession,
@@ -487,13 +496,19 @@ CK_RV C_CopyObject(CK_SESSION_HANDLE hSession,
 CK_RV C_DestroyObject(CK_SESSION_HANDLE hSession,
 		      CK_OBJECT_HANDLE hObject)
 {
-	(void)hSession;
-	(void)hObject;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_destroy_object(hSession, hObject);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_ACTION_PROHIBITED, CKR_CRYPTOKI_NOT_INITIALIZED,
+		     CKR_DEVICE_ERROR, CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED,
+		     CKR_FUNCTION_FAILED, CKR_GENERAL_ERROR, CKR_HOST_MEMORY,
+		     CKR_OBJECT_HANDLE_INVALID, CKR_OK, CKR_PIN_EXPIRED,
+		     CKR_SESSION_CLOSED, CKR_SESSION_HANDLE_INVALID,
+		     CKR_SESSION_READ_ONLY, CKR_TOKEN_WRITE_PROTECTED);
+
+	return rv;
 }
 
 CK_RV C_GetObjectSize(CK_SESSION_HANDLE hSession,
