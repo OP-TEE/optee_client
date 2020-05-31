@@ -6,7 +6,7 @@ CROSS_COMPILE   ?= arm-linux-gnueabihf-
 CC              ?= $(CROSS_COMPILE)gcc
 AR		?= $(CROSS_COMPILE)ar
 
-CFLAGS          := -Wall -Wbad-function-cast -Wcast-align \
+override CFLAGS += -Wall -Wbad-function-cast -Wcast-align \
 		   -Werror-implicit-function-declaration -Wextra \
 		   -Wfloat-equal -Wformat-nonliteral -Wformat-security \
 		   -Wformat=2 -Winit-self -Wmissing-declarations \
@@ -16,13 +16,13 @@ CFLAGS          := -Wall -Wbad-function-cast -Wcast-align \
 		   -Wswitch-default -Wunsafe-loop-optimizations \
 		   -Wwrite-strings -D_FILE_OFFSET_BITS=64
 ifeq ($(CFG_WERROR),y)
-CFLAGS		+= -Werror
+override CFLAGS	+= -Werror
 endif
-CFLAGS          += -c -fPIC
+override CFLAGS += -c -fPIC
 
 DEBUG       ?= 0
 ifeq ($(DEBUG), 1)
-CFLAGS          += -DDEBUG -O0 -g
+override CFLAGS += -DDEBUG -O0 -g
 endif
 
 RM              := rm -f
