@@ -1,6 +1,10 @@
 project(ckteec C)
 
-set(PROJECT_VERSION "0.1.0")
+set(MAJOR_VERSION 0)
+set(MINOR_VERSION 1)
+set(PATCH_VERSION 0)
+
+set(PROJECT_VERSION "${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}")
 
 ################################################################################
 # Packages
@@ -30,7 +34,7 @@ add_library (ckteec SHARED ${SRC})
 
 set_target_properties (ckteec PROPERTIES
 	VERSION ${PROJECT_VERSION}
-	SOVERSION ${PROJECT_NAME}
+	SOVERSION ${MAJOR_VERSION}
 )
 
 ################################################################################

@@ -47,7 +47,7 @@ libckteec: $(OUT_DIR)/$(LIBCKTEEC_SO_LIBRARY)
 
 $(OUT_DIR)/$(LIBCKTEEC_SO_LIBRARY): $(LIBCKTEEC_OBJS)
 	@echo "  LINK    $@"
-	$(VPREFIX)$(CC) -shared -Wl,-soname,$(LIBCKTEEC_SO_LIBRARY) -o $@ $+ $(LIBCKTEEC_LFLAGS)
+	$(VPREFIX)$(CC) -shared -Wl,-soname,$(LIB_MAJOR) -o $@ $+ $(LIBCKTEEC_LFLAGS)
 	@echo ""
 
 libckteec: $(OUT_DIR)/$(LIBCKTEEC_AR_LIBRARY)
