@@ -33,7 +33,7 @@ set (SRC
 ################################################################################
 # Built library
 ################################################################################
-add_library (ckteec SHARED ${SRC})
+add_library (ckteec ${SRC})
 
 set_target_properties (ckteec PROPERTIES
 	VERSION ${PROJECT_VERSION}
