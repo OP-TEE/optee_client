@@ -67,3 +67,10 @@ CK_RV serialize_32b(struct serializer *obj, uint32_t data)
 {
 	return serialize_buffer(obj, &data, sizeof(data));
 }
+
+CK_RV serialize_ck_ulong(struct serializer *obj, CK_ULONG data)
+{
+	uint32_t data32 = data;
+
+	return serialize_buffer(obj, &data32, sizeof(data32));
+}

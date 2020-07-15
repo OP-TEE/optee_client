@@ -13,4 +13,7 @@
 CK_RV serialize_ck_attributes(struct serializer *obj,
 			      CK_ATTRIBUTE_PTR attributes, CK_ULONG count);
 
+/* Create (and allocate) a serial object for CK_MECHANISM array */
+CK_RV serialize_ck_mecha_params(struct serializer *obj,
+				CK_MECHANISM_PTR mechanisms);
 #endif /*LIBCKTEEC_SERIALIZE_CK_H*/
