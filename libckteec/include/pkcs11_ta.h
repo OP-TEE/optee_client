@@ -43,13 +43,13 @@
  * return code for the invoked command.
  *
  * Param#1 can be used for input data arguments of the invoked command.
- * It is unused or is a input memory reference, aka memref[1].
+ * It is unused or is an input memory reference, aka memref[1].
  * Evolution of the API may use memref[1] for output data as well.
  *
  * Param#2 is mostly used for output data arguments of the invoked command
  * and for output handles generated from invoked commands.
  * Few commands uses it for a secondary input data buffer argument.
- * It is unused or is a input/output/in-out memory reference, aka memref[2].
+ * It is unused or is an input/output/in-out memory reference, aka memref[2].
  *
  * Param#3 is currently unused and reserved for evolution of the API.
  */
@@ -251,8 +251,8 @@ enum pkcs11_ta_cmd {
 	PKCS11_CMD_LOGOUT = 14,
 
 	/*
-	 * PKCS11_CMD_CREATE_OBJECT - Create a raw object in the session or
-	 *			      token
+	 * PKCS11_CMD_CREATE_OBJECT - Create a raw client assembled object in
+	 *			      the session or token
 	 *
 	 *
 	 * [in]  memref[0] = [
@@ -502,10 +502,10 @@ struct pkcs11_mechanism_info {
  * pkcs11_object_head - Header of object whose data are serialized in memory
  *
  * An object is made of several attributes. Attributes are stored one next to
- * the other with byte alignment as a serialized byte arrays. Appended
- * attributes byte arrays are prepend with this header structure that
- * defines the number of attribute items and the overall byte size of byte
- * array field pkcs11_object_head::attrs.
+ * the other with byte alignment as a serialized byte array. The byte array
+ * of serialized attributes is prepended with the size of the attrs[] array
+ * in bytes and the number of attributes in the array, yielding the struct
+ * pkcs11_object_head.
  *
  * @attrs_size - byte size of whole byte array attrs[]
  * @attrs_count - number of attribute items stored in attrs[]
@@ -533,7 +533,7 @@ struct pkcs11_attribute_head {
 };
 
 /*
- * Attribute identification IDs
+ * Attribute identification IDs as of v2.40 excluding deprecated IDs.
  * Valid values for struct pkcs11_attribute_head::id
  * PKCS11_CKA_<x> reflects CryptoKi client API attribute IDs CKA_<x>.
  */
@@ -603,6 +603,10 @@ enum pkcs11_attr_id {
 	PKCS11_CKA_EC_POINT			= 0x0181,
 	PKCS11_CKA_ALWAYS_AUTHENTICATE		= 0x0202,
 	PKCS11_CKA_WRAP_WITH_TRUSTED		= 0x0210,
+	/*
+	 * The leading 4 comes from the PKCS#11 spec or:ing with
+	 * CKF_ARRAY_ATTRIBUTE = 0x40000000.
+	 */
 	PKCS11_CKA_WRAP_TEMPLATE		= 0x40000211,
 	PKCS11_CKA_UNWRAP_TEMPLATE		= 0x40000212,
 	PKCS11_CKA_DERIVE_TEMPLATE		= 0x40000213,
@@ -640,6 +644,10 @@ enum pkcs11_attr_id {
 	PKCS11_CKA_REQUIRED_CMS_ATTRIBUTES	= 0x0501,
 	PKCS11_CKA_DEFAULT_CMS_ATTRIBUTES	= 0x0502,
 	PKCS11_CKA_SUPPORTED_CMS_ATTRIBUTES	= 0x0503,
+	/*
+	 * The leading 4 comes from the PKCS#11 spec or:ing with
+	 * CKF_ARRAY_ATTRIBUTE = 0x40000000.
+	 */
 	PKCS11_CKA_ALLOWED_MECHANISMS		= 0x40000600,
 	/* Vendor extension: reserved for undefined ID (~0U) */
 	PKCS11_CKA_UNDEFINED_ID			= PKCS11_UNDEFINED_ID,
@@ -666,6 +674,7 @@ enum pkcs11_class_id {
 /*
  * Valid values for attribute PKCS11_CKA_KEY_TYPE
  * PKCS11_CKK_<x> reflects CryptoKi client API key type IDs CKK_<x>.
+ * Note that this is only a subset of the PKCS#11 specification.
  */
 enum pkcs11_key_type {
 	PKCS11_CKK_RSA				= 0x000,
@@ -778,7 +787,10 @@ enum pkcs11_mechanism_id {
 	PKCS11_CKM_AES_CBC_ENCRYPT_DATA		= 0x01105,
 	PKCS11_CKM_AES_KEY_WRAP			= 0x02109,
 	PKCS11_CKM_AES_KEY_WRAP_PAD		= 0x0210a,
-	/* PKCS11 added IDs for operation no related to a CK mechanism ID */
+	/*
+	 * Vendor extensions below.
+	 * PKCS11 added IDs for operation not related to a CK mechanism ID
+	 */
 	PKCS11_PROCESSING_IMPORT		= 0x80000000,
 	PKCS11_CKM_UNDEFINED_ID			= PKCS11_UNDEFINED_ID,
 };
