@@ -602,14 +602,23 @@ CK_RV C_EncryptInit(CK_SESSION_HANDLE hSession,
 		    CK_MECHANISM_PTR pMechanism,
 		    CK_OBJECT_HANDLE hKey)
 {
-	(void)hSession;
-	(void)pMechanism;
-	(void)hKey;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_encdecrypt_init(hSession, pMechanism, hKey, CK_FALSE);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_CRYPTOKI_NOT_INITIALIZED, CKR_DEVICE_ERROR,
+		     CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED,
+		     CKR_FUNCTION_CANCELED, CKR_FUNCTION_FAILED,
+		     CKR_GENERAL_ERROR, CKR_HOST_MEMORY,
+		     CKR_KEY_FUNCTION_NOT_PERMITTED, CKR_KEY_HANDLE_INVALID,
+		     CKR_KEY_SIZE_RANGE, CKR_KEY_TYPE_INCONSISTENT,
+		     CKR_MECHANISM_INVALID, CKR_MECHANISM_PARAM_INVALID,
+		     CKR_OK, CKR_OPERATION_ACTIVE, CKR_PIN_EXPIRED,
+		     CKR_SESSION_CLOSED, CKR_SESSION_HANDLE_INVALID,
+		     CKR_USER_NOT_LOGGED_IN);
+
+	return rv;
 }
 
 CK_RV C_Encrypt(CK_SESSION_HANDLE hSession,
@@ -618,16 +627,22 @@ CK_RV C_Encrypt(CK_SESSION_HANDLE hSession,
 		CK_BYTE_PTR pEncryptedData,
 		CK_ULONG_PTR pulEncryptedDataLen)
 {
-	(void)hSession;
-	(void)pData;
-	(void)ulDataLen;
-	(void)pEncryptedData;
-	(void)pulEncryptedDataLen;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_encdecrypt_oneshot(hSession, pData, ulDataLen,
+					   pEncryptedData, pulEncryptedDataLen,
+					   CK_FALSE);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_BUFFER_TOO_SMALL,
+		     CKR_CRYPTOKI_NOT_INITIALIZED, CKR_DATA_LEN_RANGE,
+		     CKR_DEVICE_ERROR, CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED,
+		     CKR_FUNCTION_CANCELED, CKR_FUNCTION_FAILED,
+		     CKR_GENERAL_ERROR, CKR_HOST_MEMORY, CKR_OK,
+		     CKR_OPERATION_NOT_INITIALIZED, CKR_SESSION_CLOSED,
+		     CKR_SESSION_HANDLE_INVALID);
+
+	return rv;
 }
 
 CK_RV C_EncryptUpdate(CK_SESSION_HANDLE hSession,
@@ -636,44 +651,66 @@ CK_RV C_EncryptUpdate(CK_SESSION_HANDLE hSession,
 		      CK_BYTE_PTR pEncryptedData,
 		      CK_ULONG_PTR pulEncryptedDataLen)
 {
-	(void)hSession;
-	(void)pPart;
-	(void)ulPartLen;
-	(void)pEncryptedData;
-	(void)pulEncryptedDataLen;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_encdecrypt_update(hSession, pPart, ulPartLen,
+					  pEncryptedData,
+					  pulEncryptedDataLen, CK_FALSE);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_BUFFER_TOO_SMALL,
+		     CKR_CRYPTOKI_NOT_INITIALIZED, CKR_DATA_LEN_RANGE,
+		     CKR_DEVICE_ERROR, CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED,
+		     CKR_FUNCTION_CANCELED, CKR_FUNCTION_FAILED,
+		     CKR_GENERAL_ERROR, CKR_HOST_MEMORY, CKR_OK,
+		     CKR_OPERATION_NOT_INITIALIZED, CKR_SESSION_CLOSED,
+		     CKR_SESSION_HANDLE_INVALID);
+
+	return rv;
 }
 
 CK_RV C_EncryptFinal(CK_SESSION_HANDLE hSession,
 		     CK_BYTE_PTR pLastEncryptedPart,
 		     CK_ULONG_PTR pulLastEncryptedPartLen)
 {
-	(void)hSession;
-	(void)pLastEncryptedPart;
-	(void)pulLastEncryptedPartLen;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_encdecrypt_final(hSession, pLastEncryptedPart,
+					 pulLastEncryptedPartLen, CK_FALSE);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_BUFFER_TOO_SMALL,
+		     CKR_CRYPTOKI_NOT_INITIALIZED, CKR_DATA_LEN_RANGE,
+		     CKR_DEVICE_ERROR, CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED,
+		     CKR_FUNCTION_CANCELED, CKR_FUNCTION_FAILED,
+		     CKR_GENERAL_ERROR, CKR_HOST_MEMORY, CKR_OK,
+		     CKR_OPERATION_NOT_INITIALIZED, CKR_SESSION_CLOSED,
+		     CKR_SESSION_HANDLE_INVALID);
+
+	return rv;
 }
 
 CK_RV C_DecryptInit(CK_SESSION_HANDLE hSession,
 		    CK_MECHANISM_PTR pMechanism,
 		    CK_OBJECT_HANDLE hKey)
 {
-	(void)hSession;
-	(void)pMechanism;
-	(void)hKey;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_encdecrypt_init(hSession, pMechanism, hKey, CK_TRUE);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_CRYPTOKI_NOT_INITIALIZED,
+		     CKR_DEVICE_ERROR, CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED,
+		     CKR_FUNCTION_CANCELED, CKR_FUNCTION_FAILED,
+		     CKR_GENERAL_ERROR, CKR_HOST_MEMORY,
+		     CKR_KEY_FUNCTION_NOT_PERMITTED, CKR_KEY_HANDLE_INVALID,
+		     CKR_KEY_SIZE_RANGE, CKR_KEY_TYPE_INCONSISTENT,
+		     CKR_MECHANISM_INVALID, CKR_MECHANISM_PARAM_INVALID,
+		     CKR_OK, CKR_OPERATION_ACTIVE, CKR_PIN_EXPIRED,
+		     CKR_SESSION_CLOSED, CKR_SESSION_HANDLE_INVALID,
+		     CKR_USER_NOT_LOGGED_IN);
+
+	return rv;
 }
 
 CK_RV C_Decrypt(CK_SESSION_HANDLE hSession,
@@ -682,16 +719,23 @@ CK_RV C_Decrypt(CK_SESSION_HANDLE hSession,
 		CK_BYTE_PTR pData,
 		CK_ULONG_PTR pulDataLen)
 {
-	(void)hSession;
-	(void)pEncryptedData;
-	(void)ulEncryptedDataLen;
-	(void)pData;
-	(void)pulDataLen;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_encdecrypt_oneshot(hSession, pEncryptedData,
+					   ulEncryptedDataLen,
+					   pData, pulDataLen, CK_TRUE);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_BUFFER_TOO_SMALL,
+		     CKR_CRYPTOKI_NOT_INITIALIZED, CKR_DEVICE_ERROR,
+		     CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED,
+		     CKR_ENCRYPTED_DATA_INVALID, CKR_ENCRYPTED_DATA_LEN_RANGE,
+		     CKR_FUNCTION_CANCELED, CKR_FUNCTION_FAILED,
+		     CKR_GENERAL_ERROR, CKR_HOST_MEMORY, CKR_OK,
+		     CKR_OPERATION_NOT_INITIALIZED, CKR_SESSION_CLOSED,
+		     CKR_SESSION_HANDLE_INVALID, CKR_USER_NOT_LOGGED_IN);
+
+	return rv;
 }
 
 CK_RV C_DecryptUpdate(CK_SESSION_HANDLE hSession,
@@ -700,30 +744,45 @@ CK_RV C_DecryptUpdate(CK_SESSION_HANDLE hSession,
 		      CK_BYTE_PTR pPart,
 		      CK_ULONG_PTR pulPartLen)
 {
-	(void)hSession;
-	(void)pEncryptedPart;
-	(void)ulEncryptedPartLen;
-	(void)pPart;
-	(void)pulPartLen;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_encdecrypt_update(hSession, pEncryptedPart,
+					  ulEncryptedPartLen,
+					  pPart, pulPartLen, CK_TRUE);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_BUFFER_TOO_SMALL,
+		     CKR_CRYPTOKI_NOT_INITIALIZED, CKR_DEVICE_ERROR,
+		     CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED,
+		     CKR_ENCRYPTED_DATA_INVALID, CKR_ENCRYPTED_DATA_LEN_RANGE,
+		     CKR_FUNCTION_CANCELED, CKR_FUNCTION_FAILED,
+		     CKR_GENERAL_ERROR, CKR_HOST_MEMORY, CKR_OK,
+		     CKR_OPERATION_NOT_INITIALIZED, CKR_SESSION_CLOSED,
+		     CKR_SESSION_HANDLE_INVALID, CKR_USER_NOT_LOGGED_IN);
+
+	return rv;
 }
 
 CK_RV C_DecryptFinal(CK_SESSION_HANDLE hSession,
 		     CK_BYTE_PTR pLastPart,
 		     CK_ULONG_PTR pulLastPartLen)
 {
-	(void)hSession;
-	(void)pLastPart;
-	(void)pulLastPartLen;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_encdecrypt_final(hSession, pLastPart, pulLastPartLen,
+					 CK_TRUE);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_BUFFER_TOO_SMALL,
+		     CKR_CRYPTOKI_NOT_INITIALIZED, CKR_DEVICE_ERROR,
+		     CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED,
+		     CKR_ENCRYPTED_DATA_INVALID, CKR_ENCRYPTED_DATA_LEN_RANGE,
+		     CKR_FUNCTION_CANCELED, CKR_FUNCTION_FAILED,
+		     CKR_GENERAL_ERROR, CKR_HOST_MEMORY, CKR_OK,
+		     CKR_OPERATION_NOT_INITIALIZED, CKR_SESSION_CLOSED,
+		     CKR_SESSION_HANDLE_INVALID, CKR_USER_NOT_LOGGED_IN);
+
+	return rv;
 }
 
 CK_RV C_DigestInit(CK_SESSION_HANDLE hSession,

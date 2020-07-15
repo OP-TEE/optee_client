@@ -106,3 +106,239 @@ CK_RV ck_destroy_object(CK_SESSION_HANDLE session, CK_OBJECT_HANDLE obj)
 
 	return rv;
 }
+
+CK_RV ck_encdecrypt_init(CK_SESSION_HANDLE session,
+			 CK_MECHANISM_PTR mechanism,
+			 CK_OBJECT_HANDLE key,
+			 int decrypt)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	TEEC_SharedMemory *ctrl = NULL;
+	struct serializer obj = { };
+	uint32_t session_handle = session;
+	uint32_t key_handle = key;
+	size_t ctrl_size = 0;
+	char *buf = NULL;
+
+	if (!mechanism)
+		return CKR_ARGUMENTS_BAD;
+
+	rv = serialize_ck_mecha_params(&obj, mechanism);
+	if (rv)
+		return rv;
+
+	/*
+	 * Shm io0: (in/out) ctrl
+	 * (in) [session-handle][key-handle][serialized-mechanism-blob]
+	 * (out) [status]
+	 */
+	ctrl_size = sizeof(session_handle) + sizeof(key_handle) + obj.size;
+
+	ctrl = ckteec_alloc_shm(ctrl_size, CKTEEC_SHM_INOUT);
+	if (!ctrl) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
+
+	buf = ctrl->buffer;
+
+	memcpy(buf, &session_handle, sizeof(session_handle));
+	buf += sizeof(session_handle);
+
+	memcpy(buf, &key_handle, sizeof(key_handle));
+	buf += sizeof(key_handle);
+
+	memcpy(buf, obj.buffer, obj.size);
+
+	rv = ckteec_invoke_ctrl(decrypt ? PKCS11_CMD_DECRYPT_INIT :
+				PKCS11_CMD_ENCRYPT_INIT, ctrl);
+
+bail:
+	ckteec_free_shm(ctrl);
+	release_serial_object(&obj);
+
+	return rv;
+}
+
+CK_RV ck_encdecrypt_update(CK_SESSION_HANDLE session,
+			   CK_BYTE_PTR in,
+			   CK_ULONG in_len,
+			   CK_BYTE_PTR out,
+			   CK_ULONG_PTR out_len,
+			   int decrypt)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	TEEC_SharedMemory *ctrl = NULL;
+	TEEC_SharedMemory *in_shm = NULL;
+	TEEC_SharedMemory *out_shm = NULL;
+	uint32_t session_handle = session;
+	size_t out_size = 0;
+
+	if ((out_len && *out_len && !out) || (in_len && !in))
+		return CKR_ARGUMENTS_BAD;
+
+	/* Shm io0: (in/out) ctrl = [session-handle] / [status] */
+	ctrl = ckteec_alloc_shm(sizeof(session_handle), CKTEEC_SHM_INOUT);
+	if (!ctrl) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
+	memcpy(ctrl->buffer, &session_handle, sizeof(session_handle));
+
+	/* Shm io1: input data buffer if any */
+	if (in_len) {
+		in_shm = ckteec_register_shm(in, in_len, CKTEEC_SHM_IN);
+		if (!in_shm) {
+			rv = CKR_HOST_MEMORY;
+			goto bail;
+		}
+	}
+
+	/* Shm io2: output data buffer */
+	if (out_len && *out_len) {
+		out_shm = ckteec_register_shm(out, *out_len, CKTEEC_SHM_OUT);
+	} else {
+		/* Query output data size */
+		out_shm = ckteec_alloc_shm(0, CKTEEC_SHM_OUT);
+	}
+
+	if (!out_shm) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
+
+	/* Invoke */
+	rv = ckteec_invoke_ta(decrypt ? PKCS11_CMD_DECRYPT_UPDATE :
+			      PKCS11_CMD_ENCRYPT_UPDATE, ctrl,
+			      in_shm, out_shm, &out_size, NULL, NULL);
+
+	if (out_len && (rv == CKR_OK || rv == CKR_BUFFER_TOO_SMALL))
+		*out_len = out_size;
+
+	if (rv == CKR_BUFFER_TOO_SMALL && out_size && !out)
+		rv = CKR_OK;
+
+bail:
+	ckteec_free_shm(out_shm);
+	ckteec_free_shm(in_shm);
+	ckteec_free_shm(ctrl);
+
+	return rv;
+}
+
+CK_RV ck_encdecrypt_oneshot(CK_SESSION_HANDLE session,
+			    CK_BYTE_PTR in,
+			    CK_ULONG in_len,
+			    CK_BYTE_PTR out,
+			    CK_ULONG_PTR out_len,
+			    int decrypt)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	TEEC_SharedMemory *ctrl = NULL;
+	TEEC_SharedMemory *in_shm = NULL;
+	TEEC_SharedMemory *out_shm = NULL;
+	uint32_t session_handle = session;
+	size_t out_size = 0;
+
+	if ((out_len && *out_len && !out) || (in_len && !in))
+		return CKR_ARGUMENTS_BAD;
+
+	/* Shm io0: (in/out) ctrl = [session-handle] / [status] */
+	ctrl = ckteec_alloc_shm(sizeof(session_handle), CKTEEC_SHM_INOUT);
+	if (!ctrl) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
+	memcpy(ctrl->buffer, &session_handle, sizeof(session_handle));
+
+	/* Shm io1: input data buffer */
+	if (in_len) {
+		in_shm = ckteec_register_shm(in, in_len, CKTEEC_SHM_IN);
+		if (!in_shm) {
+			rv = CKR_HOST_MEMORY;
+			goto bail;
+		}
+	}
+
+	/* Shm io2: output data buffer */
+	if (out_len && *out_len) {
+		out_shm = ckteec_register_shm(out, *out_len, CKTEEC_SHM_OUT);
+	} else {
+		/* Query output data size */
+		out_shm = ckteec_alloc_shm(0, CKTEEC_SHM_OUT);
+	}
+
+	if (!out_shm) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
+
+	rv = ckteec_invoke_ta(decrypt ? PKCS11_CMD_DECRYPT_ONESHOT :
+			      PKCS11_CMD_ENCRYPT_ONESHOT, ctrl,
+			      in_shm, out_shm, &out_size, NULL, NULL);
+
+	if (out_len && (rv == CKR_OK || rv == CKR_BUFFER_TOO_SMALL))
+		*out_len = out_size;
+
+	if (rv == CKR_BUFFER_TOO_SMALL && out_size && !out)
+		rv = CKR_OK;
+
+bail:
+	ckteec_free_shm(out_shm);
+	ckteec_free_shm(in_shm);
+	ckteec_free_shm(ctrl);
+
+	return rv;
+}
+
+CK_RV ck_encdecrypt_final(CK_SESSION_HANDLE session,
+			  CK_BYTE_PTR out,
+			  CK_ULONG_PTR out_len,
+			  int decrypt)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	TEEC_SharedMemory *ctrl = NULL;
+	TEEC_SharedMemory *out_shm = NULL;
+	uint32_t session_handle = session;
+	size_t out_size = 0;
+
+	if (out_len && *out_len && !out)
+		return CKR_ARGUMENTS_BAD;
+
+	/* Shm io0: (in/out) ctrl = [session-handle] / [status] */
+	ctrl = ckteec_alloc_shm(sizeof(session_handle), CKTEEC_SHM_INOUT);
+	if (!ctrl) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
+	memcpy(ctrl->buffer, &session_handle, sizeof(session_handle));
+
+	/* Shm io2: output buffer reference */
+	if (out_len && *out_len) {
+		out_shm = ckteec_register_shm(out, *out_len, CKTEEC_SHM_OUT);
+	} else {
+		/* Query output data size */
+		out_shm = ckteec_alloc_shm(0, CKTEEC_SHM_OUT);
+	}
+
+	if (!out_shm) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
+
+	rv = ckteec_invoke_ctrl_out(decrypt ? PKCS11_CMD_DECRYPT_FINAL :
+				    PKCS11_CMD_ENCRYPT_FINAL,
+				    ctrl, out_shm, &out_size);
+
+	if (out_len && (rv == CKR_OK || rv == CKR_BUFFER_TOO_SMALL))
+		*out_len = out_size;
+
+	if (rv == CKR_BUFFER_TOO_SMALL && out_size && !out)
+		rv = CKR_OK;
+
+bail:
+	ckteec_free_shm(out_shm);
+	ckteec_free_shm(ctrl);
+
+	return rv;
+}

@@ -192,3 +192,111 @@ CK_RV serialize_ck_attributes(struct serializer *obj,
 
 	return rv;
 }
+
+/*
+ * Serialization of CK mechanism parameters
+ *
+ * Most mechanism have no parameters.
+ * Some mechanism have a single 32bit parameter.
+ * Some mechanism have a specific parameter structure which may contain
+ * indirected data (data referred by a buffer pointer).
+ *
+ * Below are each structure specific mechanisms parameters.
+ */
+
+static CK_RV serialize_mecha_aes_ctr(struct serializer *obj,
+				     CK_MECHANISM_PTR mecha)
+{
+	CK_AES_CTR_PARAMS_PTR param = mecha->pParameter;
+	CK_RV rv = CKR_GENERAL_ERROR;
+	uint32_t size = 0;
+
+	rv = serialize_32b(obj, obj->type);
+	if (rv)
+		return rv;
+
+	size = sizeof(uint32_t) + sizeof(param->cb);
+	rv = serialize_32b(obj, size);
+	if (rv)
+		return rv;
+
+	rv = serialize_ck_ulong(obj, param->ulCounterBits);
+	if (rv)
+		return rv;
+
+	rv = serialize_buffer(obj, param->cb, sizeof(param->cb));
+	if (rv)
+		return rv;
+
+	return rv;
+}
+
+static CK_RV serialize_mecha_aes_iv(struct serializer *obj,
+				    CK_MECHANISM_PTR mecha)
+{
+	uint32_t iv_size = mecha->ulParameterLen;
+	CK_RV rv = CKR_GENERAL_ERROR;
+
+	rv = serialize_32b(obj, obj->type);
+	if (rv)
+		return rv;
+
+	rv = serialize_32b(obj, iv_size);
+	if (rv)
+		return rv;
+
+	return serialize_buffer(obj, mecha->pParameter, mecha->ulParameterLen);
+}
+
+/**
+ * serialize_ck_mecha_params - serialize a mechanism type & params
+ *
+ * @obj - serializer used to track the serialization
+ * @mechanism - pointer of the in structure aligned CK_MECHANISM.
+ *
+ * Serialized content:
+ *	[mechanism-type][mechanism-param-blob]
+ *
+ * [mechanism-param-blob] depends on mechanism type ID, see
+ * serialize_mecha_XXX().
+ */
+CK_RV serialize_ck_mecha_params(struct serializer *obj,
+				CK_MECHANISM_PTR mechanism)
+{
+	CK_MECHANISM mecha = { };
+	CK_RV rv = CKR_GENERAL_ERROR;
+
+	memset(obj, 0, sizeof(*obj));
+
+	obj->object = PKCS11_CKO_MECHANISM;
+
+	mecha = *mechanism;
+	obj->type = mecha.mechanism;
+	if (obj->type == PKCS11_UNDEFINED_ID)
+		return CKR_MECHANISM_INVALID;
+
+	switch (mecha.mechanism) {
+	case CKM_AES_ECB:
+	case CKM_AES_CMAC:
+		/* No parameter expected, size shall be 0 */
+		if (mechanism->ulParameterLen)
+			return CKR_MECHANISM_PARAM_INVALID;
+
+		rv = serialize_32b(obj, obj->type);
+		if (rv)
+			return rv;
+
+		return serialize_32b(obj, 0);
+
+	case CKM_AES_CBC:
+	case CKM_AES_CBC_PAD:
+	case CKM_AES_CTS:
+		return serialize_mecha_aes_iv(obj, &mecha);
+
+	case CKM_AES_CTR:
+		return serialize_mecha_aes_ctr(obj, &mecha);
+
+	default:
+		return CKR_MECHANISM_INVALID;
+	}
+}
