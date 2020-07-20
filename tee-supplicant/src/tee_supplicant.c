@@ -52,6 +52,7 @@
 #include <tee_supp_fs.h>
 #include <tee_supplicant.h>
 #include <unistd.h>
+#include <coverage.h>
 
 #include "optee_msg_supplicant.h"
 
@@ -635,6 +636,9 @@ static bool process_one_request(struct thread_arg *arg)
 		break;
 	case OPTEE_MSG_RPC_CMD_FTRACE:
 		ret = prof_process(num_params, params, "ftrace-");
+		break;
+	case OPTEE_MSG_RPC_CMD_GCOV:
+		ret = coverage_process(num_params, params);
 		break;
 	default:
 		EMSG("Cmd [0x%" PRIx32 "] not supported", func);

@@ -53,6 +53,18 @@ CFG_TA_GPROF_SUPPORT ?= y
 #   to dump something
 CFG_FTRACE_SUPPORT ?= y
 
+# CFG_GCOV_SUPPORT
+#   Enable dumping coverage data, not used unless secure world decides
+#   to dump something
+CFG_GCOV_SUPPORT ?= y
+
+# CFG_TEE_CLIENT_COV_DIR
+#   Path to folder that will contain coverage data.
+#   This folder can be created with the required permission in an init
+#   script during boot, else it will be created by the tee-supplicant on
+#   first REE FS access.
+CFG_TEE_CLIENT_COV_DIR ?= $(CFG_TEE_FS_PARENT_PATH)/coverage
+
 # Default output directory.
 # May be absolute, or relative to the optee_client source directory.
 O               ?= out

@@ -31,6 +31,9 @@ endif
 ifneq (,$(filter y,$(CFG_TA_GPROF_SUPPORT) $(CFG_FTRACE_SUPPORT)))
 TEES_SRCS	+= prof.c
 endif
+ifeq ($(CFG_GCOV_SUPPORT),y)
+TEES_SRCS	+= coverage.c
+endif
 
 TEES_SRC_DIR	:= src
 TEES_OBJ_DIR	:= $(OUT_DIR)
@@ -63,6 +66,11 @@ endif
 
 ifeq ($(CFG_FTRACE_SUPPORT),y)
 TEES_CFLAGS	+= -DCFG_FTRACE_SUPPORT
+endif
+
+ifeq ($(CFG_GCOV_SUPPORT),y)
+TEES_CFLAGS	+= -DCFG_GCOV_SUPPORT \
+		   -DCFG_TEE_CLIENT_COV_DIR=\"$(CFG_TEE_CLIENT_COV_DIR)\"
 endif
 
 TEES_LFLAGS	+= -lpthread
