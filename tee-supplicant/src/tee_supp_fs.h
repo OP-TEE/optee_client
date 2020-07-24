@@ -34,4 +34,6 @@ struct tee_ioctl_param;
 TEEC_Result tee_supp_fs_process(size_t num_params,
 				struct tee_ioctl_param *params);
 
+int mkpath(const char *path, mode_t mode);
+
 #endif

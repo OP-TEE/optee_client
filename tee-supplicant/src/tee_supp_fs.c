@@ -91,7 +91,7 @@ static int do_mkdir(const char *path, mode_t mode)
 	return 0;
 }
 
-static int mkpath(const char *path, mode_t mode)
+int mkpath(const char *path, mode_t mode)
 {
 	int status = 0;
 	char *subpath = strdup(path);
