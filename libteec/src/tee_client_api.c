@@ -56,6 +56,12 @@
 #define MEMREF_SHM_OFFS(p)	((p)->a)
 #define MEMREF_SIZE(p)		((p)->b)
 
+/*
+ * Internal flags of TEEC_SharedMemory::internal.flags
+ */
+#define SHM_FLAG_BUFFER_ALLOCED		(1u << 0)
+#define SHM_FLAG_SHADOW_BUFFER_ALLOCED	(1u << 1)
+
 static pthread_mutex_t teec_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void teec_mutex_lock(pthread_mutex_t *mu)
@@ -739,6 +745,7 @@ void TEEC_RequestCancellation(TEEC_Operation *operation)
 
 TEEC_Result TEEC_RegisterSharedMemory(TEEC_Context *ctx, TEEC_SharedMemory *shm)
 {
+	TEEC_Result res = TEEC_SUCCESS;
 	int fd = 0;
 	size_t s = 0;
 
@@ -756,10 +763,40 @@ TEEC_Result TEEC_RegisterSharedMemory(TEEC_Context *ctx, TEEC_SharedMemory *shm)
 		s = 8;
 	if (ctx->reg_mem) {
 		fd = teec_shm_register(ctx->fd, shm->buffer, s, &shm->id);
-		if (fd < 0)
+		if (fd >= 0) {
+			shm->registered_fd = fd;
+			shm->shadow_buffer = NULL;
+			shm->internal.flags = 0;
+			goto out;
+		}
+
+		/*
+		 * If we're here TEE_IOC_SHM_REGISTER failed, probably
+		 * because some read-only memory was supplied and the Linux
+		 * kernel doesn't like that at the moment.
+		 *
+		 * The error could also have some other origin. In any case
+		 * we're not making matters worse by trying to allocate and
+		 * register a shadow buffer before giving up.
+		 */
+		shm->shadow_buffer = malloc(s);
+		if (!shm->shadow_buffer)
 			return TEEC_ERROR_OUT_OF_MEMORY;
-		shm->registered_fd = fd;
+		fd = teec_shm_register(ctx->fd, shm->shadow_buffer, s,
+				       &shm->id);
+		if (fd >= 0) {
+			shm->registered_fd = fd;
+			shm->internal.flags = SHM_FLAG_SHADOW_BUFFER_ALLOCED;
+			goto out;
+		}
+
+		if (errno == ENOMEM)
+			res = TEEC_ERROR_OUT_OF_MEMORY;
+		else
+			res = TEEC_ERROR_GENERIC;
+		free(shm->shadow_buffer);
 		shm->shadow_buffer = NULL;
+		return res;
 	} else {
 		fd = teec_shm_alloc(ctx->fd, s, &shm->id);
 		if (fd < 0)
@@ -773,10 +810,11 @@ TEEC_Result TEEC_RegisterSharedMemory(TEEC_Context *ctx, TEEC_SharedMemory *shm)
 			return TEEC_ERROR_OUT_OF_MEMORY;
 		}
 		shm->registered_fd = -1;
+		shm->internal.flags = 0;
 	}
 
+out:
 	shm->alloced_size = s;
-	shm->buffer_allocated = false;
 	return TEEC_SUCCESS;
 }
 
@@ -852,7 +890,7 @@ TEEC_Result TEEC_AllocateSharedMemory(TEEC_Context *ctx, TEEC_SharedMemory *shm)
 
 	shm->shadow_buffer = NULL;
 	shm->alloced_size = s;
-	shm->buffer_allocated = true;
+	shm->internal.flags = SHM_FLAG_BUFFER_ALLOCED;
 	return TEEC_SUCCESS;
 }
 
@@ -861,11 +899,14 @@ void TEEC_ReleaseSharedMemory(TEEC_SharedMemory *shm)
 	if (!shm || shm->id == -1)
 		return;
 
-	if (shm->shadow_buffer)
-		munmap(shm->shadow_buffer, shm->alloced_size);
-	else if (shm->buffer) {
+	if (shm->shadow_buffer) {
+		if (shm->internal.flags & SHM_FLAG_SHADOW_BUFFER_ALLOCED)
+			free(shm->shadow_buffer);
+		else
+			munmap(shm->shadow_buffer, shm->alloced_size);
+	} else if (shm->buffer) {
 		if (shm->registered_fd >= 0) {
-			if (shm->buffer_allocated)
+			if (shm->internal.flags & SHM_FLAG_BUFFER_ALLOCED)
 				free(shm->buffer);
 			close(shm->registered_fd);
 		} else
@@ -877,5 +918,5 @@ void TEEC_ReleaseSharedMemory(TEEC_SharedMemory *shm)
 	shm->shadow_buffer = NULL;
 	shm->buffer = NULL;
 	shm->registered_fd = -1;
-	shm->buffer_allocated = false;
+	shm->internal.flags = 0;
 }
