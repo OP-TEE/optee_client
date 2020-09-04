@@ -298,7 +298,10 @@ typedef struct {
 	size_t alloced_size;
 	void *shadow_buffer;
 	int registered_fd;
-	bool buffer_allocated;
+	union {
+		bool dummy;
+		uint8_t flags;
+	} internal;
 } TEEC_SharedMemory;
 
 /**
