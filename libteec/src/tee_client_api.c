@@ -900,19 +900,25 @@ void TEEC_ReleaseSharedMemory(TEEC_SharedMemory *shm)
 		return;
 
 	if (shm->shadow_buffer) {
-		if (shm->internal.flags & SHM_FLAG_SHADOW_BUFFER_ALLOCED)
-			free(shm->shadow_buffer);
-		else
+		if (shm->registered_fd >= 0) {
+			if (shm->internal.flags &
+			    SHM_FLAG_SHADOW_BUFFER_ALLOCED)
+				free(shm->shadow_buffer);
+			close(shm->registered_fd);
+		} else {
 			munmap(shm->shadow_buffer, shm->alloced_size);
+		}
 	} else if (shm->buffer) {
 		if (shm->registered_fd >= 0) {
 			if (shm->internal.flags & SHM_FLAG_BUFFER_ALLOCED)
 				free(shm->buffer);
 			close(shm->registered_fd);
-		} else
+		} else {
 			munmap(shm->buffer, shm->alloced_size);
-	} else if (shm->registered_fd >= 0)
+		}
+	} else if (shm->registered_fd >= 0) {
 		close(shm->registered_fd);
+	}
 
 	shm->id = -1;
 	shm->shadow_buffer = NULL;
