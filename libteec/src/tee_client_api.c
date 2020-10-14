@@ -202,13 +202,20 @@ static TEEC_Result teec_pre_process_tmpref(TEEC_Context *ctx,
 	}
 	shm->size = tmpref->size;
 
-	if (!tmpref->buffer && ctx->memref_null) {
+	if (!tmpref->buffer) {
 		if (tmpref->size)
 			return TEEC_ERROR_BAD_PARAMETERS;
 
-		/* Null pointer, indicate no shared memory attached */
-		MEMREF_SHM_ID(param) = TEE_MEMREF_NULL;
-		shm->id = -1;
+		if (ctx->memref_null) {
+			/* Null pointer, indicate no shared memory attached */
+			MEMREF_SHM_ID(param) = TEE_MEMREF_NULL;
+			shm->id = -1;
+		} else {
+			res = TEEC_AllocateSharedMemory(ctx, shm);
+			if (res != TEEC_SUCCESS)
+				return res;
+			MEMREF_SHM_ID(param) = shm->id;
+		}
 	} else {
 		shm->buffer = tmpref->buffer;
 		res = TEEC_RegisterSharedMemory(ctx, shm);
