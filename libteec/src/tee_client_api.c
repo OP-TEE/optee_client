@@ -325,6 +325,10 @@ static TEEC_Result teec_pre_process_operation(TEEC_Context *ctx,
 
 	memset(shms, 0, sizeof(TEEC_SharedMemory) *
 			TEEC_CONFIG_PAYLOAD_REF_COUNT);
+
+	for (n = 0; n < TEEC_CONFIG_PAYLOAD_REF_COUNT; n++)
+		shms[n].id = -1;
+
 	if (!operation) {
 		memset(params, 0, sizeof(struct tee_ioctl_param) *
 				  TEEC_CONFIG_PAYLOAD_REF_COUNT);
