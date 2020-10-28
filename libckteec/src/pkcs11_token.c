@@ -701,7 +701,7 @@ CK_RV ck_login(CK_SESSION_HANDLE session, CK_USER_TYPE user_type,
 	size_t ctrl_size = 0;
 	char *buf = NULL;
 
-	if (!pin)
+	if (!pin && pin_len)
 		return CKR_ARGUMENTS_BAD;
 
 	/* Shm io0: (i/o) ctrl = [session][user][pin length][pin] / [status] */
