@@ -859,14 +859,23 @@ CK_RV C_SignInit(CK_SESSION_HANDLE hSession,
 		 CK_MECHANISM_PTR pMechanism,
 		 CK_OBJECT_HANDLE hKey)
 {
-	(void)hSession;
-	(void)pMechanism;
-	(void)hKey;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_signverify_init(hSession, pMechanism, hKey, CK_TRUE);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_CRYPTOKI_NOT_INITIALIZED,
+		     CKR_DEVICE_ERROR, CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED,
+		     CKR_FUNCTION_CANCELED, CKR_FUNCTION_FAILED,
+		     CKR_GENERAL_ERROR, CKR_HOST_MEMORY,
+		     CKR_KEY_FUNCTION_NOT_PERMITTED, CKR_KEY_HANDLE_INVALID,
+		     CKR_KEY_SIZE_RANGE, CKR_KEY_TYPE_INCONSISTENT,
+		     CKR_MECHANISM_INVALID, CKR_MECHANISM_PARAM_INVALID,
+		     CKR_OK, CKR_OPERATION_ACTIVE, CKR_PIN_EXPIRED,
+		     CKR_SESSION_CLOSED, CKR_SESSION_HANDLE_INVALID,
+		     CKR_USER_NOT_LOGGED_IN);
+
+	return rv;
 }
 
 CK_RV C_Sign(CK_SESSION_HANDLE hSession,
@@ -875,44 +884,64 @@ CK_RV C_Sign(CK_SESSION_HANDLE hSession,
 	     CK_BYTE_PTR pSignature,
 	     CK_ULONG_PTR pulSignatureLen)
 {
-	(void)hSession;
-	(void)pData;
-	(void)ulDataLen;
-	(void)pSignature;
-	(void)pulSignatureLen;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_signverify_oneshot(hSession, pData, ulDataLen,
+					   pSignature, pulSignatureLen,
+					   CK_TRUE);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_BUFFER_TOO_SMALL,
+		     CKR_CRYPTOKI_NOT_INITIALIZED, CKR_DATA_INVALID,
+		     CKR_DATA_LEN_RANGE, CKR_DEVICE_ERROR, CKR_DEVICE_MEMORY,
+		     CKR_DEVICE_REMOVED, CKR_FUNCTION_CANCELED,
+		     CKR_FUNCTION_FAILED, CKR_GENERAL_ERROR, CKR_HOST_MEMORY,
+		     CKR_OK, CKR_OPERATION_NOT_INITIALIZED, CKR_SESSION_CLOSED,
+		     CKR_SESSION_HANDLE_INVALID, CKR_USER_NOT_LOGG_IN,
+		     CKR_FUNCTION_REJECTED);
+
+	return rv;
 }
 
 CK_RV C_SignUpdate(CK_SESSION_HANDLE hSession,
 		   CK_BYTE_PTR pPart,
 		   CK_ULONG ulPartLen)
 {
-	(void)hSession;
-	(void)pPart;
-	(void)ulPartLen;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_signverify_update(hSession, pPart, ulPartLen, CK_TRUE);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_CRYPTOKI_NOT_INITIALIZED,
+		     CKR_DATA_LEN_RANGE, CKR_DEVICE_ERROR, CKR_DEVICE_MEMORY,
+		     CKR_DEVICE_REMOVED, CKR_FUNCTION_CANCELED,
+		     CKR_FUNCTION_FAILED, CKR_GENERAL_ERROR, CKR_HOST_MEMORY,
+		     CKR_OK, CKR_OPERATION_NOT_INITIALIZED, CKR_SESSION_CLOSED,
+		     CKR_SESSION_HANDLE_INVALID, CKR_USER_NOT_LOGGED_IN);
+
+	return rv;
 }
 
 CK_RV C_SignFinal(CK_SESSION_HANDLE hSession,
 		  CK_BYTE_PTR pSignature,
 		  CK_ULONG_PTR pulSignatureLen)
 {
-	(void)hSession;
-	(void)pSignature;
-	(void)pulSignatureLen;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_signverify_final(hSession, pSignature, pulSignatureLen,
+					 CK_TRUE);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_BUFFER_TOO_SMALL,
+		     CKR_CRYPTOKI_NOT_INITIALIZED, CKR_DATA_LEN_RANGE,
+		     CKR_DEVICE_ERROR, CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED,
+		     CKR_FUNCTION_CANCELED, CKR_FUNCTION_FAILED,
+		     CKR_GENERAL_ERROR, CKR_HOST_MEMORY, CKR_OK,
+		     CKR_OPERATION_NOT_INITIALIZED, CKR_SESSION_CLOSED,
+		     CKR_SESSION_HANDLE_INVALID, CKR_USER_NOT_LOGGED_IN,
+		     CKR_FUNCTION_REJECTED);
+
+	return rv;
 }
 
 CK_RV C_SignRecoverInit(CK_SESSION_HANDLE hSession,
@@ -951,14 +980,23 @@ CK_RV C_VerifyInit(CK_SESSION_HANDLE hSession,
 		   CK_MECHANISM_PTR pMechanism,
 		   CK_OBJECT_HANDLE hKey)
 {
-	(void)hSession;
-	(void)pMechanism;
-	(void)hKey;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_signverify_init(hSession, pMechanism, hKey, CK_FALSE);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_CRYPTOKI_NOT_INITIALIZED,
+		     CKR_DEVICE_ERROR, CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED,
+		     CKR_FUNCTION_CANCELED, CKR_FUNCTION_FAILED,
+		     CKR_GENERAL_ERROR, CKR_HOST_MEMORY,
+		     CKR_KEY_FUNCTION_NOT_PERMITTED, CKR_KEY_HANDLE_INVALID,
+		     CKR_KEY_SIZE_RANGE, CKR_KEY_TYPE_INCONSISTENT,
+		     CKR_MECHANISM_INVALID, CKR_MECHANISM_PARAM_INVALID,
+		     CKR_OK, CKR_OPERATION_ACTIVE, CKR_PIN_EXPIRED,
+		     CKR_SESSION_CLOSED, CKR_SESSION_HANDLE_INVALID,
+		     CKR_USER_NOT_LOGGED_IN);
+
+	return rv;
 }
 
 CK_RV C_Verify(CK_SESSION_HANDLE hSession,
@@ -967,44 +1005,64 @@ CK_RV C_Verify(CK_SESSION_HANDLE hSession,
 	       CK_BYTE_PTR pSignature,
 	       CK_ULONG ulSignatureLen)
 {
-	(void)hSession;
-	(void)pData;
-	(void)ulDataLen;
-	(void)pSignature;
-	(void)ulSignatureLen;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
+	CK_ULONG out_size = ulSignatureLen;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_signverify_oneshot(hSession, pData, ulDataLen,
+					   pSignature, &out_size,
+					   CK_FALSE);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_CRYPTOKI_NOT_INITIALIZED,
+		     CKR_DATA_INVALID, CKR_DATA_LEN_RANGE, CKR_DEVICE_ERROR,
+		     CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED,
+		     CKR_FUNCTION_CANCELED, CKR_FUNCTION_FAILED,
+		     CKR_GENERAL_ERROR, CKR_HOST_MEMORY, CKR_OK,
+		     CKR_OPERATION_NOT_INITIALIZED, CKR_SESSION_CLOSED,
+		     CKR_SESSION_HANDLE_INVALID, CKR_SIGNATURE_INVALID,
+		     CKR_SIGNATURE_LEN_RANGE);
+
+	return rv;
 }
 
 CK_RV C_VerifyUpdate(CK_SESSION_HANDLE hSession,
 		     CK_BYTE_PTR pPart,
 		     CK_ULONG ulPartLen)
 {
-	(void)hSession;
-	(void)pPart;
-	(void)ulPartLen;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_signverify_update(hSession, pPart, ulPartLen, CK_FALSE);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_CRYPTOKI_NOT_INITIALIZED,
+		     CKR_DATA_LEN_RANGE, CKR_DEVICE_ERROR, CKR_DEVICE_MEMORY,
+		     CKR_DEVICE_REMOVED, CKR_FUNCTION_CANCELED,
+		     CKR_FUNCTION_FAILED, CKR_GENERAL_ERROR, CKR_HOST_MEMORY,
+		     CKR_OK, CKR_OPERATION_NOT_INITIALIZED, CKR_SESSION_CLOSED,
+		     CKR_SESSION_HANDLE_INVALID);
+
+	return rv;
 }
 
 CK_RV C_VerifyFinal(CK_SESSION_HANDLE hSession,
 		    CK_BYTE_PTR pSignature,
 		    CK_ULONG ulSignatureLen)
 {
-	(void)hSession;
-	(void)pSignature;
-	(void)ulSignatureLen;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_signverify_final(hSession, pSignature, &ulSignatureLen,
+					 CK_FALSE);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_CRYPTOKI_NOT_INITIALIZED,
+		     CKR_DATA_LEN_RANGE, CKR_DEVICE_ERROR, CKR_DEVICE_MEMORY,
+		     CKR_DEVICE_REMOVED, CKR_FUNCTION_CANCELED,
+		     CKR_FUNCTION_FAILED, CKR_GENERAL_ERROR, CKR_HOST_MEMORY,
+		     CKR_OK, CKR_OPERATION_NOT_INITIALIZED, CKR_SESSION_CLOSED,
+		     CKR_SESSION_HANDLE_INVALID, CKR_SIGNATURE_INVALID,
+		     CKR_SIGNATURE_LEN_RANGE);
+
+	return rv;
 }
 
 CK_RV C_VerifyRecoverInit(CK_SESSION_HANDLE hSession,
