@@ -36,4 +36,27 @@ CK_RV ck_encdecrypt_final(CK_SESSION_HANDLE session,
 			  CK_BYTE_PTR out,
 			  CK_ULONG_PTR out_len,
 			  int decrypt);
+
+CK_RV ck_signverify_init(CK_SESSION_HANDLE session,
+			 CK_MECHANISM_PTR mechanism,
+			 CK_OBJECT_HANDLE key,
+			 int sign);
+
+CK_RV ck_signverify_update(CK_SESSION_HANDLE session,
+			   CK_BYTE_PTR in,
+			   CK_ULONG in_len,
+			   int sign);
+
+CK_RV ck_signverify_oneshot(CK_SESSION_HANDLE session,
+			    CK_BYTE_PTR in,
+			    CK_ULONG in_len,
+			    CK_BYTE_PTR out,
+			    CK_ULONG_PTR out_len,
+			    int sign);
+
+CK_RV ck_signverify_final(CK_SESSION_HANDLE session,
+			  CK_BYTE_PTR out,
+			  CK_ULONG_PTR out_len,
+			  int sign);
+
 #endif /*LIBCKTEEC_PKCS11_PROCESSING_H*/

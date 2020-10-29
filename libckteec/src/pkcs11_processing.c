@@ -342,3 +342,221 @@ bail:
 
 	return rv;
 }
+
+CK_RV ck_signverify_init(CK_SESSION_HANDLE session,
+			 CK_MECHANISM_PTR mechanism,
+			 CK_OBJECT_HANDLE key,
+			 int sign)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	TEEC_SharedMemory *ctrl = NULL;
+	struct serializer obj = { 0 };
+	uint32_t session_handle = session;
+	uint32_t key_handle = key;
+	size_t ctrl_size = 0;
+	char *buf = NULL;
+
+	if (!mechanism)
+		return CKR_ARGUMENTS_BAD;
+
+	rv = serialize_ck_mecha_params(&obj, mechanism);
+	if (rv)
+		return rv;
+
+	/*
+	 * Shm io0: (in/out) ctrl
+	 * (in) [session-handle][key-handle][serialized-mechanism-blob]
+	 * (out) [status]
+	 */
+	ctrl_size = sizeof(session_handle) + sizeof(key_handle) + obj.size;
+	ctrl = ckteec_alloc_shm(ctrl_size, CKTEEC_SHM_INOUT);
+	if (!ctrl) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
+
+	buf = ctrl->buffer;
+
+	memcpy(buf, &session_handle, sizeof(session_handle));
+	buf += sizeof(session_handle);
+
+	memcpy(buf, &key_handle, sizeof(key_handle));
+	buf += sizeof(key_handle);
+
+	memcpy(buf, obj.buffer, obj.size);
+
+	rv = ckteec_invoke_ctrl(sign ? PKCS11_CMD_SIGN_INIT :
+				PKCS11_CMD_VERIFY_INIT, ctrl);
+
+bail:
+	ckteec_free_shm(ctrl);
+	release_serial_object(&obj);
+
+	return rv;
+}
+
+CK_RV ck_signverify_update(CK_SESSION_HANDLE session,
+			   CK_BYTE_PTR in,
+			   CK_ULONG in_len,
+			   int sign)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	TEEC_SharedMemory *ctrl = NULL;
+	TEEC_SharedMemory *in_shm = NULL;
+	uint32_t session_handle = session;
+
+	if (in_len && !in)
+		return CKR_ARGUMENTS_BAD;
+
+	/* Shm io0: (in/out) ctrl = [session-handle] / [status] */
+	ctrl = ckteec_alloc_shm(sizeof(session_handle), CKTEEC_SHM_INOUT);
+	if (!ctrl) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
+	memcpy(ctrl->buffer, &session_handle, sizeof(session_handle));
+
+	/* Shm io1: input data */
+	if (in_len) {
+		in_shm = ckteec_register_shm(in, in_len, CKTEEC_SHM_IN);
+		if (!in_shm) {
+			rv = CKR_HOST_MEMORY;
+			goto bail;
+		}
+	}
+
+	rv = ckteec_invoke_ctrl_in(sign ? PKCS11_CMD_SIGN_UPDATE :
+				   PKCS11_CMD_VERIFY_UPDATE, ctrl, in_shm);
+
+bail:
+	ckteec_free_shm(in_shm);
+	ckteec_free_shm(ctrl);
+
+	return rv;
+}
+
+CK_RV ck_signverify_oneshot(CK_SESSION_HANDLE session,
+			    CK_BYTE_PTR in,
+			    CK_ULONG in_len,
+			    CK_BYTE_PTR sign_ref,
+			    CK_ULONG_PTR sign_len,
+			    int sign)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	TEEC_SharedMemory *ctrl = NULL;
+	TEEC_SharedMemory *io1 = NULL;
+	TEEC_SharedMemory *io2 = NULL;
+	uint32_t session_handle = session;
+	size_t out_size = 0;
+
+	if ((in_len && !in) || (sign_len && *sign_len && !sign_ref) ||
+	    (sign && !sign_len))
+		return CKR_ARGUMENTS_BAD;
+
+	/* Shm io0: (in/out) ctrl = [session-handle] / [status] */
+	ctrl = ckteec_alloc_shm(sizeof(session_handle), CKTEEC_SHM_INOUT);
+	if (!ctrl) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
+	memcpy(ctrl->buffer, &session_handle, sizeof(session_handle));
+
+	/* Shm io1: input payload */
+	if (in_len) {
+		io1 = ckteec_register_shm(in, in_len, CKTEEC_SHM_IN);
+		if (!io1) {
+			rv = CKR_HOST_MEMORY;
+			goto bail;
+		}
+	}
+
+	/*
+	 * Shm io2: input signature (if verifying) or null sized shm
+	 * or
+	 * Shm io2: output signature (if signing) or null sized shm
+	 */
+	if (sign_len && *sign_len) {
+		io2 = ckteec_register_shm(sign_ref, *sign_len,
+					  sign ? CKTEEC_SHM_OUT : CKTEEC_SHM_IN);
+	} else {
+		/* Query size if output signature */
+		io2 = ckteec_alloc_shm(0, sign ? CKTEEC_SHM_OUT : CKTEEC_SHM_IN);
+	}
+
+	if (!io2) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
+
+	rv = ckteec_invoke_ta(sign ? PKCS11_CMD_SIGN_ONESHOT :
+			      PKCS11_CMD_VERIFY_ONESHOT, ctrl,
+			      io1, io2, &out_size, NULL, NULL);
+
+	if (sign && (rv == CKR_OK || rv == CKR_BUFFER_TOO_SMALL))
+		*sign_len = out_size;
+
+	if (rv == CKR_BUFFER_TOO_SMALL && out_size && !sign_ref)
+		rv = CKR_OK;
+
+bail:
+	ckteec_free_shm(io1);
+	ckteec_free_shm(io2);
+	ckteec_free_shm(ctrl);
+
+	return rv;
+}
+
+CK_RV ck_signverify_final(CK_SESSION_HANDLE session,
+			  CK_BYTE_PTR sign_ref,
+			  CK_ULONG_PTR sign_len,
+			  int sign)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	TEEC_SharedMemory *ctrl = NULL;
+	TEEC_SharedMemory *io = NULL;
+	uint32_t session_handle = session;
+	size_t out_size = 0;
+
+	if ((sign_len && *sign_len && !sign_ref) || (sign && !sign_len))
+		return CKR_ARGUMENTS_BAD;
+
+	/* Shm io0: (in/out) ctrl = [session-handle] / [status] */
+	ctrl = ckteec_alloc_shm(sizeof(session_handle), CKTEEC_SHM_INOUT);
+	if (!ctrl) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
+	memcpy(ctrl->buffer, &session_handle, sizeof(session_handle));
+
+	/*
+	 * Shm io1: input signature (if verifying) or null sized shm
+	 * or
+	 * Shm io1: output signature (if signing) or null sized shm
+	 */
+	if (sign_len && *sign_len)
+		io = ckteec_register_shm(sign_ref, *sign_len,
+					 sign ? CKTEEC_SHM_OUT : CKTEEC_SHM_IN);
+	else
+		io = ckteec_alloc_shm(0, sign ? CKTEEC_SHM_OUT : CKTEEC_SHM_IN);
+
+	if (!io) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
+
+	rv = ckteec_invoke_ctrl_out(sign ? PKCS11_CMD_SIGN_FINAL : PKCS11_CMD_VERIFY_FINAL,
+				    ctrl, io, &out_size);
+
+	if (sign && sign_len && (rv == CKR_OK || rv == CKR_BUFFER_TOO_SMALL))
+		*sign_len = out_size;
+
+	if (rv == CKR_BUFFER_TOO_SMALL && out_size && !sign_ref)
+		rv = CKR_OK;
+
+bail:
+	ckteec_free_shm(io);
+	ckteec_free_shm(ctrl);
+
+	return rv;
+}
+
