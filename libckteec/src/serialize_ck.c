@@ -39,7 +39,7 @@ static CK_RV serialize_indirect_attribute(struct serializer *obj,
 	CK_ATTRIBUTE_PTR attr = NULL;
 	CK_ULONG count = 0;
 	CK_RV rv = CKR_GENERAL_ERROR;
-	struct serializer obj2 = { };
+	struct serializer obj2 = { 0 };
 
 	switch (attribute->type) {
 	/* These are serialized each separately */
@@ -263,7 +263,7 @@ static CK_RV serialize_mecha_aes_iv(struct serializer *obj,
 CK_RV serialize_ck_mecha_params(struct serializer *obj,
 				CK_MECHANISM_PTR mechanism)
 {
-	CK_MECHANISM mecha = { };
+	CK_MECHANISM mecha = { 0 };
 	CK_RV rv = CKR_GENERAL_ERROR;
 
 	memset(obj, 0, sizeof(*obj));
