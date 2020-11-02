@@ -19,7 +19,7 @@ CK_RV ck_create_object(CK_SESSION_HANDLE session, CK_ATTRIBUTE_PTR attribs,
 		       CK_ULONG count, CK_OBJECT_HANDLE_PTR handle)
 {
 	CK_RV rv = CKR_GENERAL_ERROR;
-	struct serializer obj = { };
+	struct serializer obj = { 0 };
 	size_t ctrl_size = 0;
 	TEEC_SharedMemory *ctrl = NULL;
 	TEEC_SharedMemory *out_shm = NULL;
@@ -114,7 +114,7 @@ CK_RV ck_encdecrypt_init(CK_SESSION_HANDLE session,
 {
 	CK_RV rv = CKR_GENERAL_ERROR;
 	TEEC_SharedMemory *ctrl = NULL;
-	struct serializer obj = { };
+	struct serializer obj = { 0 };
 	uint32_t session_handle = session;
 	uint32_t key_handle = key;
 	size_t ctrl_size = 0;
