@@ -62,6 +62,7 @@ target_include_directories(teec
 )
 
 target_link_libraries (ckteec
+	INTERFACE optee-client-headers
 	PRIVATE pthread
 	PRIVATE teec
 	PRIVATE m
