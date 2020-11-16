@@ -1,6 +1,6 @@
-project(libteec C)
-
-set(PROJECT_VERSION "1.0.0")
+project(libteec
+	VERSION 1.0.0
+	LANGUAGES C)
 
 ################################################################################
 # Packages
@@ -37,7 +37,7 @@ add_library (teec ${SRC})
 
 set_target_properties (teec PROPERTIES
 	VERSION ${PROJECT_VERSION}
-	SOVERSION 1
+	SOVERSION ${PROJECT_VERSION_MAJOR}
 )
 
 ################################################################################
