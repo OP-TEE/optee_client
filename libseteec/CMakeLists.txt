@@ -1,10 +1,6 @@
-project(seteec C)
-
-set(MAJOR_VERSION 0)
-set(MINOR_VERSION 1)
-set(PATCH_VERSION 0)
-
-set(PROJECT_VERSION "${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}")
+project(seteec
+	VERSION 0.1.0
+	LANGUAGES C)
 
 ################################################################################
 # Packages
@@ -30,7 +26,7 @@ add_library (seteec ${SRC})
 
 set_target_properties (seteec PROPERTIES
 	VERSION ${PROJECT_VERSION}
-	SOVERSION ${MAJOR_VERSION}
+	SOVERSION ${PROJECT_VERSION_MAJOR}
 )
 
 ################################################################################
