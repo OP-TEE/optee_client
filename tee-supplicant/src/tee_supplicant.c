@@ -127,6 +127,16 @@ static size_t num_waiters_dec(struct thread_arg *arg)
 	return ret;
 }
 
+static void *paged_aligned_alloc(size_t sz)
+{
+	void *p = NULL;
+
+	if (!posix_memalign(&p, sysconf(_SC_PAGESIZE), sz))
+		return p;
+
+	return NULL;
+}
+
 static int get_value(size_t num_params, struct tee_ioctl_param *params,
 		     const uint32_t idx, struct param_value **value)
 {
@@ -336,7 +346,7 @@ static struct tee_shm *register_local_shm(int fd, size_t size)
 
 	memset(&data, 0, sizeof(data));
 
-	buf = malloc(size);
+	buf = paged_aligned_alloc(size);
 	if (!buf)
 		return NULL;
 
