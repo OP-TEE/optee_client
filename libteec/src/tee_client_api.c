@@ -74,6 +74,16 @@ static void teec_mutex_unlock(pthread_mutex_t *mu)
 	pthread_mutex_unlock(mu);
 }
 
+static void *teec_paged_aligned_alloc(size_t sz)
+{
+	void *p = NULL;
+
+	if (!posix_memalign(&p, sysconf(_SC_PAGESIZE), sz))
+		return p;
+
+	return NULL;
+}
+
 static int teec_open_dev(const char *devname, const char *capabilities,
 			 uint32_t *gen_caps)
 {
@@ -796,7 +806,7 @@ TEEC_Result TEEC_RegisterSharedMemory(TEEC_Context *ctx, TEEC_SharedMemory *shm)
 		 * we're not making matters worse by trying to allocate and
 		 * register a shadow buffer before giving up.
 		 */
-		shm->shadow_buffer = malloc(s);
+		shm->shadow_buffer = teec_paged_aligned_alloc(s);
 		if (!shm->shadow_buffer)
 			return TEEC_ERROR_OUT_OF_MEMORY;
 		fd = teec_shm_register(ctx->fd, shm->shadow_buffer, s,
@@ -879,7 +889,7 @@ TEEC_Result TEEC_AllocateSharedMemory(TEEC_Context *ctx, TEEC_SharedMemory *shm)
 		s = 8;
 
 	if (ctx->reg_mem) {
-		shm->buffer = malloc(s);
+		shm->buffer = teec_paged_aligned_alloc(s);
 		if (!shm->buffer)
 			return TEEC_ERROR_OUT_OF_MEMORY;
 
