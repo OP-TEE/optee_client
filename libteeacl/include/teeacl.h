@@ -13,12 +13,40 @@
 #define TEEACL_H
 
 #include <grp.h>
+#include <uuid/uuid.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #define TEEACL_NO_GROUP ((gid_t)0xFFFFFFFFFFFFFFFF)
+#define KERNEL_NAMESPACE "58ac9ca0-2086-4683-a1b8-ec4bc08e01b6"
+
+/*
+ * len UUID = 36 characters
+ *
+ * Prefixes:
+ *   public
+ *   user:
+ *   group:
+ *
+ * + '\0' character totals 43, roundup.
+ */
+
+/**
+ * Required length for UUID char buffers
+ */
+#define TEEACL_L_UUID 48
+
+/**
+ * teeacl_group_acl_uuid() - Encode a group login ACL string to the
+ * provided uuid_buf
+ *
+ * @param uuid_buf A buffer of length TEEACL_L_UUID.
+ * @param group Group id to encode for login.
+ * @return 0 on success, otherwise a negative number is returned in case of failure.
+ */
+int teeacl_group_acl_uuid(char uuid_buf[TEEACL_L_UUID], gid_t group);
 
 /**
  * The possible return values of the *_user_is_member_of functions.

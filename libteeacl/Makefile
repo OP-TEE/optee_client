@@ -21,14 +21,16 @@ LIBTEEACL_AR_LIBRARY	:= $(LIB_NAME).a
 
 LIBTEEACL_SRC_DIR	:= src
 
-LIBTEEACL_SRCS	= group.c
+libteeacl_SRCS	= tee_uuid.c
+libteeacl_SRCS	+= group.c
 
 LIBTEEACL_INCLUDES	= ${CURDIR}/include
 
-LIBTEEACL_CFLAGS	:= $(addprefix -I, $(LIBTEEACL_INCLUDES)) \
+libteeacl_CFLAGS	:= $(addprefix -I, $(libteeacl_INCLUDES)) \
+			$(shell pkg-config --cflags uuid) \
 			$(CFLAGS) -D_GNU_SOURCE -fPIC
 
-LIBTEEACL_LFLAGS	:= $(LDFLAGS)
+libteeacl_LFLAGS	:= $(LDFLAGS) $(shell pkg-config --libs uuid)
 
 LIBTEEACL_OBJ_DIR	:= $(OUT_DIR)
 LIBTEEACL_OBJS	:= $(patsubst %.c,$(LIBTEEACL_OBJ_DIR)/%.o, $(LIBTEEACL_SRCS))

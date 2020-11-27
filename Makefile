@@ -17,7 +17,8 @@ LIBDIR ?= /usr/lib
 INCLUDEDIR ?= /usr/include
 
 .PHONY: all build build-libteec build-libckteec build-libseteec \
-	build-libteeacl install copy_export clean cscope clean-cscope \
+	build-libteeacl check-libuuid install copy_export clean cscope \
+	clean-cscope \
 	checkpatch-pre-req checkpatch-modified-patch checkpatch-modified-file \
 	checkpatch-last-commit-patch checkpatch-last-commit-file \
 	checkpatch-base-commit-patch checkpatch-base-commit-file \
@@ -40,6 +41,14 @@ build: build-libteec build-tee-supplicant build-libckteec build-libseteec \
 build-libckteec: build-libteec
 	@echo "Building libckteec.so"
 	@$(MAKE) --directory=libckteec --no-print-directory --no-builtin-variables
+
+build-libteeacl: check-libuuid
+	@echo "Building libteeacl.so"
+	@$(MAKE) --directory=libteeacl --no-print-directory --no-builtin-variables
+
+check-libuuid:
+	@echo "Finding uuid.pc"
+	pkg-config --atleast-version=2.34 uuid
 
 build-libseteec: build-libteec
 	@echo "Building libseteec.so"
