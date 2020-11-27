@@ -8,7 +8,8 @@ include(GNUInstallDirs)
 ################################################################################
 # Source files
 ################################################################################
-set (SRC
+set(SRC
+	src/cktee_uuid.c
 	src/group.c
 )
 
@@ -17,7 +18,7 @@ set (SRC
 ################################################################################
 add_library (ckteeaclc ${SRC})
 
-set_target_properties (ckteeaclc PROPERTIES
+set_target_properties(ckteeaclc PROPERTIES
 	VERSION ${PROJECT_VERSION}
 	SOVERSION ${PROJECT_VERSION_MAJOR}
 	C_STANDARD 11
@@ -28,7 +29,7 @@ set_target_properties (ckteeaclc PROPERTIES
 ################################################################################
 # Flags always set
 ################################################################################
-target_compile_definitions (ckteeaclc
+target_compile_definitions(ckteeaclc
 	PRIVATE -D_GNU_SOURCE
 	PRIVATE -DBINARY_PREFIX="LT"
 )
@@ -41,9 +42,13 @@ target_include_directories(ckteeaclc PUBLIC
 	$<INSTALL_INTERFACE:include>
 )
 
+target_link_libraries(ckteeaclc
+	PUBLIC PkgConfig::uuid
+)
+
 ################################################################################
 # Install targets
 ################################################################################
-install (TARGETS ckteeaclc
+install(TARGETS ckteeaclc
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )

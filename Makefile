@@ -16,8 +16,8 @@ SBINDIR ?= /usr/sbin
 LIBDIR ?= /usr/lib
 INCLUDEDIR ?= /usr/include
 
-.PHONY: all build build-libteec build-libckteec build-libckteeaclc install \
-	copy_export clean cscope clean-cscope \
+.PHONY: all build build-libteec build-libckteec build-libckteeaclc \
+	check-libuuid install copy_export clean cscope clean-cscope \
 	checkpatch-pre-req checkpatch-modified-patch checkpatch-modified-file \
 	checkpatch-last-commit-patch checkpatch-last-commit-file \
 	checkpatch-base-commit-patch checkpatch-base-commit-file \
@@ -40,9 +40,13 @@ build-libckteec: build-libteec
 	@echo "Building libckteec.so"
 	@$(MAKE) --directory=libckteec --no-print-directory --no-builtin-variables
 
-build-libckteeaclc:
+build-libckteeaclc: check-libuuid
 	@echo "Building libckteeaclc.so"
 	@$(MAKE) --directory=libckteeaclc --no-print-directory --no-builtin-variables
+
+check-libuuid:
+	@echo "Finding uuid.pc"
+	pkg-config --atleast-version=2.34 uuid
 
 install: copy_export
 
