@@ -10,6 +10,7 @@ include(GNUInstallDirs)
 ################################################################################
 set(SRC
 	src/group.c
+	src/tee_uuid.c
 )
 
 ################################################################################
@@ -36,6 +37,10 @@ target_compile_definitions(teeacl
 target_include_directories(teeacl PUBLIC
 	$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
 	$<INSTALL_INTERFACE:include>
+)
+
+target_link_libraries(teeacl
+	PUBLIC PkgConfig::uuid
 )
 
 ################################################################################
