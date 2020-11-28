@@ -39,7 +39,7 @@ bool ckteec_invoke_initiated(void)
 
 TEEC_SharedMemory *ckteec_alloc_shm(size_t size, enum ckteec_shm_dir dir)
 {
-	TEEC_SharedMemory *shm;
+	TEEC_SharedMemory *shm = NULL;
 
 	switch (dir) {
 	case CKTEEC_SHM_IN:
@@ -72,7 +72,7 @@ TEEC_SharedMemory *ckteec_alloc_shm(size_t size, enum ckteec_shm_dir dir)
 TEEC_SharedMemory *ckteec_register_shm(void *buffer, size_t size,
 				       enum ckteec_shm_dir dir)
 {
-	TEEC_SharedMemory *shm;
+	TEEC_SharedMemory *shm = NULL;
 
 	switch (dir) {
 	case CKTEEC_SHM_IN:
@@ -194,11 +194,11 @@ CK_RV ckteec_invoke_ta(unsigned long cmd, TEEC_SharedMemory *ctrl,
 
 static CK_RV ping_ta(void)
 {
-	TEEC_Operation op;
-	uint32_t origin;
-	TEEC_Result res;
-	uint32_t ta_version[3];
-	uint32_t status;
+	TEEC_Operation op = { 0 };
+	uint32_t origin = 0;
+	TEEC_Result res = TEEC_SUCCESS;
+	uint32_t ta_version[3] = { 0 };
+	uint32_t status = 0;
 
 	memset(&op, 0, sizeof(op));
 	op.params[0].tmpref.buffer = &status;
@@ -237,7 +237,7 @@ CK_RV ckteec_invoke_init(void)
 	uint32_t origin = 0;
 	TEEC_Result res = TEEC_SUCCESS;
 	CK_RV rv = CKR_CRYPTOKI_ALREADY_INITIALIZED;
-	int e;
+	int e = 0;
 
 	e = pthread_mutex_lock(&ta_ctx.init_mutex);
 	if (e) {
@@ -290,7 +290,7 @@ out:
 CK_RV ckteec_invoke_terminate(void)
 {
 	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
-	int e;
+	int e = 0;
 
 	e = pthread_mutex_lock(&ta_ctx.init_mutex);
 	if (e) {
