@@ -1,0 +1,14 @@
+// SPDX-License-Identifier: BSD-2-Clause
+/*
+ * Copyright (c) Vaisala Oyj.
+ */
+
+#include "TeeCkCliConstants.hpp"
+
+namespace tee {
+namespace ckcli {
+
+const std::string TEECKCLI_VERSION("${TEECKCLI_VERSION}");
+
+} // namespace ckcli
+} // namespace tee
