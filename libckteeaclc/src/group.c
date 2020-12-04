@@ -5,8 +5,21 @@
 
 #include <ckteeaclc.h>
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+int ckteeaclc_try_resolve_group(gid_t *gid_out, const char *group_name)
+{
+	struct group *group_s = getgrnam(group_name);
+
+	if (!group_s) {
+		*gid_out = CKTEEACLC_NO_GROUP;
+		return errno;
+	}
+	*gid_out = group_s->gr_gid;
+	return 0;
+}
 
 enum rv_groupmember ckteeaclc_current_user_is_member_of(gid_t group)
 {

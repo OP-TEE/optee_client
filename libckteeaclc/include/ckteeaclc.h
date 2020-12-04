@@ -57,6 +57,17 @@ int ckteeaclc_lib_init(void);
 #define CKTEEACLC_L_UUID 48
 
 /**
+ * ckteeaclc_try_resolve_group - Try to resolve gid_t for a given `group_name`.
+ *
+ * @param gid_out Ptr to gid result. After the call the value will be either
+ * - Group id or
+ * - CKTEEACLC_NO_GROUP
+ * @param group_name Name of group to resolve.
+ * @return Zero on success, errno otherwise.
+ */
+int ckteeaclc_try_resolve_group(gid_t *gid_out, const char *group_name);
+
+/**
  * ckteeaclc_group_acl_uuid() - Encode a group login ACL string to the
  * provided uuid_buf
  *
