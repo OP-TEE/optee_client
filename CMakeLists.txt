@@ -13,15 +13,20 @@ include(GNUInstallDirs)
 #   We want to use the same flags in the entire optee_client git
 ################################################################################
 add_compile_options (
-	-Wall -Wbad-function-cast -Wcast-align
-	-Werror-implicit-function-declaration -Wextra
-	-Wfloat-equal -Wformat-nonliteral -Wformat-security
-	-Wformat=2 -Winit-self -Wmissing-declarations
+	-Wall -Wcast-align -Wextra -Wfloat-equal
+	-Wformat-nonliteral -Wformat-security -Wformat=2
+	-Winit-self -Wmissing-declarations
 	-Wmissing-format-attribute -Wmissing-include-dirs
-	-Wmissing-noreturn -Wmissing-prototypes -Wnested-externs
-	-Wpointer-arith -Wshadow -Wstrict-prototypes
+	-Wmissing-noreturn -Wpointer-arith -Wshadow
 	-Wswitch-default -Wunsafe-loop-optimizations
 	-Wwrite-strings -fPIC
+)
+set (C_COMPILE_OPTIONS
+	-Wbad-function-cast
+	-Werror=implicit-function-declaration
+	-Wmissing-prototypes
+	-Wnested-externs
+	-Wstrict-prototypes
 )
 if(CFG_WERROR)
     add_compile_options(-Werror)
@@ -40,3 +45,4 @@ add_subdirectory (libckteec)
 find_package (PkgConfig REQUIRED)
 pkg_check_modules(uuid REQUIRED IMPORTED_TARGET uuid)
 add_subdirectory (libckteeaclc)
+add_subdirectory (ckteecpp)

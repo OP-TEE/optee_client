@@ -152,3 +152,5 @@ copy_export: build
 	cp libckteeaclc/include/*.h $(DESTDIR)$(INCLUDEDIR)
 	cp -a ${O}/libckteeaclc/libckteeaclc.so* $(DESTDIR)$(LIBDIR)
 	cp -a ${O}/libckteeaclc/libckteeaclc.a $(DESTDIR)$(LIBDIR)
+	mkdir -p $(DESTDIR)$(INCLUDEDIR)/ckteecpp
+	cp ckteecpp/include/ckteecpp/*.h $(DESTDIR)$(INCLUDEDIR)/ckteecpp

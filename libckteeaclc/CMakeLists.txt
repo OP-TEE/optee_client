@@ -3,6 +3,8 @@ project(ckteeaclc
 	LANGUAGES C
 )
 
+add_compile_options(${C_COMPILE_OPTIONS})
+
 include(GNUInstallDirs)
 
 ################################################################################
