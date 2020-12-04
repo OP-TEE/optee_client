@@ -5,9 +5,45 @@
 
 #include <teeacl.h>
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+
+static long teeacl_getgr_r_size_max(void)
+{
+	long getgr_r_size_max = sysconf(_SC_GETGR_R_SIZE_MAX);
+	if (getgr_r_size_max == -1) {
+		return 1024;
+	}
+	return getgr_r_size_max;
+};
+
+int teeacl_gid_from_name(gid_t *gid_out, const char *group_name)
+{
+	struct group grp = { 0 };
+	char *buffer = NULL;
+	struct group *grpResult = NULL;
+	size_t getgr_r_size_max = 0;
+	int rv = 0;
+	getgr_r_size_max = teeacl_getgr_r_size_max();
+	buffer = (char *)(malloc(getgr_r_size_max));
+	if (buffer == NULL)
+		return errno ? errno : -1;
+	memset(buffer, 0, getgr_r_size_max);
+
+	rv = getgrnam_r(group_name, &grp, buffer, getgr_r_size_max, &grpResult);
+
+	free(buffer);
+	if (grpResult == NULL) {
+		*gid_out = TEEACL_NO_GROUP;
+		return rv;
+	} else {
+		*gid_out = grp.gr_gid;
+		return 0;
+	}
+}
 
 enum rv_groupmember teeacl_current_user_is_member_of(gid_t group)
 {

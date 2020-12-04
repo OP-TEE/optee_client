@@ -39,6 +39,21 @@ extern "C" {
 #define TEEACL_L_UUID 48
 
 /**
+ * teeacl_gid_from_name - Try to resolve gid_t for a given `group_name`.
+ *
+ * Note that zero is returned also when specified the `group_name` does not map
+ * to any specified group. This case must always be checked by comparing if
+ * `git_out` equals TEEACL_NO_GROUP.
+ *
+ * @param gid_out Ptr to gid result. After the call the value will be either
+ * - Group id or
+ * - TEEACL_NO_GROUP
+ * @param group_name Name of group to resolve.
+ * @return Zero on success, errno otherwise.
+ */
+int teeacl_gid_from_name(gid_t *gid_out, const char *group_name);
+
+/**
  * teeacl_group_acl_uuid() - Encode a group login ACL string to the
  * provided uuid_buf
  *
