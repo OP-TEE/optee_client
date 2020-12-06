@@ -14,7 +14,8 @@ all: tee-supplicant
 ################################################################################
 PACKAGE_NAME	:= tee-supplicant
 
-TEES_SRCS	:= tee_supplicant.c \
+TEES_SRCS	:= tee_deferred_work.c \
+		   tee_supplicant.c \
 		   teec_ta_load.c \
 		   tee_supp_fs.c \
 		   rpmb.c \

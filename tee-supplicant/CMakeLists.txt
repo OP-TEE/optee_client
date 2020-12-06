@@ -26,6 +26,7 @@ set (SRC
 	src/tee_supp_fs.c
 	src/tee_supplicant.c
 	src/teec_ta_load.c
+	src/tee_deferred_work.c
 )
 
 if (CFG_GP_SOCKETS)

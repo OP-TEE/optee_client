@@ -46,6 +46,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <tee_client_api.h>
+#include <tee_deferred_work.h>
 #include <teec_ta_load.h>
 #include <teec_trace.h>
 #include <tee_socket.h>
@@ -708,6 +709,11 @@ int main(int argc, char *argv[])
 
 	if (daemonize && daemon(0, 0) < 0) {
 		EMSG("daemon(): %s", strerror(errno));
+		exit(EXIT_FAILURE);
+	}
+
+	if (tee_dw_poller_start() != 0) {
+		EMSG("failed to start tee_dw_poller thread");
 		exit(EXIT_FAILURE);
 	}
 
