@@ -9,7 +9,6 @@ GPATH
 GRTAGS
 GTAGS
 /libs
-Makefile
 /obj
 out
 .project

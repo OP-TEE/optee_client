@@ -33,6 +33,7 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <prof.h>
+#include <plugin.h>
 #include <pthread.h>
 #include <rpmb.h>
 #include <stdbool.h>
@@ -636,6 +637,9 @@ static bool process_one_request(struct thread_arg *arg)
 	case OPTEE_MSG_RPC_CMD_FTRACE:
 		ret = prof_process(num_params, params, "ftrace-");
 		break;
+	case OPTEE_MSG_RPC_CMD_PLUGIN:
+		ret = plugin_process(num_params, params);
+		break;
 	default:
 		EMSG("Cmd [0x%" PRIx32 "] not supported", func);
 		/* Not supported. */
@@ -708,6 +712,11 @@ int main(int argc, char *argv[])
 
 	if (daemonize && daemon(0, 0) < 0) {
 		EMSG("daemon(): %s", strerror(errno));
+		exit(EXIT_FAILURE);
+	}
+
+	if (plugin_load_all() != 0) {
+		EMSG("failed to load plugins");
 		exit(EXIT_FAILURE);
 	}
 
