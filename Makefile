@@ -129,6 +129,7 @@ distclean: clean
 
 copy_export: build
 	mkdir -p $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(INCLUDEDIR)
+	cp config.mk $(DESTDIR)/optee_client_config.mk
 	cp -a ${O}/libteec/libteec.so* $(DESTDIR)$(LIBDIR)
 	cp -a ${O}/libteec/libteec.a $(DESTDIR)$(LIBDIR)
 	cp ${O}/tee-supplicant/tee-supplicant $(DESTDIR)$(SBINDIR)

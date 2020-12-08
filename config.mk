@@ -33,6 +33,10 @@ CFG_TEE_CLIENT_LOG_FILE ?= $(CFG_TEE_FS_PARENT_PATH)/teec.log
 #   The location of the client library file.
 CFG_TEE_CLIENT_LOAD_PATH ?= /lib
 
+# CFG_TEE_PLUGIN_LOAD_PATH
+#   The location of the user plugins
+CFG_TEE_PLUGIN_LOAD_PATH ?= /usr/lib/tee-supplicant/plugins/
+
 # CFG_TA_TEST_PATH
 #   Enable the tee test path.  When enabled, the supplicant will try
 #   loading from a debug path before the regular path.  This allows test

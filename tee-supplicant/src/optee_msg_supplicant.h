@@ -183,6 +183,10 @@
  */
 #define OPTEE_MSG_RPC_CMD_FTRACE	11
 
+/*
+ * Plugin commands
+ */
+#define OPTEE_MSG_RPC_CMD_PLUGIN	12
 
 /*
  * Define protocol for messages with .cmd == OPTEE_MSG_RPC_CMD_SOCKET
@@ -257,6 +261,40 @@
 
 /*
  * End of definitions for messages with .cmd == OPTEE_MSG_RPC_CMD_SOCKET
+ */
+
+/*
+ * Define protocol for messages with .cmd == OPTEE_MSG_RPC_CMD_PLUGIN
+ */
+
+/*
+ * Invoke a tee-supplicant plugin.
+ *
+ * [in]     param[0].u.value.a	OPTEE_INVOKE_PLUGIN
+ * [in]     param[0].u.value.b	uuid.d1
+ * [in]     param[0].u.value.c	uuid.d2
+ * [in]     param[1].u.value.a	uuid.d3
+ * [in]     param[1].u.value.b	uuid.d4
+ * [in]     param[1].u.value.c	cmd for plugin
+ * [in]     param[2].u.value.a	sub_cmd for plugin
+ * [out]    param[2].u.value.b  length of the outbuf (param[3]),
+ *                              if out is needed.
+ * [in/out] param[3].u.tmem	buffer holding data for plugin
+ *
+ * UUID serialized into octets:
+ * b0  b1  b2  b3   b4  b5  b6  b7   b8  b9  b10  b11   b12  b13  b14  b15
+ *       d1       |       d2       |        d3        |         d4
+ *
+ * The endianness of words d1, d2, d3 and d4 from SWd is little-endian.
+ * d1 word contains [b3 b2 b1 b0]
+ * d2 word contains [b7 b6 b5 b4]
+ * d3 word contains [b11 b10 b9 b8]
+ * d4 word contains [b15 b14 b13 b12]
+ */
+#define OPTEE_INVOKE_PLUGIN	0
+
+/*
+ * End of definitions for messages with .cmd == OPTEE_MSG_RPC_CMD_PLUGIN
  */
 
 #endif /*__OPTEE_MSG_SUPPLICANT_H*/
