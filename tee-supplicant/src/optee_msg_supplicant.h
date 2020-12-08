@@ -183,6 +183,11 @@
  */
 #define OPTEE_MSG_RPC_CMD_FTRACE	11
 
+/*
+ * Code coverage support management commands
+ */
+#define OPTEE_MSG_RPC_CMD_GCOV		12
+
 
 /*
  * Define protocol for messages with .cmd == OPTEE_MSG_RPC_CMD_SOCKET
