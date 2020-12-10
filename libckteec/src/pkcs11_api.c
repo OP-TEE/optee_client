@@ -7,8 +7,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#include "invoke_ta.h"
 #include "ck_helpers.h"
+#include "invoke_ta.h"
 #include "pkcs11_processing.h"
 #include "pkcs11_token.h"
 
