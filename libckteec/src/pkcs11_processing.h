@@ -59,4 +59,10 @@ CK_RV ck_signverify_final(CK_SESSION_HANDLE session,
 			  CK_ULONG_PTR out_len,
 			  int sign);
 
+CK_RV ck_generate_key(CK_SESSION_HANDLE session,
+		      CK_MECHANISM_PTR mechanism,
+		      CK_ATTRIBUTE_PTR attribs,
+		      CK_ULONG count,
+		      CK_OBJECT_HANDLE_PTR handle);
+
 #endif /*LIBCKTEEC_PKCS11_PROCESSING_H*/
