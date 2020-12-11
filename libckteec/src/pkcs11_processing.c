@@ -556,3 +556,81 @@ bail:
 	return rv;
 }
 
+CK_RV ck_generate_key(CK_SESSION_HANDLE session,
+		      CK_MECHANISM_PTR mechanism,
+		      CK_ATTRIBUTE_PTR attribs,
+		      CK_ULONG count,
+		      CK_OBJECT_HANDLE_PTR handle)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	TEEC_SharedMemory *ctrl = NULL;
+	TEEC_SharedMemory *out_shm = NULL;
+	struct serializer smecha = { 0 };
+	struct serializer sattr = { 0 };
+	uint32_t session_handle = session;
+	size_t ctrl_size = 0;
+	uint32_t key_handle = 0;
+	char *buf = NULL;
+	size_t out_size = 0;
+
+	if (!handle || !mechanism || (count && !attribs))
+		return CKR_ARGUMENTS_BAD;
+
+	rv = serialize_ck_mecha_params(&smecha, mechanism);
+	if (rv)
+		return rv;
+
+	rv = serialize_ck_attributes(&sattr, attribs, count);
+	if (rv)
+		goto bail;
+
+	/*
+	 * Shm io0: (in/out) ctrl
+	 * (in) [session-handle][serialized-mecha][serialized-attributes]
+	 * (out) [status]
+	 */
+	ctrl_size = sizeof(session_handle) + smecha.size + sattr.size;
+
+	ctrl = ckteec_alloc_shm(ctrl_size, CKTEEC_SHM_INOUT);
+	if (!ctrl) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
+
+	buf = ctrl->buffer;
+
+	memcpy(buf, &session_handle, sizeof(session_handle));
+	buf += sizeof(session_handle);
+
+	memcpy(buf, smecha.buffer, smecha.size);
+	buf += smecha.size;
+
+	memcpy(buf, sattr.buffer, sattr.size);
+
+	/* Shm io2: (out) [object handle] */
+	out_shm = ckteec_alloc_shm(sizeof(key_handle), CKTEEC_SHM_OUT);
+	if (!out_shm) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
+
+	rv = ckteec_invoke_ctrl_out(PKCS11_CMD_GENERATE_KEY,
+				    ctrl, out_shm, &out_size);
+
+	if (rv != CKR_OK || out_size != out_shm->size) {
+		if (rv == CKR_OK)
+			rv = CKR_DEVICE_ERROR;
+		goto bail;
+	}
+
+	memcpy(&key_handle, out_shm->buffer, sizeof(key_handle));
+	*handle = key_handle;
+
+bail:
+	ckteec_free_shm(out_shm);
+	ckteec_free_shm(ctrl);
+	release_serial_object(&sattr);
+	release_serial_object(&smecha);
+
+	return rv;
+}

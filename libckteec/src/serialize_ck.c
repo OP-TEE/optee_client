@@ -276,6 +276,8 @@ CK_RV serialize_ck_mecha_params(struct serializer *obj,
 		return CKR_MECHANISM_INVALID;
 
 	switch (mecha.mechanism) {
+	case CKM_GENERIC_SECRET_KEY_GEN:
+	case CKM_AES_KEY_GEN:
 	case CKM_AES_ECB:
 	case CKM_AES_CMAC:
 	case CKM_MD5_HMAC:
