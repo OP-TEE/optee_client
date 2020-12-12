@@ -648,7 +648,7 @@ CK_RV ck_set_pin(CK_SESSION_HANDLE session,
 	size_t ctrl_size = 0;
 	char *buf;
 
-	if (!old || !new)
+	if ((!old && old_len) || (!new && new_len))
 		return CKR_ARGUMENTS_BAD;
 
 	/*
