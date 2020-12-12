@@ -605,7 +605,7 @@ CK_RV ck_init_pin(CK_SESSION_HANDLE session,
 	size_t ctrl_size = 0;
 	char *buf = NULL;
 
-	if (!pin)
+	if (!pin && pin_len)
 		return CKR_ARGUMENTS_BAD;
 
 	/* Shm io0: (in/out) ctrl = [session][pin_len][pin] / [status] */
