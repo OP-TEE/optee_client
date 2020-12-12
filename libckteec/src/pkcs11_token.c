@@ -558,7 +558,10 @@ CK_RV ck_init_token(CK_SLOT_ID slot, CK_UTF8CHAR_PTR pin,
 	size_t ctrl_size = 0;
 	char *buf = NULL;
 
-	if (!pin || !label)
+	if (!pin && pin_len)
+		return CKR_ARGUMENTS_BAD;
+
+	if (!label)
 		return CKR_ARGUMENTS_BAD;
 
 	/* Shm io0: (in/out) ctrl = [slot-id][pin_len][label][pin] / [status] */
