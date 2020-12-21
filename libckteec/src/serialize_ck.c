@@ -78,6 +78,26 @@ static CK_RV serialize_indirect_attribute(struct serializer *obj,
 	return rv;
 }
 
+static CK_RV deserialize_indirect_attribute(struct pkcs11_attribute_head *obj,
+					    CK_ATTRIBUTE_PTR attribute)
+{
+	CK_ULONG count = 0;
+	CK_ATTRIBUTE_PTR attr = NULL;
+
+	switch (attribute->type) {
+	/* These are serialized each separately */
+	case CKA_WRAP_TEMPLATE:
+	case CKA_UNWRAP_TEMPLATE:
+		count = attribute->ulValueLen / sizeof(CK_ATTRIBUTE);
+		attr = (CK_ATTRIBUTE_PTR)attribute->pValue;
+		break;
+	default:
+		return CKR_GENERAL_ERROR;
+	}
+
+	return deserialize_ck_attributes(obj->data, attr, count);
+}
+
 static int ck_attr_is_ulong(CK_ATTRIBUTE_TYPE attribute_id)
 {
 	switch (attribute_id) {
@@ -189,6 +209,101 @@ CK_RV serialize_ck_attributes(struct serializer *obj,
 		release_serial_object(obj);
 	else
 		finalize_serial_object(obj);
+
+	return rv;
+}
+
+static CK_RV deserialize_mecha_list(CK_MECHANISM_TYPE *dst, void *src,
+				    size_t count)
+{
+	char *ta_src = src;
+	size_t n = 0;
+	uint32_t mecha_id = 0;
+
+	for (n = 0; n < count; n++) {
+		memcpy(&mecha_id, ta_src + n * sizeof(mecha_id),
+		       sizeof(mecha_id));
+		dst[n] = mecha_id;
+	}
+
+	return CKR_OK;
+}
+
+static CK_RV deserialize_ck_attribute(struct pkcs11_attribute_head *in,
+				      CK_ATTRIBUTE_PTR out)
+{
+	CK_ULONG ck_ulong = 0;
+	uint32_t pkcs11_data32 = 0;
+	CK_RV rv = CKR_OK;
+
+	out->type = in->id;
+
+	if (out->ulValueLen < in->size) {
+		out->ulValueLen = in->size;
+		return CKR_OK;
+	}
+
+	if (!out->pValue)
+		return CKR_OK;
+
+	/* Specific ulong encoded as 32bit in PKCS11 TA API */
+	if (ck_attr_is_ulong(out->type)) {
+		if (out->ulValueLen != sizeof(CK_ULONG))
+			return CKR_ATTRIBUTE_TYPE_INVALID;
+
+		memcpy(&pkcs11_data32, in->data, sizeof(uint32_t));
+	}
+
+	switch (out->type) {
+	case CKA_CLASS:
+	case CKA_KEY_TYPE:
+	case CKA_KEY_GEN_MECHANISM:
+		ck_ulong = pkcs11_data32;
+		memcpy(out->pValue, &ck_ulong, sizeof(CK_ULONG));
+		break;
+	case CKA_WRAP_TEMPLATE:
+	case CKA_UNWRAP_TEMPLATE:
+		rv = deserialize_indirect_attribute(in, out->pValue);
+		break;
+	case CKA_ALLOWED_MECHANISMS:
+		rv = deserialize_mecha_list(out->pValue, in->data,
+					    out->ulValueLen / sizeof(CK_ULONG));
+		break;
+	/* Attributes which data value do not need conversion (aside ulong) */
+	default:
+		memcpy(out->pValue, in->data, in->size);
+		break;
+	}
+
+	return rv;
+}
+
+CK_RV deserialize_ck_attributes(uint8_t *in, CK_ATTRIBUTE_PTR attributes,
+				CK_ULONG count)
+{
+	CK_ATTRIBUTE_PTR cur_attr = attributes;
+	CK_ULONG n = 0;
+	CK_RV rv = CKR_OK;
+	uint8_t *curr_head = in;
+	size_t len = 0;
+
+	curr_head += sizeof(struct pkcs11_object_head);
+
+	for (n = count; n > 0; n--, cur_attr++, curr_head += len) {
+		struct pkcs11_attribute_head *cli_ref = (void *)curr_head;
+
+		len = sizeof(*cli_ref);
+		/*
+		 * Can't trust size because it was set to reflect
+		 * required buffer.
+		 */
+		if (cur_attr->pValue)
+			len += cli_ref->size;
+
+		rv = deserialize_ck_attribute(cli_ref, cur_attr);
+		if (rv)
+			return rv;
+	}
 
 	return rv;
 }
