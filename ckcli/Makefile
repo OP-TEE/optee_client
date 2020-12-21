@@ -22,18 +22,23 @@ endif
 
 OUT_DIR := $(OO)/ckcli
 
-.PHONY: all teeckcli configure clean
+.PHONY: all teeckcli clean
 
 all: teeckcli
 
 TEECKCLI_VERSION	:= 0.1.0
+# Write version to file so that it can be used for up-to-date checks
+TEECKCLI_VERSION_FILE	:= $(OUT_DIR)/metadata/version
+$(shell mkdir -p $(dir $(TEECKCLI_VERSION_FILE)); echo $(TEECKCLI_VERSION) | \
+	diff $(TEECKCLI_VERSION_FILE) - > /dev/null || \
+	echo $(TEECKCLI_VERSION) > $(TEECKCLI_VERSION_FILE) )
 
 GENERATED_SOURCES_DIR	:= $(OO)/generated-src/teeckcli
 $(GENERATED_SOURCES_DIR):
 	mkdir -p $(GENERATED_SOURCES_DIR)
 
 TEECKCLI_CONSTANTS_CPP	:= $(GENERATED_SOURCES_DIR)/TeeCkCliConstants.cpp
-$(TEECKCLI_CONSTANTS_CPP): configure $(GENERATED_SOURCES_DIR)
+$(TEECKCLI_CONSTANTS_CPP): $(GENERATED_SOURCES_DIR) $(TEECKCLI_VERSION_FILE) src/TeeCkCliConstants.cpp.in
 	sed 's/$${TEECKCLI_VERSION}/${TEECKCLI_VERSION}/g' src/TeeCkCliConstants.cpp.in > $(TEECKCLI_CONSTANTS_CPP)
 
 TEECKCLI_SRCS	:= teeckcli.cpp
@@ -60,7 +65,7 @@ TEECKCLI_LFLAGS	:= $(LDFLAGS) -L$(OUT_DIR)/../libteec -lteec \
 		-L$(OUT_DIR)/../libckteeaclc -lckteeaclc \
 		$(shell pkg-config --libs docopt)
 
-teeckcli: configure $(TEECKCLI_FILE)
+teeckcli: $(TEECKCLI_FILE)
 
 $(TEECKCLI_FILE): $(TEECKCLI_OBJS)
 	@echo "  LINK    $@"
