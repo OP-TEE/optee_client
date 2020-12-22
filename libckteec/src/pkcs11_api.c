@@ -561,14 +561,19 @@ CK_RV C_FindObjectsInit(CK_SESSION_HANDLE hSession,
 			CK_ATTRIBUTE_PTR pTemplate,
 			CK_ULONG ulCount)
 {
-	(void)hSession;
-	(void)pTemplate;
-	(void)ulCount;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_find_objects_init(hSession, pTemplate, ulCount);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_ATTRIBUTE_TYPE_INVALID,
+		     CKR_ATTRIBUTE_VALUE_INVALID, CKR_CRYPTOKI_NOT_INITIALIZED,
+		     CKR_DEVICE_ERROR, CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED,
+		     CKR_FUNCTION_FAILED, CKR_GENERAL_ERROR, CKR_HOST_MEMORY,
+		     CKR_OK, CKR_OPERATION_ACTIVE, CKR_PIN_EXPIRED,
+		     CKR_SESSION_CLOSED, CKR_SESSION_HANDLE_INVALID);
+
+	return rv;
 }
 
 CK_RV C_FindObjects(CK_SESSION_HANDLE hSession,
@@ -577,25 +582,35 @@ CK_RV C_FindObjects(CK_SESSION_HANDLE hSession,
 		    CK_ULONG_PTR pulObjectCount)
 
 {
-	(void)hSession;
-	(void)phObject;
-	(void)ulMaxObjectCount;
-	(void)pulObjectCount;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_find_objects(hSession, phObject,
+				     ulMaxObjectCount, pulObjectCount);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_CRYPTOKI_NOT_INITIALIZED,
+		     CKR_DEVICE_ERROR, CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED,
+		     CKR_FUNCTION_FAILED, CKR_GENERAL_ERROR, CKR_HOST_MEMORY,
+		     CKR_OK, CKR_OPERATION_NOT_INITIALIZED, CKR_SESSION_CLOSED,
+		     CKR_SESSION_HANDLE_INVALID);
+
+	return rv;
 }
 
 CK_RV C_FindObjectsFinal(CK_SESSION_HANDLE hSession)
 {
-	(void)hSession;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_find_objects_final(hSession);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_CRYPTOKI_NOT_INITIALIZED, CKR_DEVICE_ERROR,
+		     CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED, CKR_FUNCTION_FAILED,
+		     CKR_GENERAL_ERROR, CKR_HOST_MEMORY, CKR_OK,
+		     CKR_OPERATION_NOT_INITIALIZED, CKR_SESSION_CLOSED,
+		     CKR_SESSION_HANDLE_INVALID);
+
+	return rv;
 }
 
 CK_RV C_EncryptInit(CK_SESSION_HANDLE hSession,
