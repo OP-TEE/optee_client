@@ -65,4 +65,15 @@ CK_RV ck_generate_key(CK_SESSION_HANDLE session,
 		      CK_ULONG count,
 		      CK_OBJECT_HANDLE_PTR handle);
 
+CK_RV ck_find_objects_init(CK_SESSION_HANDLE session,
+			   CK_ATTRIBUTE_PTR attribs,
+			   CK_ULONG count);
+
+CK_RV ck_find_objects(CK_SESSION_HANDLE session,
+		      CK_OBJECT_HANDLE_PTR obj,
+		      CK_ULONG max_count,
+		      CK_ULONG_PTR count);
+
+CK_RV ck_find_objects_final(CK_SESSION_HANDLE session);
+
 #endif /*LIBCKTEEC_PKCS11_PROCESSING_H*/
