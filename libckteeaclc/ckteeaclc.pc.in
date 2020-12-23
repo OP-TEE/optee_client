@@ -1,0 +1,14 @@
+# filename must match library name
+libname=ckteeaclc
+prefix=${pcfiledir}/../..
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: ${libname}
+Description: Access Control List utilities for ckteec library
+Version: @PROJECT_VERSION@
+Requires: uuid >= 2.34
+Libs: -L${libdir} -l${libname}
+Libs.private: -L${libdir}
+Cflags: -I${includedir}

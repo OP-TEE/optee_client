@@ -76,5 +76,13 @@ target_link_libraries (ckteec
 install (TARGETS ckteec
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
+configure_file(
+	"${PROJECT_SOURCE_DIR}/ckteec.pc.in"
+	"${CMAKE_BINARY_DIR}/pkgconfig/ckteec.pc"
+	@ONLY
+)
+install(FILES "${CMAKE_BINARY_DIR}/pkgconfig/ckteec.pc"
+	DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
+)
 
 add_subdirectory(include)

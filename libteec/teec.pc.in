@@ -1,0 +1,13 @@
+# filename must match library name
+libname=teec
+prefix=${pcfiledir}/../..
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: ${libname}
+Description: OP-TEE client library
+Version: @PROJECT_VERSION@
+Libs: -L${libdir} -l${libname}
+Libs.private: -L${libdir}
+Cflags: -I${includedir}

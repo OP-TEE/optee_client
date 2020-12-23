@@ -1,0 +1,14 @@
+# filename must match library name
+libname=ckteec
+prefix=${pcfiledir}/../..
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: ${libname}
+Description: PKCS#11 library in OP-TEE
+Version: @PROJECT_VERSION@
+Requires: teec
+Libs: -L${libdir} -l${libname}
+Libs.private: -L${libdir}
+Cflags: -I${includedir}

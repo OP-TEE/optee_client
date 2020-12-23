@@ -1,4 +1,7 @@
-project(ckteecpp CXX)
+project(ckteecpp
+	VERSION 0.1.0
+	LANGUAGES CXX
+)
 
 add_library(${PROJECT_NAME} INTERFACE)
 
@@ -20,3 +23,11 @@ install(DIRECTORY include/${PROJECT_NAME}
 install(TARGETS ${PROJECT_NAME}
 	PUBLIC_HEADER
 ) # no EXPORT yet, so a no-op
+configure_file(
+	"${PROJECT_SOURCE_DIR}/ckteecpp.pc.in"
+	"${CMAKE_BINARY_DIR}/pkgconfig/ckteecpp.pc"
+	@ONLY
+)
+install(FILES "${CMAKE_BINARY_DIR}/pkgconfig/ckteecpp.pc"
+	DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
+)

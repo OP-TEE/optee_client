@@ -54,3 +54,11 @@ target_link_libraries(ckteeaclc
 install(TARGETS ckteeaclc
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
+configure_file(
+	"${PROJECT_SOURCE_DIR}/ckteeaclc.pc.in"
+	"${CMAKE_BINARY_DIR}/pkgconfig/ckteeaclc.pc"
+	@ONLY
+)
+install(FILES "${CMAKE_BINARY_DIR}/pkgconfig/ckteeaclc.pc"
+	DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
+)
