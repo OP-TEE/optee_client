@@ -1274,19 +1274,30 @@ CK_RV C_GenerateKeyPair(CK_SESSION_HANDLE hSession,
 			CK_OBJECT_HANDLE_PTR phPublicKey,
 			CK_OBJECT_HANDLE_PTR phPrivateKey)
 {
-	(void)hSession;
-	(void)pMechanism;
-	(void)pPublicKeyTemplate;
-	(void)ulPublicKeyAttributeCount;
-	(void)pPrivateKeyTemplate;
-	(void)ulPrivateKeyAttributeCount;
-	(void)phPublicKey;
-	(void)phPrivateKey;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_generate_key_pair(hSession, pMechanism,
+					  pPublicKeyTemplate,
+					  ulPublicKeyAttributeCount,
+					  pPrivateKeyTemplate,
+					  ulPrivateKeyAttributeCount,
+					  phPublicKey, phPrivateKey);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_ATTRIBUTE_READ_ONLY,
+		     CKR_ATTRIBUTE_TYPE_INVALID, CKR_ATTRIBUTE_VALUE_INVALID,
+		     CKR_CRYPTOKI_NOT_INITIALIZED, CKR_CURVE_NOT_SUPPORTED,
+		     CKR_DEVICE_ERROR, CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED,
+		     CKR_DOMAIN_PARAMS_INVALID, CKR_FUNCTION_CANCELED,
+		     CKR_FUNCTION_FAILED, CKR_GENERAL_ERROR, CKR_HOST_MEMORY,
+		     CKR_MECHANISM_INVALID, CKR_MECHANISM_PARAM_INVALID,
+		     CKR_OK, CKR_OPERATION_ACTIVE, CKR_PIN_EXPIRED,
+		     CKR_SESSION_CLOSED, CKR_SESSION_HANDLE_INVALID,
+		     CKR_SESSION_READ_ONLY, CKR_TEMPLATE_INCOMPLETE,
+		     CKR_TEMPLATE_INCONSISTENT, CKR_TOKEN_WRITE_PROTECTED,
+		     CKR_USER_NOT_LOGGED_IN);
+
+	return rv;
 }
 
 CK_RV C_WrapKey(CK_SESSION_HANDLE hSession,
