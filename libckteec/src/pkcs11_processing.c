@@ -1423,3 +1423,100 @@ CK_RV ck_release_active_processing(CK_SESSION_HANDLE session,
 
 	return rv;
 }
+
+CK_RV ck_generate_key_pair(CK_SESSION_HANDLE session,
+			   CK_MECHANISM_PTR mechanism,
+			   CK_ATTRIBUTE_PTR pub_attribs,
+			   CK_ULONG pub_count,
+			   CK_ATTRIBUTE_PTR priv_attribs,
+			   CK_ULONG priv_count,
+			   CK_OBJECT_HANDLE_PTR pub_key,
+			   CK_OBJECT_HANDLE_PTR priv_key)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	TEEC_SharedMemory *ctrl = NULL;
+	TEEC_SharedMemory *out_shm = NULL;
+	struct serializer smecha = { 0 };
+	struct serializer pub_sattr = { 0 };
+	struct serializer priv_sattr = { 0 };
+	uint32_t session_handle = session;
+	size_t ctrl_size = 0;
+	uint32_t *key_handle = NULL;
+	size_t key_handle_size = 2 * sizeof(*key_handle);
+	char *buf = NULL;
+	size_t out_size = 0;
+
+	if (!(mechanism && pub_attribs && priv_attribs && pub_key && priv_key))
+		return CKR_ARGUMENTS_BAD;
+
+	rv = serialize_ck_mecha_params(&smecha, mechanism);
+	if (rv)
+		return rv;
+
+	rv = serialize_ck_attributes(&pub_sattr, pub_attribs, pub_count);
+	if (rv)
+		goto bail;
+
+	rv = serialize_ck_attributes(&priv_sattr, priv_attribs, priv_count);
+	if (rv)
+		goto bail;
+
+	/*
+	 * Shm io0: (in/out) ctrl
+	 * (in) [session-handle][serialized-mecha][serialized-pub_attribs]
+	 *      [serialized-priv_attribs]
+	 * (out) [status]
+	 */
+	ctrl_size = sizeof(session_handle) + smecha.size + pub_sattr.size +
+		    priv_sattr.size;
+
+	ctrl = ckteec_alloc_shm(ctrl_size, CKTEEC_SHM_INOUT);
+	if (!ctrl) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
+
+	buf = ctrl->buffer;
+
+	memcpy(buf, &session_handle, sizeof(session_handle));
+	buf += sizeof(session_handle);
+
+	memcpy(buf, smecha.buffer, smecha.size);
+	buf += smecha.size;
+
+	memcpy(buf, pub_sattr.buffer, pub_sattr.size);
+	buf += pub_sattr.size;
+
+	memcpy(buf, priv_sattr.buffer, priv_sattr.size);
+
+	/*
+	 * Shm io2: (out) public key object handle][private key object handle]
+	 */
+	out_shm = ckteec_alloc_shm(key_handle_size, CKTEEC_SHM_OUT);
+	if (!out_shm) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
+
+	rv = ckteec_invoke_ctrl_out(PKCS11_CMD_GENERATE_KEY_PAIR,
+				    ctrl, out_shm, &out_size);
+
+	if (rv != CKR_OK || out_size != out_shm->size) {
+		if (rv == CKR_OK)
+			rv = CKR_DEVICE_ERROR;
+		goto bail;
+	}
+
+	key_handle = out_shm->buffer;
+	*pub_key = key_handle[0];
+	*priv_key = key_handle[1];
+
+bail:
+	ckteec_free_shm(out_shm);
+	ckteec_free_shm(ctrl);
+	release_serial_object(&priv_sattr);
+	release_serial_object(&pub_sattr);
+	release_serial_object(&smecha);
+
+	return rv;
+}

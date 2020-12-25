@@ -118,4 +118,13 @@ CK_RV ck_derive_key(CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism,
 CK_RV ck_release_active_processing(CK_SESSION_HANDLE session,
 				   enum pkcs11_ta_cmd command);
 
+CK_RV ck_generate_key_pair(CK_SESSION_HANDLE session,
+			   CK_MECHANISM_PTR mechanism,
+			   CK_ATTRIBUTE_PTR pub_attribs,
+			   CK_ULONG pub_count,
+			   CK_ATTRIBUTE_PTR priv_attribs,
+			   CK_ULONG priv_count,
+			   CK_OBJECT_HANDLE_PTR pub_key,
+			   CK_OBJECT_HANDLE_PTR priv_key);
+
 #endif /*LIBCKTEEC_PKCS11_PROCESSING_H*/

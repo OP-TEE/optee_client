@@ -508,6 +508,7 @@ CK_RV serialize_ck_mecha_params(struct serializer *obj,
 	case CKM_SHA256_HMAC:
 	case CKM_SHA384_HMAC:
 	case CKM_SHA512_HMAC:
+	case CKM_EC_KEY_PAIR_GEN:
 		/* No parameter expected, size shall be 0 */
 		if (mechanism->ulParameterLen)
 			return CKR_MECHANISM_PARAM_INVALID;
