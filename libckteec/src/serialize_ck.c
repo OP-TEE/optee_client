@@ -230,7 +230,7 @@ static CK_RV deserialize_mecha_list(CK_MECHANISM_TYPE *dst, void *src,
 }
 
 static CK_RV deserialize_ck_attribute(struct pkcs11_attribute_head *in,
-				      CK_ATTRIBUTE_PTR out)
+				      uint8_t *data, CK_ATTRIBUTE_PTR out)
 {
 	CK_ULONG ck_ulong = 0;
 	uint32_t pkcs11_data32 = 0;
@@ -251,7 +251,7 @@ static CK_RV deserialize_ck_attribute(struct pkcs11_attribute_head *in,
 		if (out->ulValueLen < sizeof(CK_ULONG))
 			return CKR_ATTRIBUTE_TYPE_INVALID;
 
-		memcpy(&pkcs11_data32, in->data, sizeof(uint32_t));
+		memcpy(&pkcs11_data32, data, sizeof(uint32_t));
 		ck_ulong = pkcs11_data32;
 		memcpy(out->pValue, &ck_ulong, sizeof(CK_ULONG));
 		out->ulValueLen = sizeof(CK_ULONG);
@@ -264,14 +264,14 @@ static CK_RV deserialize_ck_attribute(struct pkcs11_attribute_head *in,
 		rv = deserialize_indirect_attribute(in, out->pValue);
 		break;
 	case CKA_ALLOWED_MECHANISMS:
-		rv = deserialize_mecha_list(out->pValue, in->data,
+		rv = deserialize_mecha_list(out->pValue, data,
 					    in->size / sizeof(uint32_t));
 		out->ulValueLen = in->size / sizeof(uint32_t) *
 				  sizeof(CK_ULONG);
 		break;
 	/* Attributes which data value do not need conversion (aside ulong) */
 	default:
-		memcpy(out->pValue, in->data, in->size);
+		memcpy(out->pValue, data, in->size);
 		out->ulValueLen = in->size;
 		break;
 	}
@@ -292,8 +292,16 @@ CK_RV deserialize_ck_attributes(uint8_t *in, CK_ATTRIBUTE_PTR attributes,
 
 	for (n = count; n > 0; n--, cur_attr++, curr_head += len) {
 		struct pkcs11_attribute_head *cli_ref = (void *)curr_head;
+		struct pkcs11_attribute_head cli_head = { 0 };
+		void *data_ptr = NULL;
 
-		len = sizeof(*cli_ref);
+		/* Make copy if header so that is aligned properly. */
+		memcpy(&cli_head, cli_ref, sizeof(cli_head));
+
+		/* Get real data pointer from template data */
+		data_ptr = cli_ref->data;
+
+		len = sizeof(cli_head);
 
 		/* Advance by size provisioned in input serialized buffer */
 		if (cur_attr->pValue) {
@@ -303,7 +311,7 @@ CK_RV deserialize_ck_attributes(uint8_t *in, CK_ATTRIBUTE_PTR attributes,
 				len += cur_attr->ulValueLen;
 		}
 
-		rv = deserialize_ck_attribute(cli_ref, cur_attr);
+		rv = deserialize_ck_attribute(&cli_head, data_ptr, cur_attr);
 		if (rv)
 			return rv;
 	}
