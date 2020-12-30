@@ -1326,28 +1326,40 @@ CK_RV C_SeedRandom(CK_SESSION_HANDLE hSession,
 		   CK_BYTE_PTR pSeed,
 		   CK_ULONG ulSeedLen)
 {
-	(void)hSession;
-	(void)pSeed;
-	(void)ulSeedLen;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_seed_random(hSession, pSeed, ulSeedLen);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_CRYPTOKI_NOT_INITIALIZED,
+		     CKR_DEVICE_ERROR, CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED,
+		     CKR_FUNCTION_CANCELED, CKR_FUNCTION_FAILED,
+		     CKR_GENERAL_ERROR, CKR_HOST_MEMORY, CKR_OK,
+		     CKR_OPERATION_ACTIVE, CKR_RANDOM_SEED_NOT_SUPPORTED,
+		     CKR_RANDOM_NO_RNG, CKR_SESSION_CLOSED,
+		     CKR_SESSION_HANDLE_INVALID, CKR_USER_NOT_LOGGED_IN);
+
+	return rv;
 }
 
 CK_RV C_GenerateRandom(CK_SESSION_HANDLE hSession,
 		       CK_BYTE_PTR pRandomData,
 		       CK_ULONG ulRandomLen)
 {
-	(void)hSession;
-	(void)pRandomData;
-	(void)ulRandomLen;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_generate_random(hSession, pRandomData, ulRandomLen);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_CRYPTOKI_NOT_INITIALIZED,
+		     CKR_DEVICE_ERROR, CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED,
+		     CKR_FUNCTION_CANCELED, CKR_FUNCTION_FAILED,
+		     CKR_GENERAL_ERROR, CKR_HOST_MEMORY, CKR_OK,
+		     CKR_OPERATION_ACTIVE, CKR_RANDOM_NO_RNG,
+		     CKR_SESSION_CLOSED, CKR_SESSION_HANDLE_INVALID,
+		     CKR_USER_NOT_LOGGED_IN);
+
+	return rv;
 }
 
 CK_RV C_GetFunctionStatus(CK_SESSION_HANDLE hSession)

@@ -754,3 +754,83 @@ CK_RV ck_logout(CK_SESSION_HANDLE session)
 
 	return rv;
 }
+
+CK_RV ck_seed_random(CK_SESSION_HANDLE session, CK_BYTE_PTR seed,
+		     CK_ULONG length)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	size_t ctrl_size = 0;
+	TEEC_SharedMemory *ctrl = NULL;
+	TEEC_SharedMemory *in_shm = NULL;
+	uint32_t session_handle = session;
+
+	if (!seed && length)
+		return CKR_ARGUMENTS_BAD;
+
+	if (!seed)
+		return CKR_OK;
+
+	/* Shm io0: (i/o) [session-handle] / [status] */
+	ctrl_size = sizeof(session_handle);
+	ctrl = ckteec_alloc_shm(ctrl_size, CKTEEC_SHM_INOUT);
+	if (!ctrl)
+		return CKR_HOST_MEMORY;
+
+	memcpy(ctrl->buffer, &session_handle, sizeof(session_handle));
+
+	/* Shm io1: (in) [seed data] */
+	in_shm = ckteec_register_shm(seed, length, CKTEEC_SHM_IN);
+	if (!in_shm) {
+		rv = CKR_HOST_MEMORY;
+		goto out;
+	}
+
+	rv = ckteec_invoke_ctrl_in(PKCS11_CMD_SEED_RANDOM, ctrl, in_shm);
+
+out:
+	ckteec_free_shm(in_shm);
+	ckteec_free_shm(ctrl);
+
+	return rv;
+}
+
+CK_RV ck_generate_random(CK_SESSION_HANDLE session, CK_BYTE_PTR data,
+			 CK_ULONG length)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	size_t ctrl_size = 0;
+	TEEC_SharedMemory *ctrl = NULL;
+	TEEC_SharedMemory *out_shm = NULL;
+	uint32_t session_handle = session;
+	size_t out_size = 0;
+
+	if (!data && length)
+		return CKR_ARGUMENTS_BAD;
+
+	if (!data)
+		return CKR_OK;
+
+	/* Shm io0: (i/o) [session-handle] / [status] */
+	ctrl_size = sizeof(session_handle);
+	ctrl = ckteec_alloc_shm(ctrl_size, CKTEEC_SHM_INOUT);
+	if (!ctrl)
+		return CKR_HOST_MEMORY;
+
+	memcpy(ctrl->buffer, &session_handle, sizeof(session_handle));
+
+	/* Shm io2: (out) [generated random] */
+	out_shm = ckteec_register_shm(data, length, CKTEEC_SHM_OUT);
+	if (!out_shm) {
+		rv = CKR_HOST_MEMORY;
+		goto out;
+	}
+
+	rv = ckteec_invoke_ctrl_out(PKCS11_CMD_GENERATE_RANDOM, ctrl, out_shm,
+				    &out_size);
+
+out:
+	ckteec_free_shm(out_shm);
+	ckteec_free_shm(ctrl);
+
+	return rv;
+}

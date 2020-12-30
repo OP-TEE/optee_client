@@ -50,4 +50,10 @@ CK_RV ck_login(CK_SESSION_HANDLE session, CK_USER_TYPE user_type,
 
 CK_RV ck_logout(CK_SESSION_HANDLE session);
 
+CK_RV ck_seed_random(CK_SESSION_HANDLE session, CK_BYTE_PTR seed,
+		     CK_ULONG length);
+
+CK_RV ck_generate_random(CK_SESSION_HANDLE session, CK_BYTE_PTR data,
+			 CK_ULONG length);
+
 #endif /*LIBCKTEEC_PKCS11_TOKEN_H*/
