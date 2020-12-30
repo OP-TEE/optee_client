@@ -238,6 +238,11 @@ static CK_RV deserialize_ck_attribute(struct pkcs11_attribute_head *in,
 
 	out->type = in->id;
 
+	if (in->size == PKCS11_CK_UNAVAILABLE_INFORMATION) {
+		out->ulValueLen = CK_UNAVAILABLE_INFORMATION;
+		return CKR_OK;
+	}
+
 	if (out->ulValueLen < in->size) {
 		out->ulValueLen = in->size;
 		return CKR_OK;
