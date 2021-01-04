@@ -500,6 +500,44 @@ static CK_RV serialize_mecha_rsa_pss_param(struct serializer *obj,
 	return serialize_ck_ulong(obj, params->sLen);
 }
 
+static CK_RV serialize_mecha_rsa_oaep_param(struct serializer *obj,
+					    CK_MECHANISM_PTR mecha)
+{
+	CK_RSA_PKCS_OAEP_PARAMS *params = mecha->pParameter;
+	CK_RV rv = CKR_GENERAL_ERROR;
+	size_t params_size = 4 * sizeof(uint32_t) + params->ulSourceDataLen;
+
+	if (mecha->ulParameterLen != sizeof(*params))
+		return CKR_ARGUMENTS_BAD;
+
+	rv = serialize_32b(obj, obj->type);
+	if (rv)
+		return rv;
+
+	rv = serialize_32b(obj, params_size);
+	if (rv)
+		return rv;
+
+	rv = serialize_ck_ulong(obj, params->hashAlg);
+	if (rv)
+		return rv;
+
+	rv = serialize_ck_ulong(obj, params->mgf);
+	if (rv)
+		return rv;
+
+	rv = serialize_ck_ulong(obj, params->source);
+	if (rv)
+		return rv;
+
+	rv = serialize_ck_ulong(obj, params->ulSourceDataLen);
+	if (rv)
+		return rv;
+
+	return serialize_buffer(obj, params->pSourceData,
+				params->ulSourceDataLen);
+}
+
 /**
  * serialize_ck_mecha_params - serialize a mechanism type & params
  *
@@ -590,6 +628,9 @@ CK_RV serialize_ck_mecha_params(struct serializer *obj,
 	case CKM_SHA512_RSA_PKCS_PSS:
 	case CKM_SHA224_RSA_PKCS_PSS:
 		return serialize_mecha_rsa_pss_param(obj, &mecha);
+
+	case CKM_RSA_PKCS_OAEP:
+		return serialize_mecha_rsa_oaep_param(obj, &mecha);
 
 	default:
 		return CKR_MECHANISM_INVALID;

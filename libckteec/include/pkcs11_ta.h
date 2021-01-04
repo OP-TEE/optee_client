@@ -1300,4 +1300,11 @@ enum pkcs11_mgf_id {
 	/* Vendor extension: reserved for undefined ID (~0U) */
 	PKCS11_CKG_UNDEFINED_ID			= PKCS11_UNDEFINED_ID,
 };
+
+/*
+ * Valid values for RSA PKCS/OAEP source type identifier
+ * PKCS11_CKZ_<x> reflects CryptoKi client API source type IDs CKZ_<x>.
+ */
+#define PKCS11_CKZ_DATA_SPECIFIED		0x0001
+
 #endif /*PKCS11_TA_H*/
