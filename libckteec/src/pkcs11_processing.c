@@ -757,3 +757,131 @@ CK_RV ck_find_objects_final(CK_SESSION_HANDLE session)
 
 	return rv;
 }
+
+CK_RV ck_get_object_size(CK_SESSION_HANDLE session,
+			 CK_OBJECT_HANDLE obj,
+			 CK_ULONG_PTR p_size)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	TEEC_SharedMemory *ctrl = NULL;
+	TEEC_SharedMemory *out_shm = NULL;
+	size_t ctrl_size = 0;
+	uint32_t session_handle = session;
+	uint32_t obj_handle = obj;
+	char *buf = NULL;
+	size_t out_size = 0;
+	uint32_t u32_sz = 0;
+
+	if (!p_size)
+		return CKR_ARGUMENTS_BAD;
+
+	/* Shm io0: (in/out) [session][obj-handle] / [status] */
+	ctrl_size = sizeof(session_handle) + sizeof(obj_handle);
+
+	ctrl = ckteec_alloc_shm(ctrl_size, CKTEEC_SHM_INOUT);
+	if (!ctrl) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
+
+	buf = ctrl->buffer;
+
+	memcpy(buf, &session_handle, sizeof(session_handle));
+	buf += sizeof(session_handle);
+
+	memcpy(buf, &obj_handle, sizeof(obj_handle));
+
+	/* Shm io2: (out) [object size] */
+	out_shm = ckteec_alloc_shm(sizeof(uint32_t), CKTEEC_SHM_OUT);
+	if (!out_shm) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
+
+	rv = ckteec_invoke_ctrl_out(PKCS11_CMD_GET_OBJECT_SIZE,
+				    ctrl, out_shm, &out_size);
+	if (rv)
+		goto bail;
+
+	if (out_shm->size != sizeof(uint32_t)) {
+		rv = CKR_DEVICE_ERROR;
+		goto bail;
+	}
+
+	memcpy(&u32_sz, out_shm->buffer, out_shm->size);
+	*p_size = u32_sz;
+
+bail:
+	ckteec_free_shm(out_shm);
+	ckteec_free_shm(ctrl);
+
+	return rv;
+}
+
+CK_RV ck_get_attribute_value(CK_SESSION_HANDLE session,
+			     CK_OBJECT_HANDLE obj,
+			     CK_ATTRIBUTE_PTR attribs,
+			     CK_ULONG count)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	CK_RV rv2 = CKR_GENERAL_ERROR;
+	TEEC_SharedMemory *ctrl = NULL;
+	TEEC_SharedMemory *out_shm = NULL;
+	struct serializer sattr = { 0 };
+	size_t ctrl_size = 0;
+	uint32_t session_handle = session;
+	uint32_t obj_handle = obj;
+	char *buf = NULL;
+	size_t out_size = 0;
+
+	if (count && !attribs)
+		return CKR_ARGUMENTS_BAD;
+
+	rv = serialize_ck_attributes(&sattr, attribs, count);
+	if (rv)
+		goto bail;
+
+	/* Shm io0: (in/out) [session][obj-handle][attributes] / [status] */
+	ctrl_size = sizeof(session_handle) + sizeof(obj_handle) + sattr.size;
+
+	ctrl = ckteec_alloc_shm(ctrl_size, CKTEEC_SHM_INOUT);
+	if (!ctrl) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
+
+	buf = ctrl->buffer;
+
+	memcpy(buf, &session_handle, sizeof(session_handle));
+	buf += sizeof(session_handle);
+
+	memcpy(buf, &obj_handle, sizeof(obj_handle));
+	buf += sizeof(obj_handle);
+
+	memcpy(buf, sattr.buffer, sattr.size);
+
+	/* Shm io2: (out) [attributes] */
+	out_shm = ckteec_alloc_shm(sattr.size, CKTEEC_SHM_OUT);
+	if (!out_shm) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
+
+	rv = ckteec_invoke_ctrl_out(PKCS11_CMD_GET_ATTRIBUTE_VALUE,
+				    ctrl, out_shm, &out_size);
+
+	if (rv == CKR_OK || rv == CKR_ATTRIBUTE_SENSITIVE ||
+	    rv == CKR_ATTRIBUTE_TYPE_INVALID || rv == CKR_BUFFER_TOO_SMALL) {
+		rv2 = deserialize_ck_attributes(out_shm->buffer, attribs,
+						count);
+		if (rv2)
+			rv = CKR_GENERAL_ERROR;
+	}
+
+bail:
+	ckteec_free_shm(out_shm);
+	ckteec_free_shm(ctrl);
+	release_serial_object(&sattr);
+
+	return rv;
+}
