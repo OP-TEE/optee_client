@@ -515,14 +515,18 @@ CK_RV C_GetObjectSize(CK_SESSION_HANDLE hSession,
 		      CK_OBJECT_HANDLE hObject,
 		      CK_ULONG_PTR pulSize)
 {
-	(void)hSession;
-	(void)hObject;
-	(void)pulSize;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_get_object_size(hSession, hObject, pulSize);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_CRYPTOKI_NOT_INITIALIZED,
+		     CKR_DEVICE_ERROR, CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED,
+		     CKR_FUNCTION_FAILED, CKR_GENERAL_ERROR, CKR_HOST_MEMORY,
+		     CKR_INFORMATION_SENSITIVE, CKR_OBJECT_HANDLE_INVALID,
+		     CKR_OK, CKR_SESSION_CLOSED, CKR_SESSION_HANDLE_INVALID);
+
+	return rv;
 }
 
 CK_RV C_GetAttributeValue(CK_SESSION_HANDLE hSession,
@@ -530,15 +534,20 @@ CK_RV C_GetAttributeValue(CK_SESSION_HANDLE hSession,
 			  CK_ATTRIBUTE_PTR pTemplate,
 			  CK_ULONG ulCount)
 {
-	(void)hSession;
-	(void)hObject;
-	(void)pTemplate;
-	(void)ulCount;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_get_attribute_value(hSession, hObject, pTemplate, ulCount);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_ATTRIBUTE_SENSITIVE,
+		     CKR_ATTRIBUTE_TYPE_INVALID, CKR_BUFFER_TOO_SMALL,
+		     CKR_CRYPTOKI_NOT_INITIALIZED, CKR_DEVICE_ERROR,
+		     CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED,
+		     CKR_FUNCTION_FAILED, CKR_GENERAL_ERROR, CKR_HOST_MEMORY,
+		     CKR_OBJECT_HANDLE_INVALID, CKR_OK, CKR_SESSION_CLOSED,
+		     CKR_SESSION_HANDLE_INVALID);
+
+	return rv;
 }
 
 CK_RV C_SetAttributeValue(CK_SESSION_HANDLE hSession,
