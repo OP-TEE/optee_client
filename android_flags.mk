@@ -5,7 +5,7 @@ CFLAGS          := -Wall -Wbad-function-cast -Wcast-align \
 		   -Werror-implicit-function-declaration -Wextra \
 		   -Wfloat-equal -Wformat-nonliteral -Wformat-security \
 		   -Wformat=2 -Winit-self -Wmissing-declarations \
-		   -Wmissing-format-attribute  \
+		   -Wmissing-format-attribute -Wmissing-include-dirs \
 		   -Wmissing-noreturn -Wmissing-prototypes -Wnested-externs \
 		   -Wpointer-arith -Wshadow -Wstrict-prototypes \
 		   -Wswitch-default \
@@ -21,3 +21,7 @@ CFLAGS          += -DDEBUG -O0 -g
 endif
 
 RM              := rm -rf
+
+define rmdir
+if [ -d "$(1)" ] ; then rmdir --ignore-fail-on-non-empty $(1) ; fi
+endef

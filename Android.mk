@@ -31,7 +31,7 @@ endif
 LOCAL_CFLAGS += -DDEBUGLEVEL_$(CFG_TEE_CLIENT_LOG_LEVEL)
 LOCAL_CFLAGS += -DBINARY_PREFIX=\"TEEC\"
 
-LOCAL_SRC_FILES := libteec/src/tee_client_api.c\
+LOCAL_SRC_FILES := libteec/src/tee_client_api.c \
                    libteec/src/teec_trace.c
 ifeq ($(CFG_TEE_BENCHMARK),y)
 LOCAL_CFLAGS += -DCFG_TEE_BENCHMARK
@@ -55,5 +55,7 @@ LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/public
 
 include $(BUILD_SHARED_LIBRARY)
 
-# TEE Supplicant
+################################################################################
+# Build TEE Supplicant                                                         #
+################################################################################
 include $(LOCAL_PATH)/tee-supplicant/tee_supplicant_android.mk
