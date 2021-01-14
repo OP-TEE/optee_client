@@ -1,5 +1,5 @@
 ################################################################################
-# Android optee-client and optee-supplicant makefile                                                #
+# Android optee-client, libckteec and optee-supplicant makefile                #
 ################################################################################
 LOCAL_PATH := $(call my-dir)
 
@@ -52,6 +52,41 @@ LOCAL_MULTILIB := both
 LOCAL_MODULE_TARGET_ARCH := arm arm64
 
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/public
+
+include $(BUILD_SHARED_LIBRARY)
+
+################################################################################
+# Build libckteec.so                                                           #
+################################################################################
+include $(CLEAR_VARS)
+
+LOCAL_CFLAGS += $(optee_CFLAGS)
+
+LOCAL_SRC_FILES := libckteec/src/pkcs11_api.c \
+                   libckteec/src/ck_debug.c \
+                   libckteec/src/ck_helpers.c \
+                   libckteec/src/invoke_ta.c \
+                   libckteec/src/pkcs11_processing.c \
+                   libckteec/src/pkcs11_token.c \
+                   libckteec/src/serializer.c \
+                   libckteec/src/serialize_ck.c
+
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/public \
+                    $(LOCAL_PATH)/libckteec/include
+
+LOCAL_SHARED_LIBRARIES := libteec
+
+LOCAL_PRELINK_MODULE := false
+LOCAL_MODULE := libckteec
+
+LOCAL_MODULE_TAGS := optional
+LOCAL_VENDOR_MODULE := true
+
+# Build the 32-bit and 64-bit versions.
+LOCAL_MULTILIB := both
+LOCAL_MODULE_TARGET_ARCH := arm arm64
+
+LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/libckteec/include
 
 include $(BUILD_SHARED_LIBRARY)
 
