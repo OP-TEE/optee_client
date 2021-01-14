@@ -47,6 +47,10 @@ LOCAL_MODULE := libteec
 LOCAL_MODULE_TAGS := optional
 LOCAL_VENDOR_MODULE := true
 
+# Build the 32-bit and 64-bit versions.
+LOCAL_MULTILIB := both
+LOCAL_MODULE_TARGET_ARCH := arm arm64
+
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/public
 
 include $(BUILD_SHARED_LIBRARY)
