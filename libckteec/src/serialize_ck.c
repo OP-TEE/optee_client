@@ -155,7 +155,7 @@ static CK_RV serialize_ck_attribute(struct serializer *obj, CK_ATTRIBUTE *attr)
 		if (ck_attr_is_ulong(attr->type)) {
 			CK_ULONG ck_ulong = 0;
 
-			if (attr->ulValueLen != sizeof(CK_ULONG))
+			if (attr->ulValueLen < sizeof(CK_ULONG))
 				return CKR_ATTRIBUTE_TYPE_INVALID;
 
 			memcpy(&ck_ulong, attr->pValue, sizeof(ck_ulong));
