@@ -195,7 +195,11 @@ static CK_RV serialize_ck_attribute(struct serializer *obj, CK_ATTRIBUTE *attr)
 			pkcs11_size = sizeof(uint32_t);
 		} else {
 			pkcs11_pdata = attr->pValue;
-			pkcs11_size = attr->ulValueLen;
+			/* Support NULL data pointer with non-zero size */
+			if (!pkcs11_pdata)
+				pkcs11_size = 0;
+			else
+				pkcs11_size = attr->ulValueLen;
 		}
 		break;
 	}
