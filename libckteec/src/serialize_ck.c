@@ -16,6 +16,37 @@
 #include "serialize_ck.h"
 
 /*
+ * Serialization and de-serialization logic
+ *
+ * Cryptoki API works in a way that user application uses memory references
+ * in object attributes description. TA can be invoked with only a small set
+ * of possible references to caller memory. Thus a Cryptoki object, made of
+ * data and pointers to data, is reassembled into a byte array where each
+ * attribute info (ID, value size, value) is appended with byte alignment. This
+ * so-called serialized object can be passed through the TA API.
+ *
+ * Initial entry to PKCS11 TA uses serialize_ck_attributes(). When TA
+ * returns with updated serialized data to be passed back to caller, we call
+ * deserialize_ck_attributes().
+ *
+ * Special handling is performed for CK_ULONG passing which may be either 32
+ * bits or 64 bits depending on target device architecture. In TA interface
+ * this is handled as unsigned 32 bit data type.
+ *
+ * When user application is querying attributes in example with
+ * C_GetAttributeValue() user may allocate larger value buffers. During entry
+ * to TA shared buffer is allocated in serialize_ck_attributes() based on
+ * caller's arguments. For each attribute TA verifies if value fits in
+ * the buffer and if it does, value is returned. Value size in buffer is
+ * updated to indicate real size of the value. When call is returned back to
+ * REE deserialize_ck_attributes() is invoked and then both input arguments and
+ * serialization buffer are used to return values to caller. Provided input
+ * arguments from caller are used to determine serialization buffer structure
+ * and then actual values and value sizes are then decoded from serialization
+ * buffer and returned to caller in caller's allocated memory.
+ */
+
+/*
  * Generic way of serializing CK keys, certificates, mechanism parameters, ...
  * In cryptoki 2.40 parameters are almost all packaged as structure below:
  */
