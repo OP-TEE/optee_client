@@ -15,6 +15,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 #include <tee_client_api.h>
 #include <teec_trace.h>
 
