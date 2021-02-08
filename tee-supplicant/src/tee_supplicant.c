@@ -696,6 +696,11 @@ int main(int argc, char *argv[])
 			dev = argv[i];
 	}
 
+	if (daemonize && daemon(0, 0) < 0) {
+		EMSG("daemon(): %s", strerror(errno));
+		exit(EXIT_FAILURE);
+	}
+
 	if (dev) {
 		arg.fd = open_dev(dev, &arg.gen_caps);
 		if (arg.fd < 0) {
@@ -708,11 +713,6 @@ int main(int argc, char *argv[])
 			EMSG("failed to find an OP-TEE supplicant device");
 			exit(EXIT_FAILURE);
 		}
-	}
-
-	if (daemonize && daemon(0, 0) < 0) {
-		EMSG("daemon(): %s", strerror(errno));
-		exit(EXIT_FAILURE);
 	}
 
 	if (plugin_load_all() != 0) {
