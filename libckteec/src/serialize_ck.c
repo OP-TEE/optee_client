@@ -410,6 +410,56 @@ static CK_RV serialize_mecha_aes_iv(struct serializer *obj,
 	return serialize_buffer(obj, mecha->pParameter, mecha->ulParameterLen);
 }
 
+static CK_RV serialize_mecha_key_deriv_str(struct serializer *obj,
+					   CK_MECHANISM_PTR mecha)
+{
+	CK_KEY_DERIVATION_STRING_DATA_PTR param = mecha->pParameter;
+	CK_RV rv = CKR_GENERAL_ERROR;
+	uint32_t size = 0;
+
+	rv = serialize_32b(obj, obj->type);
+	if (rv)
+		return rv;
+
+	size = sizeof(uint32_t) + param->ulLen;
+	rv = serialize_32b(obj, size);
+	if (rv)
+		return rv;
+
+	rv = serialize_ck_ulong(obj, param->ulLen);
+	if (rv)
+		return rv;
+
+	return serialize_buffer(obj, param->pData, param->ulLen);
+}
+
+static CK_RV serialize_mecha_aes_cbc_encrypt_data(struct serializer *obj,
+						  CK_MECHANISM_PTR mecha)
+{
+	CK_AES_CBC_ENCRYPT_DATA_PARAMS_PTR param = mecha->pParameter;
+	CK_RV rv = CKR_GENERAL_ERROR;
+	uint32_t size = 0;
+
+	rv = serialize_32b(obj, obj->type);
+	if (rv)
+		return rv;
+
+	size = sizeof(param->iv) + sizeof(uint32_t) + param->length;
+	rv = serialize_32b(obj, size);
+	if (rv)
+		return rv;
+
+	rv = serialize_buffer(obj, param->iv, sizeof(param->iv));
+	if (rv)
+		return rv;
+
+	rv = serialize_ck_ulong(obj, param->length);
+	if (rv)
+		return rv;
+
+	return serialize_buffer(obj, param->pData, param->length);
+}
+
 /**
  * serialize_ck_mecha_params - serialize a mechanism type & params
  *
@@ -465,6 +515,12 @@ CK_RV serialize_ck_mecha_params(struct serializer *obj,
 
 	case CKM_AES_CTR:
 		return serialize_mecha_aes_ctr(obj, &mecha);
+
+	case CKM_AES_ECB_ENCRYPT_DATA:
+		return serialize_mecha_key_deriv_str(obj, &mecha);
+
+	case CKM_AES_CBC_ENCRYPT_DATA:
+		return serialize_mecha_aes_cbc_encrypt_data(obj, &mecha);
 
 	default:
 		return CKR_MECHANISM_INVALID;
