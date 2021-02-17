@@ -96,4 +96,8 @@ CK_RV ck_copy_object(CK_SESSION_HANDLE session,
 		     CK_ULONG count,
 		     CK_OBJECT_HANDLE_PTR handle);
 
+CK_RV ck_derive_key(CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism,
+		    CK_OBJECT_HANDLE base_key, CK_ATTRIBUTE_PTR attribs,
+		    CK_ULONG count, CK_OBJECT_HANDLE_PTR handle);
+
 #endif /*LIBCKTEEC_PKCS11_PROCESSING_H*/
