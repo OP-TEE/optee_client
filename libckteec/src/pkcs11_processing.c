@@ -341,6 +341,281 @@ bail:
 	return rv;
 }
 
+CK_RV ck_digest_init(CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	TEEC_SharedMemory *ctrl = NULL;
+	struct serializer obj = { 0 };
+	uint32_t session_handle = session;
+	size_t ctrl_size = 0;
+	uint8_t *buf = NULL;
+
+	if (!mechanism)
+		return CKR_ARGUMENTS_BAD;
+
+	rv = serialize_ck_mecha_params(&obj, mechanism);
+	if (rv)
+		return rv;
+
+	/*
+	 * Shm io0: (in/out) ctrl
+	 * (in) [session-handle][serialized-mechanism-blob]
+	 * (out) [status]
+	 */
+	ctrl_size = sizeof(session_handle) + obj.size;
+	ctrl = ckteec_alloc_shm(ctrl_size, CKTEEC_SHM_INOUT);
+	if (!ctrl) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
+
+	buf = ctrl->buffer;
+
+	memcpy(buf, &session_handle, sizeof(session_handle));
+	buf += sizeof(session_handle);
+
+	memcpy(buf, obj.buffer, obj.size);
+
+	rv = ckteec_invoke_ctrl(PKCS11_CMD_DIGEST_INIT, ctrl);
+
+bail:
+	ckteec_free_shm(ctrl);
+	release_serial_object(&obj);
+
+	return rv;
+}
+
+CK_RV ck_digest_key(CK_SESSION_HANDLE session, CK_OBJECT_HANDLE key)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	TEEC_SharedMemory *ctrl = NULL;
+	uint32_t session_handle = session;
+	uint32_t key_handle = key;
+	size_t ctrl_size = 0;
+	uint8_t *buf = NULL;
+
+	/*
+	 * Shm io0: (in/out) ctrl
+	 * (in) [session-handle][key-handle]
+	 * (out) [status]
+	 */
+	ctrl_size = sizeof(session_handle) + sizeof(key_handle);
+	ctrl = ckteec_alloc_shm(ctrl_size, CKTEEC_SHM_INOUT);
+	if (!ctrl)
+		return CKR_HOST_MEMORY;
+
+	buf = ctrl->buffer;
+
+	memcpy(buf, &session_handle, sizeof(session_handle));
+	buf += sizeof(session_handle);
+
+	memcpy(buf, &key_handle, sizeof(key_handle));
+
+	rv = ckteec_invoke_ctrl(PKCS11_CMD_DIGEST_KEY, ctrl);
+
+	ckteec_free_shm(ctrl);
+
+	return rv;
+}
+
+CK_RV ck_digest_update(CK_SESSION_HANDLE session, CK_BYTE_PTR in, CK_ULONG in_len)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	TEEC_SharedMemory *ctrl = NULL;
+	TEEC_SharedMemory *io1 = NULL;
+	uint32_t session_handle = session;
+	uint8_t *buf = NULL;
+
+	/*
+	 * Bad argument handling for in and in_len:
+	 * - If in == NULL AND in_len != 0 -> need to call TA to
+	 * terminate session.
+	 * - If in == NULL AND in_len == 0 -> just operate normally.
+	 */
+	if (!in && in_len) {
+		ck_release_active_processing(session,
+					     PKCS11_CMD_DIGEST_UPDATE);
+		return CKR_ARGUMENTS_BAD;
+	}
+
+	/*
+	 * Shm io0: (in/out) ctrl = [session-handle] / [status]
+	 */
+	ctrl = ckteec_alloc_shm(sizeof(session_handle), CKTEEC_SHM_INOUT);
+	buf = ctrl->buffer;
+
+	memcpy(buf, &session_handle, sizeof(session_handle));
+
+	/* Shm io1: input payload */
+	if (in_len && in) {
+		io1 = ckteec_register_shm(in, in_len, CKTEEC_SHM_IN);
+		if (!io1) {
+			rv = CKR_HOST_MEMORY;
+			goto bail;
+		}
+	}
+
+	rv = ckteec_invoke_ctrl_in(PKCS11_CMD_DIGEST_UPDATE, ctrl, io1);
+
+bail:
+	ckteec_free_shm(io1);
+	ckteec_free_shm(ctrl);
+
+	return rv;
+}
+
+CK_RV ck_digest_oneshot(CK_SESSION_HANDLE session, CK_BYTE_PTR in,
+			CK_ULONG in_len, CK_BYTE_PTR digest_ref,
+			CK_ULONG_PTR digest_len)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	TEEC_SharedMemory *ctrl = NULL;
+	TEEC_SharedMemory *io1 = NULL;
+	TEEC_SharedMemory *io2 = NULL;
+	uint32_t session_handle = session;
+	size_t out_size = 0;
+	uint8_t *buf = NULL;
+
+	/*
+	 * Bad argument handling for in and in_len:
+	 * - If in == NULL AND in_len != 0 -> need to call TA to
+	 * terminate session.
+	 * - If in == NULL AND in_len == 0 -> just operate normally.
+	 */
+	if (!in && in_len) {
+		ck_release_active_processing(session,
+					     PKCS11_CMD_DIGEST_ONESHOT);
+		return CKR_ARGUMENTS_BAD;
+	}
+
+	/*
+	 * Bad argument handling for digest_ref and digest_len:
+	 * - If digest_ref == NULL AND digest_len == NULL -> need to call TA to
+	 * terminate session.
+	 * - If digest_len == NULL -> need to call to TA to terminate session.
+	 * - If digest_ref == NULL BUT digest_len != NULL just operate normally
+	 * to get size of the required buffer
+	 */
+	if (!digest_len) {
+		ck_release_active_processing(session,
+					     PKCS11_CMD_DIGEST_ONESHOT);
+		return CKR_ARGUMENTS_BAD;
+	}
+
+	/*
+	 * Shm io0: (in/out) ctrl = [session-handle] / [status]
+	 */
+	ctrl = ckteec_alloc_shm(sizeof(session_handle), CKTEEC_SHM_INOUT);
+	if (!ctrl) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
+	buf = ctrl->buffer;
+
+	memcpy(buf, &session_handle, sizeof(session_handle));
+
+	/* Shm io1: input payload */
+	if (in_len && in) {
+		io1 = ckteec_register_shm(in, in_len, CKTEEC_SHM_IN);
+		if (!io1) {
+			rv = CKR_HOST_MEMORY;
+			goto bail;
+		}
+	}
+
+	/* Shm io2: output digest or null sized shm */
+	if (digest_ref) {
+		io2 = ckteec_register_shm(digest_ref, *digest_len,
+					  CKTEEC_SHM_OUT);
+	} else {
+		/* Query size if output signature */
+		io2 = ckteec_alloc_shm(0, CKTEEC_SHM_OUT);
+	}
+
+	if (!io2) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
+
+	rv = ckteec_invoke_ta(PKCS11_CMD_DIGEST_ONESHOT, ctrl,
+			      io1, io2, &out_size, NULL, NULL);
+
+	if (rv == CKR_OK || rv == CKR_BUFFER_TOO_SMALL)
+		*digest_len = out_size;
+
+	if (rv == CKR_BUFFER_TOO_SMALL && out_size && !digest_ref)
+		rv = CKR_OK;
+
+bail:
+	ckteec_free_shm(io1);
+	ckteec_free_shm(io2);
+	ckteec_free_shm(ctrl);
+
+	return rv;
+}
+
+CK_RV ck_digest_final(CK_SESSION_HANDLE session, CK_BYTE_PTR digest_ref,
+		      CK_ULONG_PTR digest_len)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	TEEC_SharedMemory *ctrl = NULL;
+	TEEC_SharedMemory *io2 = NULL;
+	uint32_t session_handle = session;
+	size_t io2_size = 0;
+	uint8_t *buf = NULL;
+
+	/*
+	 * - If digest_ref == NULL AND digest_len == NULL -> need to call TA to
+	 * terminate session.
+	 * - If digest_len == NULL -> need to call to TA to terminate session.
+	 * - If digest_ref == NULL BUT digest_len != NULL just operate normally
+	 * to get size of the required buffer
+	 */
+	if (!digest_len) {
+		ck_release_active_processing(session, PKCS11_CMD_DIGEST_FINAL);
+		return CKR_ARGUMENTS_BAD;
+	}
+
+	/*
+	 * Shm io0: (in/out) ctrl = [session-handle] / [status]
+	 */
+	ctrl = ckteec_alloc_shm(sizeof(session_handle),	CKTEEC_SHM_INOUT);
+	if (!ctrl) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
+	buf = ctrl->buffer;
+
+	memcpy(buf, &session_handle, sizeof(session_handle));
+
+	/* Shm io2: output digest or null sized shm */
+	if (digest_ref)
+		io2 = ckteec_register_shm(digest_ref, *digest_len,
+					  CKTEEC_SHM_OUT);
+	else
+		io2 = ckteec_alloc_shm(0, CKTEEC_SHM_OUT);
+
+	if (!io2) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
+
+	rv = ckteec_invoke_ta(PKCS11_CMD_DIGEST_FINAL, ctrl, NULL, io2,
+			      &io2_size, NULL, NULL);
+
+	if (rv == CKR_OK || rv == CKR_BUFFER_TOO_SMALL)
+		*digest_len = io2_size;
+
+	if (rv == CKR_BUFFER_TOO_SMALL && io2_size && !digest_ref)
+		rv = CKR_OK;
+
+bail:
+	ckteec_free_shm(io2);
+	ckteec_free_shm(ctrl);
+
+	return rv;
+}
+
 CK_RV ck_signverify_init(CK_SESSION_HANDLE session,
 			 CK_MECHANISM_PTR mechanism,
 			 CK_OBJECT_HANDLE key,
