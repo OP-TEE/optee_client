@@ -492,6 +492,12 @@ CK_RV serialize_ck_mecha_params(struct serializer *obj,
 	case CKM_AES_KEY_GEN:
 	case CKM_AES_ECB:
 	case CKM_AES_CMAC:
+	case CKM_MD5:
+	case CKM_SHA_1:
+	case CKM_SHA224:
+	case CKM_SHA256:
+	case CKM_SHA384:
+	case CKM_SHA512:
 	case CKM_MD5_HMAC:
 	case CKM_SHA_1_HMAC:
 	case CKM_SHA224_HMAC:

@@ -597,6 +597,66 @@ enum pkcs11_ta_cmd {
 	 * processing matches.
 	 */
 	PKCS11_CMD_RELEASE_ACTIVE_PROCESSING = 44,
+
+	/*
+	 * PKCS11_CMD_DIGEST_INIT - Initialize a digest computation processing
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit session handle,
+	 *              (struct pkcs11_attribute_head)mechanism + mecha params
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 *
+	 * This command relates to the PKCS#11 API function C_DigestInit().
+	 */
+	PKCS11_CMD_DIGEST_INIT = 45,
+
+	/*
+	 * PKCS11_CMD_DIGEST_KEY - Update digest with a key
+	 *
+	 * [in]  memref[0] = [
+	 *              32bit session handle,
+	 *              32bit key handle
+	 *	 ]
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 *
+	 * This command relates to the PKCS#11 API function C_DigestKey().
+	 */
+	PKCS11_CMD_DIGEST_KEY = 46,
+
+	/*
+	 * PKCS11_CMD_DIGEST_UPDATE - Update digest with data
+	 *
+	 * [in]  memref[0] = 32bit session handle
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [in]  memref[1] = input data to be processed
+	 *
+	 * This command relates to the PKCS#11 API function C_DigestUpdate().
+	 */
+	PKCS11_CMD_DIGEST_UPDATE = 47,
+
+	/*
+	 * PKCS11_CMD_DIGEST_FINAL - Finalize a digest computation processing
+	 *
+	 * [in]  memref[0] = 32bit session handle
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [out] memref[2] = output digest
+	 *
+	 * This command relates to the PKCS#11 API function C_DigestFinal().
+	 */
+	PKCS11_CMD_DIGEST_FINAL = 48,
+
+	/*
+	 * PKCS11_CMD_DIGEST_ONESHOT - Compute a digest
+	 *
+	 * [in]  memref[0] = 32bit session handle
+	 * [out] memref[0] = 32bit return code, enum pkcs11_rc
+	 * [in]  memref[1] = input data to be processed
+	 * [out] memref[2] = byte array: generated digest
+	 *
+	 * This command relates to the PKCS#11 API function C_Digest().
+	 */
+	PKCS11_CMD_DIGEST_ONESHOT = 49,
 };
 
 /*
@@ -625,6 +685,7 @@ enum pkcs11_rc {
 	PKCS11_CKR_KEY_HANDLE_INVALID		= 0x0060,
 	PKCS11_CKR_KEY_SIZE_RANGE		= 0x0062,
 	PKCS11_CKR_KEY_TYPE_INCONSISTENT	= 0x0063,
+	PKCS11_CKR_KEY_INDIGESTIBLE		= 0x0067,
 	PKCS11_CKR_KEY_FUNCTION_NOT_PERMITTED	= 0x0068,
 	PKCS11_CKR_KEY_NOT_WRAPPABLE		= 0x0069,
 	PKCS11_CKR_KEY_UNEXTRACTABLE		= 0x006a,

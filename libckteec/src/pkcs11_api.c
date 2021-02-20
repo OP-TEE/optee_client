@@ -826,13 +826,20 @@ CK_RV C_DecryptFinal(CK_SESSION_HANDLE hSession,
 CK_RV C_DigestInit(CK_SESSION_HANDLE hSession,
 		   CK_MECHANISM_PTR pMechanism)
 {
-	(void)hSession;
-	(void)pMechanism;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_digest_init(hSession, pMechanism);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_CRYPTOKI_NOT_INITIALIZED,
+		     CKR_DEVICE_ERROR, CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED,
+		     CKR_FUNCTION_CANCELED, CKR_FUNCTION_FAILED,
+		     CKR_GENERAL_ERROR, CKR_HOST_MEMORY, CKR_MECHANISM_INVALID,
+		     CKR_MECHANISM_PARAM_INVALID, CKR_OK, CKR_OPERATION_ACTIVE,
+		     CKR_PIN_EXPIRED, CKR_SESSION_CLOSED,
+		     CKR_SESSION_HANDLE_INVALID, CKR_USER_NOT_LOGGED_IN);
+
+	return rv;
 }
 
 CK_RV C_Digest(CK_SESSION_HANDLE hSession,
@@ -841,56 +848,80 @@ CK_RV C_Digest(CK_SESSION_HANDLE hSession,
 	       CK_BYTE_PTR pDigest,
 	       CK_ULONG_PTR pulDigestLen)
 {
-	(void)hSession;
-	(void)pData;
-	(void)ulDataLen;
-	(void)pDigest;
-	(void)pulDigestLen;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_digest_oneshot(hSession, pData, ulDataLen, pDigest,
+				       pulDigestLen);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_BUFFER_TOO_SMALL,
+		     CKR_CRYPTOKI_NOT_INITIALIZED, CKR_DEVICE_ERROR,
+		     CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED,
+		     CKR_FUNCTION_CANCELED, CKR_FUNCTION_FAILED,
+		     CKR_GENERAL_ERROR, CKR_HOST_MEMORY, CKR_OK,
+		     CKR_OPERATION_NOT_INITIALIZED, CKR_SESSION_CLOSED,
+		     CKR_SESSION_HANDLE_INVALID);
+
+	return rv;
 }
 
 CK_RV C_DigestUpdate(CK_SESSION_HANDLE hSession,
 		     CK_BYTE_PTR pPart,
 		     CK_ULONG ulPartLen)
 {
-	(void)hSession;
-	(void)pPart;
-	(void)ulPartLen;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_digest_update(hSession, pPart, ulPartLen);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_CRYPTOKI_NOT_INITIALIZED,
+		     CKR_DEVICE_ERROR, CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED,
+		     CKR_FUNCTION_CANCELED, CKR_FUNCTION_FAILED,
+		     CKR_GENERAL_ERROR, CKR_HOST_MEMORY, CKR_OK,
+		     CKR_OPERATION_NOT_INITIALIZED, CKR_SESSION_CLOSED,
+		     CKR_SESSION_HANDLE_INVALID);
+
+	return rv;
 }
 
 CK_RV C_DigestKey(CK_SESSION_HANDLE hSession,
 		  CK_OBJECT_HANDLE hKey)
 {
-	(void)hSession;
-	(void)hKey;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_digest_key(hSession, hKey);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_CRYPTOKI_NOT_INITIALIZED, CKR_DEVICE_ERROR,
+		     CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED,
+		     CKR_FUNCTION_CANCELED, CKR_FUNCTION_FAILED,
+		     CKR_GENERAL_ERROR, CKR_HOST_MEMORY,
+		     CKR_KEY_HANDLE_INVALID, CKR_KEY_INDIGESTIBLE,
+		     CKR_KEY_SIZE_RANGE, CKR_OK,
+		     CKR_OPERATION_NOT_INITIALIZED, CKR_SESSION_CLOSED,
+		     CKR_SESSION_HANDLE_INVALID);
+
+	return rv;
 }
 
 CK_RV C_DigestFinal(CK_SESSION_HANDLE hSession,
 		    CK_BYTE_PTR pDigest,
 		    CK_ULONG_PTR pulDigestLen)
 {
-	(void)hSession;
-	(void)pDigest;
-	(void)pulDigestLen;
+	CK_RV rv = CKR_CRYPTOKI_NOT_INITIALIZED;
 
-	if (!lib_initiated())
-		return CKR_CRYPTOKI_NOT_INITIALIZED;
+	if (lib_initiated())
+		rv = ck_digest_final(hSession, pDigest, pulDigestLen);
 
-	return CKR_FUNCTION_NOT_SUPPORTED;
+	ASSERT_CK_RV(rv, CKR_ARGUMENTS_BAD, CKR_BUFFER_TOO_SMALL,
+		     CKR_CRYPTOKI_NOT_INITIALIZED, CKR_DEVICE_ERROR,
+		     CKR_DEVICE_MEMORY, CKR_DEVICE_REMOVED,
+		     CKR_FUNCTION_CANCELED, CKR_FUNCTION_FAILED,
+		     CKR_GENERAL_ERROR, CKR_HOST_MEMORY, CKR_OK,
+		     CKR_OPERATION_NOT_INITIALIZED, CKR_SESSION_CLOSED,
+		     CKR_SESSION_HANDLE_INVALID);
+
+	return rv;
 }
 
 CK_RV C_SignInit(CK_SESSION_HANDLE hSession,

@@ -38,6 +38,20 @@ CK_RV ck_encdecrypt_final(CK_SESSION_HANDLE session,
 			  CK_ULONG_PTR out_len,
 			  int decrypt);
 
+CK_RV ck_digest_init(CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism);
+
+CK_RV ck_digest_key(CK_SESSION_HANDLE session, CK_OBJECT_HANDLE key);
+
+CK_RV ck_digest_update(CK_SESSION_HANDLE session, CK_BYTE_PTR in,
+		       CK_ULONG in_len);
+
+CK_RV ck_digest_oneshot(CK_SESSION_HANDLE session, CK_BYTE_PTR in,
+			CK_ULONG in_len, CK_BYTE_PTR out,
+			CK_ULONG_PTR out_len);
+
+CK_RV ck_digest_final(CK_SESSION_HANDLE session, CK_BYTE_PTR out,
+		      CK_ULONG_PTR out_len);
+
 CK_RV ck_signverify_init(CK_SESSION_HANDLE session,
 			 CK_MECHANISM_PTR mechanism,
 			 CK_OBJECT_HANDLE key,
