@@ -127,4 +127,13 @@ CK_RV ck_generate_key_pair(CK_SESSION_HANDLE session,
 			   CK_OBJECT_HANDLE_PTR pub_key,
 			   CK_OBJECT_HANDLE_PTR priv_key);
 
+CK_RV ck_wrap_key(CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism,
+		  CK_OBJECT_HANDLE wrapping_key, CK_OBJECT_HANDLE key,
+		  CK_BYTE_PTR wrapped_key, CK_ULONG_PTR wrapped_key_len);
+
+CK_RV ck_unwrap_key(CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism,
+		    CK_OBJECT_HANDLE unwrapping_key, CK_BYTE_PTR wrapped_key,
+		    CK_ULONG wrapped_key_len, CK_ATTRIBUTE_PTR attribs,
+		    CK_ULONG count, CK_OBJECT_HANDLE_PTR handle);
+
 #endif /*LIBCKTEEC_PKCS11_PROCESSING_H*/
