@@ -1087,3 +1087,34 @@ bail:
 
 	return rv;
 }
+
+CK_RV ck_release_active_processing(CK_SESSION_HANDLE session,
+				   enum pkcs11_ta_cmd command)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	TEEC_SharedMemory *ctrl = NULL;
+	uint32_t session_handle = session;
+	uint32_t cmd = command;
+	size_t ctrl_size = 0;
+	char *buf = NULL;
+
+	/* Shm io0: (in/out) ctrl = [session-handle][command] / [status] */
+	ctrl_size = sizeof(session_handle) + sizeof(cmd);
+
+	ctrl = ckteec_alloc_shm(ctrl_size, CKTEEC_SHM_INOUT);
+	if (!ctrl)
+		return CKR_HOST_MEMORY;
+
+	buf = ctrl->buffer;
+
+	memcpy(buf, &session_handle, sizeof(session_handle));
+	buf += sizeof(session_handle);
+
+	memcpy(buf, &cmd, sizeof(cmd));
+
+	rv = ckteec_invoke_ctrl(PKCS11_CMD_RELEASE_ACTIVE_PROCESSING, ctrl);
+
+	ckteec_free_shm(ctrl);
+
+	return rv;
+}
