@@ -7,6 +7,7 @@
 #define LIBCKTEEC_PKCS11_PROCESSING_H
 
 #include <pkcs11.h>
+#include <pkcs11_ta.h>
 
 CK_RV ck_create_object(CK_SESSION_HANDLE session, CK_ATTRIBUTE_PTR attribs,
 		       CK_ULONG count, CK_OBJECT_HANDLE_PTR phObject);
@@ -99,5 +100,8 @@ CK_RV ck_copy_object(CK_SESSION_HANDLE session,
 CK_RV ck_derive_key(CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism,
 		    CK_OBJECT_HANDLE base_key, CK_ATTRIBUTE_PTR attribs,
 		    CK_ULONG count, CK_OBJECT_HANDLE_PTR handle);
+
+CK_RV ck_release_active_processing(CK_SESSION_HANDLE session,
+				   enum pkcs11_ta_cmd command);
 
 #endif /*LIBCKTEEC_PKCS11_PROCESSING_H*/
