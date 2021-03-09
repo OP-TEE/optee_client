@@ -18,6 +18,7 @@
 #include <sys/types.h>
 #include <tee_client_api.h>
 #include <teec_trace.h>
+#include <unistd.h>
 
 #include "ck_helpers.h"
 #include "invoke_ta.h"
