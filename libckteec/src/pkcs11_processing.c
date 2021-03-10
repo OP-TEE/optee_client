@@ -174,8 +174,10 @@ CK_RV ck_encdecrypt_update(CK_SESSION_HANDLE session,
 	uint32_t session_handle = session;
 	size_t out_size = 0;
 
-	if ((out_len && *out_len && !out) || (in_len && !in))
-		return CKR_ARGUMENTS_BAD;
+	if ((out_len && *out_len && !out) || (in_len && !in)) {
+		rv = CKR_ARGUMENTS_BAD;
+		goto bail;
+	}
 
 	/* Shm io0: (in/out) ctrl = [session-handle] / [status] */
 	ctrl = ckteec_alloc_shm(sizeof(session_handle), CKTEEC_SHM_INOUT);
@@ -218,7 +220,13 @@ CK_RV ck_encdecrypt_update(CK_SESSION_HANDLE session,
 	if (rv == CKR_BUFFER_TOO_SMALL && out_size && !out)
 		rv = CKR_OK;
 
+	goto bail_invoked;
+
 bail:
+	ck_release_active_processing(session, decrypt ?
+				     PKCS11_CMD_DECRYPT_UPDATE :
+				     PKCS11_CMD_ENCRYPT_UPDATE);
+bail_invoked:
 	ckteec_free_shm(out_shm);
 	ckteec_free_shm(in_shm);
 	ckteec_free_shm(ctrl);
@@ -240,8 +248,10 @@ CK_RV ck_encdecrypt_oneshot(CK_SESSION_HANDLE session,
 	uint32_t session_handle = session;
 	size_t out_size = 0;
 
-	if ((out_len && *out_len && !out) || (in_len && !in))
-		return CKR_ARGUMENTS_BAD;
+	if ((out_len && *out_len && !out) || (in_len && !in)) {
+		rv = CKR_ARGUMENTS_BAD;
+		goto bail;
+	}
 
 	/* Shm io0: (in/out) ctrl = [session-handle] / [status] */
 	ctrl = ckteec_alloc_shm(sizeof(session_handle), CKTEEC_SHM_INOUT);
@@ -281,7 +291,13 @@ CK_RV ck_encdecrypt_oneshot(CK_SESSION_HANDLE session,
 	if (rv == CKR_BUFFER_TOO_SMALL && out_size && !out)
 		rv = CKR_OK;
 
+	goto bail_invoked;
+
 bail:
+	ck_release_active_processing(session, decrypt ?
+				     PKCS11_CMD_DECRYPT_ONESHOT :
+				     PKCS11_CMD_ENCRYPT_ONESHOT);
+bail_invoked:
 	ckteec_free_shm(out_shm);
 	ckteec_free_shm(in_shm);
 	ckteec_free_shm(ctrl);
@@ -300,8 +316,10 @@ CK_RV ck_encdecrypt_final(CK_SESSION_HANDLE session,
 	uint32_t session_handle = session;
 	size_t out_size = 0;
 
-	if (out_len && *out_len && !out)
-		return CKR_ARGUMENTS_BAD;
+	if (out_len && *out_len && !out) {
+		rv = CKR_ARGUMENTS_BAD;
+		goto bail;
+	}
 
 	/* Shm io0: (in/out) ctrl = [session-handle] / [status] */
 	ctrl = ckteec_alloc_shm(sizeof(session_handle), CKTEEC_SHM_INOUT);
@@ -334,7 +352,13 @@ CK_RV ck_encdecrypt_final(CK_SESSION_HANDLE session,
 	if (rv == CKR_BUFFER_TOO_SMALL && out_size && !out)
 		rv = CKR_OK;
 
+	goto bail_invoked;
+
 bail:
+	ck_release_active_processing(session, decrypt ?
+				     PKCS11_CMD_DECRYPT_FINAL :
+				     PKCS11_CMD_ENCRYPT_FINAL);
+bail_invoked:
 	ckteec_free_shm(out_shm);
 	ckteec_free_shm(ctrl);
 
@@ -418,7 +442,8 @@ CK_RV ck_digest_key(CK_SESSION_HANDLE session, CK_OBJECT_HANDLE key)
 	return rv;
 }
 
-CK_RV ck_digest_update(CK_SESSION_HANDLE session, CK_BYTE_PTR in, CK_ULONG in_len)
+CK_RV ck_digest_update(CK_SESSION_HANDLE session, CK_BYTE_PTR in,
+		       CK_ULONG in_len)
 {
 	CK_RV rv = CKR_GENERAL_ERROR;
 	TEEC_SharedMemory *ctrl = NULL;
@@ -426,16 +451,9 @@ CK_RV ck_digest_update(CK_SESSION_HANDLE session, CK_BYTE_PTR in, CK_ULONG in_le
 	uint32_t session_handle = session;
 	uint8_t *buf = NULL;
 
-	/*
-	 * Bad argument handling for in and in_len:
-	 * - If in == NULL AND in_len != 0 -> need to call TA to
-	 * terminate session.
-	 * - If in == NULL AND in_len == 0 -> just operate normally.
-	 */
 	if (!in && in_len) {
-		ck_release_active_processing(session,
-					     PKCS11_CMD_DIGEST_UPDATE);
-		return CKR_ARGUMENTS_BAD;
+		rv = CKR_ARGUMENTS_BAD;
+		goto bail;
 	}
 
 	/*
@@ -457,7 +475,11 @@ CK_RV ck_digest_update(CK_SESSION_HANDLE session, CK_BYTE_PTR in, CK_ULONG in_le
 
 	rv = ckteec_invoke_ctrl_in(PKCS11_CMD_DIGEST_UPDATE, ctrl, io1);
 
+	goto bail_invoked;
+
 bail:
+	ck_release_active_processing(session, PKCS11_CMD_DIGEST_UPDATE);
+bail_invoked:
 	ckteec_free_shm(io1);
 	ckteec_free_shm(ctrl);
 
@@ -476,30 +498,9 @@ CK_RV ck_digest_oneshot(CK_SESSION_HANDLE session, CK_BYTE_PTR in,
 	size_t out_size = 0;
 	uint8_t *buf = NULL;
 
-	/*
-	 * Bad argument handling for in and in_len:
-	 * - If in == NULL AND in_len != 0 -> need to call TA to
-	 * terminate session.
-	 * - If in == NULL AND in_len == 0 -> just operate normally.
-	 */
-	if (!in && in_len) {
-		ck_release_active_processing(session,
-					     PKCS11_CMD_DIGEST_ONESHOT);
-		return CKR_ARGUMENTS_BAD;
-	}
-
-	/*
-	 * Bad argument handling for digest_ref and digest_len:
-	 * - If digest_ref == NULL AND digest_len == NULL -> need to call TA to
-	 * terminate session.
-	 * - If digest_len == NULL -> need to call to TA to terminate session.
-	 * - If digest_ref == NULL BUT digest_len != NULL just operate normally
-	 * to get size of the required buffer
-	 */
-	if (!digest_len) {
-		ck_release_active_processing(session,
-					     PKCS11_CMD_DIGEST_ONESHOT);
-		return CKR_ARGUMENTS_BAD;
+	if ((!in && in_len) || !digest_len) {
+		rv = CKR_ARGUMENTS_BAD;
+		goto bail;
 	}
 
 	/*
@@ -546,7 +547,11 @@ CK_RV ck_digest_oneshot(CK_SESSION_HANDLE session, CK_BYTE_PTR in,
 	if (rv == CKR_BUFFER_TOO_SMALL && out_size && !digest_ref)
 		rv = CKR_OK;
 
+	goto bail_invoked;
+
 bail:
+	ck_release_active_processing(session, PKCS11_CMD_DIGEST_ONESHOT);
+bail_invoked:
 	ckteec_free_shm(io1);
 	ckteec_free_shm(io2);
 	ckteec_free_shm(ctrl);
@@ -572,8 +577,8 @@ CK_RV ck_digest_final(CK_SESSION_HANDLE session, CK_BYTE_PTR digest_ref,
 	 * to get size of the required buffer
 	 */
 	if (!digest_len) {
-		ck_release_active_processing(session, PKCS11_CMD_DIGEST_FINAL);
-		return CKR_ARGUMENTS_BAD;
+		rv = CKR_ARGUMENTS_BAD;
+		goto bail;
 	}
 
 	/*
@@ -609,7 +614,11 @@ CK_RV ck_digest_final(CK_SESSION_HANDLE session, CK_BYTE_PTR digest_ref,
 	if (rv == CKR_BUFFER_TOO_SMALL && io2_size && !digest_ref)
 		rv = CKR_OK;
 
+	goto bail_invoked;
+
 bail:
+	ck_release_active_processing(session, PKCS11_CMD_DIGEST_FINAL);
+bail_invoked:
 	ckteec_free_shm(io2);
 	ckteec_free_shm(ctrl);
 
@@ -678,8 +687,10 @@ CK_RV ck_signverify_update(CK_SESSION_HANDLE session,
 	TEEC_SharedMemory *in_shm = NULL;
 	uint32_t session_handle = session;
 
-	if (in_len && !in)
-		return CKR_ARGUMENTS_BAD;
+	if (!in && in_len) {
+		rv = CKR_ARGUMENTS_BAD;
+		goto bail;
+	}
 
 	/* Shm io0: (in/out) ctrl = [session-handle] / [status] */
 	ctrl = ckteec_alloc_shm(sizeof(session_handle), CKTEEC_SHM_INOUT);
@@ -699,7 +710,12 @@ CK_RV ck_signverify_update(CK_SESSION_HANDLE session,
 	rv = ckteec_invoke_ctrl_in(sign ? PKCS11_CMD_SIGN_UPDATE :
 				   PKCS11_CMD_VERIFY_UPDATE, ctrl, in_shm);
 
+	goto bail_invoked;
+
 bail:
+	ck_release_active_processing(session, sign ? PKCS11_CMD_SIGN_UPDATE :
+				     PKCS11_CMD_VERIFY_UPDATE);
+bail_invoked:
 	ckteec_free_shm(in_shm);
 	ckteec_free_shm(ctrl);
 
@@ -721,8 +737,10 @@ CK_RV ck_signverify_oneshot(CK_SESSION_HANDLE session,
 	size_t out_size = 0;
 
 	if ((in_len && !in) || (sign_len && *sign_len && !sign_ref) ||
-	    (sign && !sign_len))
-		return CKR_ARGUMENTS_BAD;
+	    (sign && !sign_len)) {
+		rv = CKR_ARGUMENTS_BAD;
+		goto bail;
+	}
 
 	/* Shm io0: (in/out) ctrl = [session-handle] / [status] */
 	ctrl = ckteec_alloc_shm(sizeof(session_handle), CKTEEC_SHM_INOUT);
@@ -769,7 +787,12 @@ CK_RV ck_signverify_oneshot(CK_SESSION_HANDLE session,
 	if (rv == CKR_BUFFER_TOO_SMALL && out_size && !sign_ref)
 		rv = CKR_OK;
 
+	goto bail_invoked;
+
 bail:
+	ck_release_active_processing(session, sign ? PKCS11_CMD_SIGN_ONESHOT :
+				     PKCS11_CMD_VERIFY_ONESHOT);
+bail_invoked:
 	ckteec_free_shm(io1);
 	ckteec_free_shm(io2);
 	ckteec_free_shm(ctrl);
@@ -788,8 +811,10 @@ CK_RV ck_signverify_final(CK_SESSION_HANDLE session,
 	uint32_t session_handle = session;
 	size_t io_size = 0;
 
-	if ((sign_len && *sign_len && !sign_ref) || (sign && !sign_len))
-		return CKR_ARGUMENTS_BAD;
+	if ((sign_len && *sign_len && !sign_ref) || (sign && !sign_len)) {
+		rv = CKR_ARGUMENTS_BAD;
+		goto bail;
+	}
 
 	/* Shm io0: (in/out) ctrl = [session-handle] / [status] */
 	ctrl = ckteec_alloc_shm(sizeof(session_handle), CKTEEC_SHM_INOUT);
@@ -825,7 +850,12 @@ CK_RV ck_signverify_final(CK_SESSION_HANDLE session,
 	if (rv == CKR_BUFFER_TOO_SMALL && io_size && !sign_ref)
 		rv = CKR_OK;
 
+	goto bail_invoked;
+
 bail:
+	ck_release_active_processing(session, sign ? PKCS11_CMD_SIGN_FINAL :
+				     PKCS11_CMD_VERIFY_FINAL);
+bail_invoked:
 	ckteec_free_shm(io);
 	ckteec_free_shm(ctrl);
 
