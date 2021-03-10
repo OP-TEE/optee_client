@@ -74,6 +74,7 @@ static CK_RV serialize_indirect_attribute(struct serializer *obj,
 
 	switch (attribute->type) {
 	/* These are serialized each separately */
+	case CKA_DERIVE_TEMPLATE:
 	case CKA_WRAP_TEMPLATE:
 	case CKA_UNWRAP_TEMPLATE:
 		count = attribute->ulValueLen / sizeof(CK_ATTRIBUTE);
@@ -117,6 +118,7 @@ static CK_RV deserialize_indirect_attribute(struct pkcs11_attribute_head *obj,
 
 	switch (attribute->type) {
 	/* These are serialized each separately */
+	case CKA_DERIVE_TEMPLATE:
 	case CKA_WRAP_TEMPLATE:
 	case CKA_UNWRAP_TEMPLATE:
 		count = attribute->ulValueLen / sizeof(CK_ATTRIBUTE);
@@ -161,6 +163,7 @@ static CK_RV serialize_ck_attribute(struct serializer *obj, CK_ATTRIBUTE *attr)
 		return CKR_ATTRIBUTE_TYPE_INVALID;
 
 	switch (attr->type) {
+	case CKA_DERIVE_TEMPLATE:
 	case CKA_WRAP_TEMPLATE:
 	case CKA_UNWRAP_TEMPLATE:
 		return serialize_indirect_attribute(obj, attr);
@@ -299,6 +302,7 @@ static CK_RV deserialize_ck_attribute(struct pkcs11_attribute_head *in,
 	}
 
 	switch (out->type) {
+	case CKA_DERIVE_TEMPLATE:
 	case CKA_WRAP_TEMPLATE:
 	case CKA_UNWRAP_TEMPLATE:
 		rv = deserialize_indirect_attribute(in, out->pValue);
