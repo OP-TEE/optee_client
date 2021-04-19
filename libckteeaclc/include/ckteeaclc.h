@@ -29,7 +29,7 @@ extern "C" {
  */
 extern uuid_t kernel_namespace_uuid;
 /*
- * making KERNEL_NAMESPACE_UUID const would probably require initializing with
+ * making kernel_namespace_uuid const would probably require initializing with
  * a magic byte array. The non const version can be initialized with
  * `uuid_parse`.
  */
