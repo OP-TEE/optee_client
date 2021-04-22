@@ -1,6 +1,8 @@
-project(libteec C)
+project(libteec
+	VERSION 1.0.0
+	LANGUAGES C)
 
-set(PROJECT_VERSION "1.0.0")
+add_compile_options(${C_COMPILE_OPTIONS})
 
 ################################################################################
 # Packages
@@ -37,7 +39,7 @@ add_library (teec ${SRC})
 
 set_target_properties (teec PROPERTIES
 	VERSION ${PROJECT_VERSION}
-	SOVERSION 1
+	SOVERSION ${PROJECT_VERSION_MAJOR}
 )
 
 ################################################################################
@@ -73,3 +75,11 @@ target_link_libraries (teec
 # FIXME: Should we change this to /usr/local/lib?
 install (TARGETS teec LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
                       ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+configure_file(
+	"${PROJECT_SOURCE_DIR}/teec.pc.in"
+	"${CMAKE_BINARY_DIR}/pkgconfig/teec.pc"
+	@ONLY
+)
+install(FILES "${CMAKE_BINARY_DIR}/pkgconfig/teec.pc"
+	DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
+)

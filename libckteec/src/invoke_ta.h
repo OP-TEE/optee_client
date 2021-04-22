@@ -6,7 +6,9 @@
 #ifndef LIBCKTEEC_INVOKE_TA_H
 #define LIBCKTEEC_INVOKE_TA_H
 
+#include <inttypes.h>
 #include <pkcs11.h>
+#include <sys/types.h>
 #include <tee_client_api.h>
 
 enum ckteec_shm_dir {

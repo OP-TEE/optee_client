@@ -1,88 +1,64 @@
-project(ckteec
+project(ckteeaclc
 	VERSION 0.1.0
-	LANGUAGES C)
+	LANGUAGES C
+)
 
 add_compile_options(${C_COMPILE_OPTIONS})
-
-################################################################################
-# Packages
-################################################################################
-find_package(Threads REQUIRED)
-if(NOT THREADS_FOUND)
-	message(FATAL_ERROR "Threads not found")
-endif()
 
 include(GNUInstallDirs)
 
 ################################################################################
 # Source files
 ################################################################################
-set (SRC
-	src/pkcs11_api.c
-	src/ck_debug.c
-	src/ck_helpers.c
-	src/invoke_ta.c
-	src/pkcs11_processing.c
-	src/pkcs11_token.c
-	src/serializer.c
-	src/serialize_ck.c
+set(SRC
+	src/cktee_uuid.c
+	src/group.c
 )
 
 ################################################################################
 # Built library
 ################################################################################
-add_library (ckteec ${SRC})
+add_library (ckteeaclc ${SRC})
 
-set_target_properties (ckteec PROPERTIES
+set_target_properties(ckteeaclc PROPERTIES
 	VERSION ${PROJECT_VERSION}
 	SOVERSION ${PROJECT_VERSION_MAJOR}
+	C_STANDARD 11
+	C_STANDARD_REQUIRED ON
+	C_EXTENSIONS ON
 )
 
 ################################################################################
 # Flags always set
 ################################################################################
-target_compile_definitions (ckteec
+target_compile_definitions(ckteeaclc
 	PRIVATE -D_GNU_SOURCE
 	PRIVATE -DBINARY_PREFIX="LT"
 )
 
 ################################################################################
-# Optional flags
-################################################################################
-
-################################################################################
 # Public and private header and library dependencies
 ################################################################################
-target_include_directories(ckteec
-	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+target_include_directories(ckteeaclc PUBLIC
+	$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
 	$<INSTALL_INTERFACE:include>
-	PRIVATE src
 )
 
-target_include_directories(teec
-	PUBLIC include
-)
-
-target_link_libraries (ckteec
-	INTERFACE optee-client-headers
-	PRIVATE pthread
-	PRIVATE teec
-	PRIVATE m
+target_link_libraries(ckteeaclc
+	PUBLIC PkgConfig::uuid
 )
 
 ################################################################################
 # Install targets
 ################################################################################
-install (TARGETS ckteec
+install(TARGETS ckteeaclc
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 configure_file(
-	"${PROJECT_SOURCE_DIR}/ckteec.pc.in"
-	"${CMAKE_BINARY_DIR}/pkgconfig/ckteec.pc"
+	"${PROJECT_SOURCE_DIR}/ckteeaclc.pc.in"
+	"${CMAKE_BINARY_DIR}/pkgconfig/ckteeaclc.pc"
 	@ONLY
 )
-install(FILES "${CMAKE_BINARY_DIR}/pkgconfig/ckteec.pc"
+install(FILES "${CMAKE_BINARY_DIR}/pkgconfig/ckteeaclc.pc"
 	DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
 )
-
-add_subdirectory(include)

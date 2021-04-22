@@ -1,0 +1,11 @@
+# filename must match library name
+libname=ckteecpp
+prefix=${pcfiledir}/../..
+exec_prefix=${prefix}
+includedir=${prefix}/include
+
+Name: ${libname}
+Description: OP-TEE C++ Client library
+Version: @PROJECT_VERSION@
+Requires: ckteec,ckteeaclc
+Cflags: -I${includedir}

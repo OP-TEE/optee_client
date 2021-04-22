@@ -20,6 +20,7 @@
 #include <teec_trace.h>
 #include <unistd.h>
 
+#include "ckteec_extensions.h"
 #include "ck_helpers.h"
 #include "invoke_ta.h"
 #include "local_utils.h"
@@ -236,18 +237,12 @@ static CK_RV ping_ta(void)
 
 CK_RV ckteec_invoke_init(void)
 {
-	TEEC_UUID uuid = PKCS11_TA_UUID;
-	uint32_t origin = 0;
-	TEEC_Result res = TEEC_SUCCESS;
-	CK_RV rv = CKR_CRYPTOKI_ALREADY_INITIALIZED;
 	const char *login_type_env = NULL;
 	const char *login_gid_env = NULL;
 	uint32_t login_method = TEEC_LOGIN_PUBLIC;
-	void *login_data = NULL;
 	gid_t login_gid = 0;
 	unsigned long tmpconv = 0;
 	char *endp = NULL;
-	int e = 0;
 
 	login_type_env = getenv("CKTEEC_LOGIN_TYPE");
 
@@ -260,8 +255,7 @@ CK_RV ckteec_invoke_init(void)
 			login_gid_env = getenv("CKTEEC_LOGIN_GID");
 			if (!login_gid_env || !strlen(login_gid_env)) {
 				EMSG("missing CKTEEC_LOGIN_GID");
-				rv = CKR_ARGUMENTS_BAD;
-				goto out;
+				return CKR_ARGUMENTS_BAD;
 			}
 
 			login_method = TEEC_LOGIN_GROUP;
@@ -269,17 +263,37 @@ CK_RV ckteec_invoke_init(void)
 			if (errno == ERANGE || tmpconv > (gid_t)-1 ||
 			    (login_gid_env + strlen(login_gid_env) != endp)) {
 				EMSG("failed to convert CKTEEC_LOGIN_GID");
-				rv = CKR_ARGUMENTS_BAD;
-				goto out;
+				return CKR_ARGUMENTS_BAD;
 			}
 
 			login_gid = (gid_t)tmpconv;
-			login_data = &login_gid;
 		} else {
 			EMSG("invalid value for CKTEEC_LOGIN_TYPE");
-			rv = CKR_ARGUMENTS_BAD;
-			goto out;
+			return CKR_ARGUMENTS_BAD;
 		}
+	}
+
+	return ckteec_invoke_init_with_login(login_method, login_gid);
+}
+
+CK_RV ckteec_invoke_init_with_login(uint32_t login_method, gid_t login_gid)
+{
+	TEEC_UUID uuid = PKCS11_TA_UUID;
+	uint32_t origin = 0;
+	TEEC_Result res = TEEC_SUCCESS;
+	CK_RV rv = CKR_CRYPTOKI_ALREADY_INITIALIZED;
+	void *login_data = NULL;
+	int e = 0;
+
+	switch (login_method) {
+	case TEEC_LOGIN_PUBLIC:
+	case TEEC_LOGIN_USER:
+		break;
+	case TEEC_LOGIN_GROUP:
+		login_data = &login_gid;
+		break;
+	default:
+		return CKR_ARGUMENTS_BAD;
 	}
 
 	e = pthread_mutex_lock(&ta_ctx.init_mutex);

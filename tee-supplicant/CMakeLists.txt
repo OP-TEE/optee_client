@@ -1,5 +1,7 @@
 project (tee-supplicant C)
 
+add_compile_options(${C_COMPILE_OPTIONS})
+
 ################################################################################
 # Configuration flags always included
 ################################################################################

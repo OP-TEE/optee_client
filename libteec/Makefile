@@ -12,10 +12,17 @@ all: libteec
 MAJOR_VERSION	:= 1
 MINOR_VERSION	:= 0
 PATCH_VERSION	:= 0
+MAJ_MIN_P	:= $(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)
 LIB_NAME	:= libteec.so
 LIB_MAJOR	:= $(LIB_NAME).$(MAJOR_VERSION)
 LIB_MAJ_MIN	:= $(LIB_NAME).$(MAJOR_VERSION).$(MINOR_VERSION)
 LIB_MAJ_MIN_P	:= $(LIB_NAME).$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)
+
+# Write version to file so that it can be used for up-to-date checks
+MAJ_MIN_P_FILE	:= $(OUT_DIR)/metadata/version
+$(shell mkdir -p $(dir $(MAJ_MIN_P_FILE)); echo $(MAJ_MIN_P) | \
+	diff $(MAJ_MIN_P_FILE) - > /dev/null || \
+	echo $(MAJ_MIN_P) > $(MAJ_MIN_P_FILE) )
 
 TEEC_SRCS	:= tee_client_api.c \
 		   teec_trace.c
@@ -41,7 +48,9 @@ endif
 TEEC_LFLAGS    := $(LDFLAGS) -lpthread
 TEEC_LIBRARY	:= $(OUT_DIR)/$(LIB_MAJ_MIN_P)
 
-libteec: $(TEEC_LIBRARY) $(OUT_DIR)/libteec.a
+TEEC_PKGCONF	:= $(OO)/pkgconfig/teec.pc
+
+libteec: $(TEEC_LIBRARY) $(OUT_DIR)/libteec.a $(TEEC_PKGCONF)
 	$(VPREFIX)ln -sf $(LIB_MAJ_MIN_P) $(OUT_DIR)/$(LIB_MAJOR)
 	$(VPREFIX)ln -sf $(LIB_MAJ_MIN_P) $(OUT_DIR)/$(LIB_MAJ_MIN)
 	$(VPREFIX)ln -sf $(LIB_MAJOR) $(OUT_DIR)/$(LIB_NAME)
@@ -54,6 +63,12 @@ $(TEEC_LIBRARY): $(TEEC_OBJS)
 $(OUT_DIR)/libteec.a: $(TEEC_OBJS)
 	@echo "  AR      $@"
 	$(VPREFIX)$(AR) rcs $@ $+
+
+$(TEEC_PKGCONF): ${CURDIR}/teec.pc.in $(MAJ_MIN_P_FILE) $(OO)/pkgconfig
+	sed 's/@PROJECT_VERSION@/${MAJ_MIN_P}/g' ${CURDIR}/teec.pc.in > $(TEEC_PKGCONF)
+
+$(OO)/pkgconfig:
+	mkdir -p $(OO)/pkgconfig
 
 $(TEEC_OBJ_DIR)/%.o: ${TEEC_SRC_DIR}/%.c
 	$(VPREFIX)mkdir -p $(TEEC_OBJ_DIR)

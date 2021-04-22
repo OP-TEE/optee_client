@@ -12,12 +12,19 @@ LIB_NAME	:= libckteec
 MAJOR_VERSION	:= 0
 MINOR_VERSION	:= 1
 PATCH_VERSION	:= 0
+MAJ_MIN_P	:= $(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)
 
 LIB_MAJOR		:= $(LIB_NAME).so.$(MAJOR_VERSION)
 LIB_MAJ_MIN		:= $(LIB_NAME).so.$(MAJOR_VERSION).$(MINOR_VERSION)
 LIB_MAJ_MIN_PAT		:= $(LIB_NAME).so.$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)
 LIBCKTEEC_SO_LIBRARY	:= $(LIB_MAJ_MIN_PAT)
 LIBCKTEEC_AR_LIBRARY	:= $(LIB_NAME).a
+
+# Write version to file so that it can be used for up-to-date checks
+MAJ_MIN_P_FILE	:= $(OUT_DIR)/metadata/version
+$(shell mkdir -p $(dir $(MAJ_MIN_P_FILE)); echo $(MAJ_MIN_P) | \
+	diff $(MAJ_MIN_P_FILE) - > /dev/null || \
+	echo $(MAJ_MIN_P) > $(MAJ_MIN_P_FILE) )
 
 LIBCKTEEC_SRC_DIR	:= src
 
@@ -38,6 +45,8 @@ LIBCKTEEC_CFLAGS	:= $(addprefix -I, $(LIBCKTEEC_INCLUDES)) \
 
 LIBCKTEEC_LFLAGS	:= $(LDFLAGS) -L$(OUT_DIR)/../libteec -lteec
 
+CKTEEC_PKGCONF		:= $(OO)/pkgconfig/ckteec.pc
+
 LIBCKTEEC_OBJ_DIR	:= $(OUT_DIR)
 LIBCKTEEC_OBJS		:= $(patsubst %.c,$(LIBCKTEEC_OBJ_DIR)/%.o, $(LIBCKTEEC_SRCS))
 
@@ -46,7 +55,7 @@ $(LIBCKTEEC_OBJ_DIR)/%.o: ${LIBCKTEEC_SRC_DIR}/%.c
 	@echo "  CC      $<"
 	$(VPREFIX)$(CC) $(LIBCKTEEC_CFLAGS) -c $< -o $@
 
-libckteec: $(OUT_DIR)/$(LIBCKTEEC_SO_LIBRARY)
+libckteec: $(OUT_DIR)/$(LIBCKTEEC_SO_LIBRARY) $(CKTEEC_PKGCONF)
 
 $(OUT_DIR)/$(LIBCKTEEC_SO_LIBRARY): $(LIBCKTEEC_OBJS)
 	@echo "  LINK    $@"
@@ -58,6 +67,12 @@ libckteec: $(OUT_DIR)/$(LIBCKTEEC_AR_LIBRARY)
 $(OUT_DIR)/$(LIBCKTEEC_AR_LIBRARY): $(LIBCKTEEC_OBJS)
 	@echo "  AR      $@"
 	$(VPREFIX)$(AR) rcs $@ $+
+
+$(CKTEEC_PKGCONF): ${CURDIR}/ckteec.pc.in $(MAJ_MIN_P_FILE) $(OO)/pkgconfig
+	sed 's/@PROJECT_VERSION@/${MAJ_MIN_P}/g' ${CURDIR}/ckteec.pc.in > $(CKTEEC_PKGCONF)
+
+$(OO)/pkgconfig:
+	mkdir -p $(OO)/pkgconfig
 
 libckteec:
 	$(VPREFIX)ln -sf $(LIB_MAJ_MIN_PAT) $(OUT_DIR)/$(LIB_MAJ_MIN)

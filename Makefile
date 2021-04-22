@@ -16,8 +16,8 @@ SBINDIR ?= /usr/sbin
 LIBDIR ?= /usr/lib
 INCLUDEDIR ?= /usr/include
 
-.PHONY: all build build-libteec build-libckteec install copy_export \
-	clean cscope clean-cscope \
+.PHONY: all build build-ckcli build-libteec build-libckteec build-libckteeaclc \
+	build-ckteecpp check-libuuid install copy_export clean cscope clean-cscope \
 	checkpatch-pre-req checkpatch-modified-patch checkpatch-modified-file \
 	checkpatch-last-commit-patch checkpatch-last-commit-file \
 	checkpatch-base-commit-patch checkpatch-base-commit-file \
@@ -34,15 +34,33 @@ build-tee-supplicant: build-libteec
 	@echo "Building tee-supplicant"
 	$(MAKE) --directory=tee-supplicant  --no-print-directory --no-builtin-variables CFG_TEE_SUPP_LOG_LEVEL=$(CFG_TEE_SUPP_LOG_LEVEL)
 
-build: build-libteec build-tee-supplicant build-libckteec
+build: build-libteec build-tee-supplicant build-libckteec build-libckteeaclc \
+	build-ckteecpp build-ckcli
 
 build-libckteec: build-libteec
 	@echo "Building libckteec.so"
 	@$(MAKE) --directory=libckteec --no-print-directory --no-builtin-variables
 
+build-libckteeaclc: check-libuuid
+	@echo "Building libckteeaclc.so"
+	@$(MAKE) --directory=libckteeaclc --no-print-directory --no-builtin-variables
+
+check-libuuid:
+	@echo "Finding uuid.pc"
+	pkg-config --atleast-version=2.34 uuid
+
+build-ckteecpp: build-libckteec build-libckteeaclc
+	@echo "Building ckteecpp"
+	@$(MAKE) --directory=ckteecpp --no-print-directory --no-builtin-variables
+
+build-ckcli: build-ckteecpp
+	@echo "Building ckcli directory"
+	@$(MAKE) --directory=ckcli --no-print-directory --no-builtin-variables
+
 install: copy_export
 
-clean: clean-libteec clean-tee-supplicant clean-cscope clean-libckteec
+clean: clean-libteec clean-tee-supplicant clean-cscope clean-libckteec \
+	clean-libckteeaclc clean-ckteecpp clean-ckcli
 
 clean-libteec:
 	@$(MAKE) --directory=libteec --no-print-directory clean
@@ -52,6 +70,15 @@ clean-tee-supplicant:
 
 clean-libckteec:
 	@$(MAKE) --directory=libckteec --no-print-directory clean
+
+clean-libckteeaclc:
+	@$(MAKE) --directory=libckteeaclc --no-print-directory clean
+
+clean-ckteecpp:
+	@$(MAKE) --directory=ckteecpp --no-print-directory clean
+
+clean-ckcli:
+	@$(MAKE) --directory=ckcli --no-print-directory clean
 
 cscope:
 	@echo "  CSCOPE"
@@ -128,12 +155,23 @@ checkpatch-all-files: checkpatch-pre-req
 distclean: clean
 
 copy_export: build
-	mkdir -p $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(INCLUDEDIR)
+	mkdir -p $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(LIBDIR)/pkgconfig \
+	$(DESTDIR)$(INCLUDEDIR)
 	cp config.mk $(DESTDIR)/optee_client_config.mk
 	cp -a ${O}/libteec/libteec.so* $(DESTDIR)$(LIBDIR)
 	cp -a ${O}/libteec/libteec.a $(DESTDIR)$(LIBDIR)
+	cp -a ${O}/pkgconfig/teec.pc $(DESTDIR)$(LIBDIR)/pkgconfig/
 	cp ${O}/tee-supplicant/tee-supplicant $(DESTDIR)$(SBINDIR)
 	cp public/*.h $(DESTDIR)$(INCLUDEDIR)
 	cp libckteec/include/*.h $(DESTDIR)$(INCLUDEDIR)
 	cp -a ${O}/libckteec/libckteec.so* $(DESTDIR)$(LIBDIR)
 	cp -a ${O}/libckteec/libckteec.a $(DESTDIR)$(LIBDIR)
+	cp -a ${O}/pkgconfig/ckteec.pc $(DESTDIR)$(LIBDIR)/pkgconfig/
+	cp libckteeaclc/include/*.h $(DESTDIR)$(INCLUDEDIR)
+	cp -a ${O}/libckteeaclc/libckteeaclc.so* $(DESTDIR)$(LIBDIR)
+	cp -a ${O}/libckteeaclc/libckteeaclc.a $(DESTDIR)$(LIBDIR)
+	cp -a ${O}/pkgconfig/ckteeaclc.pc $(DESTDIR)$(LIBDIR)/pkgconfig/
+	mkdir -p $(DESTDIR)$(INCLUDEDIR)/ckteecpp
+	cp ckteecpp/include/ckteecpp/*.hpp $(DESTDIR)$(INCLUDEDIR)/ckteecpp/
+	cp -a ${O}/pkgconfig/ckteecpp.pc $(DESTDIR)$(LIBDIR)/pkgconfig/
+	cp ${O}/ckcli/teeckcli $(DESTDIR)$(SBINDIR)
