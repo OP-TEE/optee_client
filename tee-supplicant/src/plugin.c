@@ -122,48 +122,49 @@ TEEC_Result plugin_load_all(void)
 	}
 
 	while ((entry = readdir(dir))) {
-		if (entry->d_type == DT_REG) {
-			struct plugin *p;
+		struct plugin *p;
 
-			p = calloc(1, sizeof(struct plugin));
-			if (!p) {
-				EMSG("allocate mem for plugin <%s> failed",
-				     entry->d_name);
-				closedir(dir);
-				return TEEC_ERROR_OUT_OF_MEMORY;
-			}
+		if (!strcmp(entry->d_name, "..") || !strcmp(entry->d_name, "."))
+			continue;
 
-			res = load_plugin((const char *)entry->d_name, p);
-			switch (res) {
-			case PLUGIN_DL_OPEN_ERR:
-				EMSG("open plugin <%s> failed: %s",
-				     entry->d_name, dlerror());
-				free(p);
-				continue;
-			case PLUGIN_DL_SYM_ERR:
-				EMSG("find 'plugin_method' sym in <%s> failed: %s",
-				     entry->d_name, dlerror());
-				free(p);
-				continue;
-			default:
-				DMSG("loading the <%s> plugin were successful",
-				     p->method->name);
-				break;
-			}
-
-			/* Init the plugin */
-			if (p->method->init) {
-				teec_res = p->method->init();
-				if (teec_res) {
-					EMSG("init the <%s> plugin failed with 0x%x",
-					     p->method->name, teec_res);
-					free(p);
-					continue;
-				}
-			}
-
-			push_plugin(p);
+		p = calloc(1, sizeof(struct plugin));
+		if (!p) {
+			EMSG("allocate mem for plugin <%s> failed",
+			     entry->d_name);
+			closedir(dir);
+			return TEEC_ERROR_OUT_OF_MEMORY;
 		}
+
+		res = load_plugin((const char *)entry->d_name, p);
+		switch (res) {
+		case PLUGIN_DL_OPEN_ERR:
+			EMSG("open plugin <%s> failed: %s",
+			     entry->d_name, dlerror());
+			free(p);
+			continue;
+		case PLUGIN_DL_SYM_ERR:
+			EMSG("find 'plugin_method' sym in <%s> failed: %s",
+			     entry->d_name, dlerror());
+			free(p);
+			continue;
+		default:
+			DMSG("loading the <%s> plugin were successful",
+			     p->method->name);
+			break;
+		}
+
+		/* Init the plugin */
+		if (p->method->init) {
+			teec_res = p->method->init();
+			if (teec_res) {
+				EMSG("init the <%s> plugin failed with 0x%x",
+				     p->method->name, teec_res);
+				free(p);
+				continue;
+			}
+		}
+
+		push_plugin(p);
 	}
 
 	closedir(dir);
