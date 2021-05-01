@@ -7,12 +7,18 @@ LOCAL_PATH := $(call my-dir)
 CFG_TEE_CLIENT_LOG_LEVEL ?= 2
 CFG_TEE_SUPP_LOG_LEVEL ?= 2
 
-# set CFG_TEE_CLIENT_LOAD_PATH before include config.mk
+# Define Android-specific configuration before including config.mk
 CFG_TEE_CLIENT_LOAD_PATH ?= /vendor/lib
-
-# set CFG_TEE_FS_PARENT_PATH before include config.mk
 TEEC_TEST_LOAD_PATH ?= /data/vendor/tee
 CFG_TEE_FS_PARENT_PATH ?= /data/vendor/tee
+ifneq ($(strip $($(combo_2nd_arch_prefix)TARGET_TOOLS_PREFIX)),)
+CFG_TEE_PLUGIN_LOAD_PATH ?= /vendor/lib64/tee-supplicant/plugins/
+else
+CFG_TEE_PLUGIN_LOAD_PATH ?= /vendor/lib/tee-supplicant/plugins/
+endif
+
+$(info CFG_TEE_PLUGIN_LOAD_PATH = ${CFG_TEE_PLUGIN_LOAD_PATH})
+
 
 ################################################################################
 # Include optee-client common config and flags                                 #
