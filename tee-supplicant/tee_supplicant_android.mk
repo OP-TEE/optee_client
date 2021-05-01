@@ -7,9 +7,9 @@ include $(CLEAR_VARS)
 LOCAL_CFLAGS += $(optee_CFLAGS)
 
 LOCAL_CFLAGS += -DDEBUGLEVEL_$(CFG_TEE_SUPP_LOG_LEVEL) \
-                -DBINARY_PREFIX=\"TEES\" \
-                -DTEEC_LOAD_PATH=\"$(CFG_TEE_CLIENT_LOAD_PATH)\" \
-		-DTEE_FS_PARENT_PATH=\"$(CFG_TEE_FS_PARENT_PATH)\"
+		-DBINARY_PREFIX=\"TEES\" \
+		-DTEE_FS_PARENT_PATH=\"$(CFG_TEE_FS_PARENT_PATH)\" \
+		-DTEEC_LOAD_PATH=\"$(CFG_TEE_CLIENT_LOAD_PATH)\"
 
 ifneq ($(TEEC_TEST_LOAD_PATH),)
 LOCAL_CFLAGS += -DTEEC_TEST_LOAD_PATH=\"$(TEEC_TEST_LOAD_PATH)\"
@@ -19,11 +19,11 @@ ifeq ($(CFG_TA_TEST_PATH),y)
 LOCAL_CFLAGS += -DCFG_TA_TEST_PATH=1
 endif
 
-LOCAL_SRC_FILES += src/handle.c \
-                   src/tee_supp_fs.c \
-                   src/tee_supplicant.c \
-                   src/teec_ta_load.c \
-                   src/rpmb.c
+LOCAL_SRC_FILES += src/tee_supplicant.c \
+		   src/teec_ta_load.c \
+		   src/tee_supp_fs.c \
+		   src/rpmb.c \
+		   src/handle.c
 
 ifeq ($(CFG_GP_SOCKETS),y)
 LOCAL_SRC_FILES += src/tee_socket.c
