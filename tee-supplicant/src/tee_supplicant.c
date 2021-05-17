@@ -257,7 +257,7 @@ static int get_param(size_t num_params, struct tee_ioctl_param *params,
 		return -1;
 
 	shm->flags = TEEC_MEM_INPUT | TEEC_MEM_OUTPUT;
-	shm->size = sz - offs;
+	shm->size = sz;
 	shm->id = MEMREF_SHM_ID(params + idx);
 	shm->buffer = (uint8_t *)tshm->p + offs;
 
