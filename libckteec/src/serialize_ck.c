@@ -543,6 +543,28 @@ static CK_RV serialize_mecha_rsa_oaep_param(struct serializer *obj,
 				params->ulSourceDataLen);
 }
 
+static CK_RV serialize_mecha_mac_general_param(struct serializer *obj,
+					       CK_MECHANISM_PTR mecha)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	CK_ULONG ck_data = 0;
+
+	if (mecha->ulParameterLen != sizeof(ck_data))
+		return CKR_ARGUMENTS_BAD;
+
+	memcpy(&ck_data, mecha->pParameter, mecha->ulParameterLen);
+
+	rv = serialize_32b(obj, obj->type);
+	if (rv)
+		return rv;
+
+	rv = serialize_32b(obj, sizeof(uint32_t));
+	if (rv)
+		return rv;
+
+	return serialize_ck_ulong(obj, ck_data);
+}
+
 /**
  * serialize_ck_mecha_params - serialize a mechanism type & params
  *
@@ -636,6 +658,14 @@ CK_RV serialize_ck_mecha_params(struct serializer *obj,
 
 	case CKM_RSA_PKCS_OAEP:
 		return serialize_mecha_rsa_oaep_param(obj, &mecha);
+
+	case CKM_MD5_HMAC_GENERAL:
+	case CKM_SHA_1_HMAC_GENERAL:
+	case CKM_SHA224_HMAC_GENERAL:
+	case CKM_SHA256_HMAC_GENERAL:
+	case CKM_SHA384_HMAC_GENERAL:
+	case CKM_SHA512_HMAC_GENERAL:
+		return serialize_mecha_mac_general_param(obj, &mecha);
 
 	default:
 		return CKR_MECHANISM_INVALID;
