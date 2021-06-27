@@ -186,7 +186,10 @@ static CK_RV serialize_ck_attribute(struct serializer *obj, CK_ATTRIBUTE *attr)
 		break;
 	/* Attributes which data value do not need conversion (aside ulong) */
 	default:
-		if (ck_attr_is_ulong(attr->type)) {
+		pkcs11_pdata = attr->pValue;
+		if (!attr->pValue) {
+			pkcs11_size = 0;
+		} else if (ck_attr_is_ulong(attr->type)) {
 			CK_ULONG ck_ulong = 0;
 
 			if (attr->ulValueLen < sizeof(CK_ULONG))
@@ -197,12 +200,7 @@ static CK_RV serialize_ck_attribute(struct serializer *obj, CK_ATTRIBUTE *attr)
 			pkcs11_pdata = &pkcs11_data32;
 			pkcs11_size = sizeof(uint32_t);
 		} else {
-			pkcs11_pdata = attr->pValue;
-			/* Support NULL data pointer with non-zero size */
-			if (!pkcs11_pdata)
-				pkcs11_size = 0;
-			else
-				pkcs11_size = attr->ulValueLen;
+			pkcs11_size = attr->ulValueLen;
 		}
 		break;
 	}
@@ -278,6 +276,11 @@ static CK_RV deserialize_ck_attribute(struct pkcs11_attribute_head *in,
 
 	if (in->size == PKCS11_CK_UNAVAILABLE_INFORMATION) {
 		out->ulValueLen = CK_UNAVAILABLE_INFORMATION;
+		return CKR_OK;
+	}
+
+	if (!out->pValue && ck_attr_is_ulong(out->type)) {
+		out->ulValueLen = sizeof(CK_ULONG);
 		return CKR_OK;
 	}
 
