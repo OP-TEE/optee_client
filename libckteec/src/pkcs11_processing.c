@@ -736,7 +736,7 @@ CK_RV ck_signverify_oneshot(CK_SESSION_HANDLE session,
 	uint32_t session_handle = session;
 	size_t out_size = 0;
 
-	if ((in_len && !in) || (sign_len && *sign_len && !sign_ref) ||
+	if ((in_len && !in) || (!sign && sign_len && *sign_len && !sign_ref) ||
 	    (sign && !sign_len)) {
 		rv = CKR_ARGUMENTS_BAD;
 		goto bail;
@@ -764,7 +764,7 @@ CK_RV ck_signverify_oneshot(CK_SESSION_HANDLE session,
 	 * or
 	 * Shm io2: output signature (if signing) or null sized shm
 	 */
-	if (sign_len && *sign_len) {
+	if (sign_ref && sign_len && *sign_len) {
 		io2 = ckteec_register_shm(sign_ref, *sign_len,
 					  sign ? CKTEEC_SHM_OUT : CKTEEC_SHM_IN);
 	} else {
@@ -811,7 +811,8 @@ CK_RV ck_signverify_final(CK_SESSION_HANDLE session,
 	uint32_t session_handle = session;
 	size_t io_size = 0;
 
-	if ((sign_len && *sign_len && !sign_ref) || (sign && !sign_len)) {
+	if ((!sign && sign_len && *sign_len && !sign_ref) ||
+	    (sign && !sign_len)) {
 		rv = CKR_ARGUMENTS_BAD;
 		goto bail;
 	}
@@ -829,7 +830,7 @@ CK_RV ck_signverify_final(CK_SESSION_HANDLE session,
 	 * or
 	 * Shm io1: output signature (if signing) or null sized shm
 	 */
-	if (sign_len && *sign_len)
+	if (sign_ref && sign_len && *sign_len)
 		io = ckteec_register_shm(sign_ref, *sign_len,
 					 sign ? CKTEEC_SHM_OUT : CKTEEC_SHM_IN);
 	else
