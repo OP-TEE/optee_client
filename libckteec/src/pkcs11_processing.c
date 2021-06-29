@@ -174,7 +174,7 @@ CK_RV ck_encdecrypt_update(CK_SESSION_HANDLE session,
 	uint32_t session_handle = session;
 	size_t out_size = 0;
 
-	if ((out_len && *out_len && !out) || (in_len && !in)) {
+	if (!out_len || (in_len && !in)) {
 		rv = CKR_ARGUMENTS_BAD;
 		goto bail;
 	}
@@ -197,7 +197,7 @@ CK_RV ck_encdecrypt_update(CK_SESSION_HANDLE session,
 	}
 
 	/* Shm io2: output data buffer */
-	if (out_len && *out_len) {
+	if (out && out_len && *out_len) {
 		out_shm = ckteec_register_shm(out, *out_len, CKTEEC_SHM_OUT);
 	} else {
 		/* Query output data size */
@@ -248,7 +248,7 @@ CK_RV ck_encdecrypt_oneshot(CK_SESSION_HANDLE session,
 	uint32_t session_handle = session;
 	size_t out_size = 0;
 
-	if ((out_len && *out_len && !out) || (in_len && !in)) {
+	if (!out_len || (in_len && !in)) {
 		rv = CKR_ARGUMENTS_BAD;
 		goto bail;
 	}
@@ -269,7 +269,7 @@ CK_RV ck_encdecrypt_oneshot(CK_SESSION_HANDLE session,
 	}
 
 	/* Shm io2: output data buffer */
-	if (out_len && *out_len) {
+	if (out && out_len && *out_len) {
 		out_shm = ckteec_register_shm(out, *out_len, CKTEEC_SHM_OUT);
 	} else {
 		/* Query output data size */
@@ -316,7 +316,7 @@ CK_RV ck_encdecrypt_final(CK_SESSION_HANDLE session,
 	uint32_t session_handle = session;
 	size_t out_size = 0;
 
-	if (out_len && *out_len && !out) {
+	if (!out_len) {
 		rv = CKR_ARGUMENTS_BAD;
 		goto bail;
 	}
@@ -330,7 +330,7 @@ CK_RV ck_encdecrypt_final(CK_SESSION_HANDLE session,
 	memcpy(ctrl->buffer, &session_handle, sizeof(session_handle));
 
 	/* Shm io2: output buffer reference */
-	if (out_len && *out_len) {
+	if (out && out_len && *out_len) {
 		out_shm = ckteec_register_shm(out, *out_len, CKTEEC_SHM_OUT);
 	} else {
 		/* Query output data size */
