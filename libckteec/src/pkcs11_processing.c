@@ -1537,8 +1537,7 @@ CK_RV ck_wrap_key(CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism,
 	size_t out_size = 0;
 	char *buf = NULL;
 
-	if (!mechanism || !wrapped_key_len ||
-	    (wrapped_key_len && *wrapped_key_len && !wrapped_key))
+	if (!mechanism || !wrapped_key_len)
 		return CKR_ARGUMENTS_BAD;
 
 	rv = serialize_ck_mecha_params(&smecha, mechanism);
@@ -1574,7 +1573,7 @@ CK_RV ck_wrap_key(CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism,
 	memcpy(buf, smecha.buffer, smecha.size);
 
 	/* Shm io2: output buffer reference - wrapped key */
-	if (*wrapped_key_len)
+	if (wrapped_key && *wrapped_key_len)
 		out_shm = ckteec_register_shm(wrapped_key, *wrapped_key_len,
 					      CKTEEC_SHM_OUT);
 	else
