@@ -1190,7 +1190,11 @@ enum pkcs11_mechanism_id {
 	PKCS11_CKM_RSA_PKCS			= 0x00001,
 	PKCS11_CKM_RSA_9796			= 0x00002,
 	PKCS11_CKM_RSA_X_509			= 0x00003,
+	PKCS11_CKM_MD5_RSA_PKCS			= 0x00005,
+	PKCS11_CKM_SHA1_RSA_PKCS		= 0x00006,
 	PKCS11_CKM_RSA_PKCS_OAEP		= 0x00009,
+	PKCS11_CKM_RSA_PKCS_PSS			= 0x0000d,
+	PKCS11_CKM_SHA1_RSA_PKCS_PSS		= 0x0000e,
 	PKCS11_CKM_SHA256_RSA_PKCS		= 0x00040,
 	PKCS11_CKM_SHA384_RSA_PKCS		= 0x00041,
 	PKCS11_CKM_SHA512_RSA_PKCS		= 0x00042,
@@ -1282,4 +1286,25 @@ enum pkcs11_mechanism_id {
 	PKCS11_PROCESSING_IMPORT		= 0x80000000,
 	PKCS11_CKM_UNDEFINED_ID			= PKCS11_UNDEFINED_ID,
 };
+
+/*
+ * Valid values MG function identifiers
+ * PKCS11_CKG_<x> reflects CryptoKi client API MG function IDs CKG_<x>.
+ */
+enum pkcs11_mgf_id {
+	PKCS11_CKG_MGF1_SHA1			= 0x0001,
+	PKCS11_CKG_MGF1_SHA224			= 0x0005,
+	PKCS11_CKG_MGF1_SHA256			= 0x0002,
+	PKCS11_CKG_MGF1_SHA384			= 0x0003,
+	PKCS11_CKG_MGF1_SHA512			= 0x0004,
+	/* Vendor extension: reserved for undefined ID (~0U) */
+	PKCS11_CKG_UNDEFINED_ID			= PKCS11_UNDEFINED_ID,
+};
+
+/*
+ * Valid values for RSA PKCS/OAEP source type identifier
+ * PKCS11_CKZ_<x> reflects CryptoKi client API source type IDs CKZ_<x>.
+ */
+#define PKCS11_CKZ_DATA_SPECIFIED		0x0001
+
 #endif /*PKCS11_TA_H*/
