@@ -9,6 +9,7 @@
 #include <pkcs11_ta.h>
 #include <stdlib.h>
 #include <string.h>
+#include <teec_trace.h>
 
 #include "ck_helpers.h"
 #include "local_utils.h"
@@ -471,6 +472,30 @@ static CK_RV serialize_mecha_aes_cbc_encrypt_data(struct serializer *obj,
 	return serialize_buffer(obj, param->pData, param->length);
 }
 
+static CK_RV serialize_mecha_ulong_param(struct serializer *obj,
+					 CK_MECHANISM_PTR mecha)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	uint32_t pkcs11_data = 0;
+	CK_ULONG ck_data = 0;
+
+	if (mecha->ulParameterLen != sizeof(ck_data))
+		return CKR_ARGUMENTS_BAD;
+
+	memcpy(&ck_data, mecha->pParameter, mecha->ulParameterLen);
+	pkcs11_data = ck_data;
+
+	rv = serialize_32b(obj, obj->type);
+	if (rv)
+		return rv;
+
+	rv = serialize_32b(obj, sizeof(uint32_t));
+	if (rv)
+		return rv;
+
+	return serialize_32b(obj, pkcs11_data);
+}
+
 /**
  * serialize_ck_mecha_params - serialize a mechanism type & params
  *
@@ -545,6 +570,14 @@ CK_RV serialize_ck_mecha_params(struct serializer *obj,
 
 	case CKM_AES_CBC_ENCRYPT_DATA:
 		return serialize_mecha_aes_cbc_encrypt_data(obj, &mecha);
+
+	case CKM_MD5_HMAC_GENERAL:
+	case CKM_SHA_1_HMAC_GENERAL:
+	case CKM_SHA224_HMAC_GENERAL:
+	case CKM_SHA256_HMAC_GENERAL:
+	case CKM_SHA384_HMAC_GENERAL:
+	case CKM_SHA512_HMAC_GENERAL:
+		return serialize_mecha_ulong_param(obj, &mecha);
 
 	default:
 		return CKR_MECHANISM_INVALID;
