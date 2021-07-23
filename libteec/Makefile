@@ -9,7 +9,7 @@ all: libteec
 ################################################################################
 # Teec configuration
 ################################################################################
-MAJOR_VERSION	:= 1
+MAJOR_VERSION	:= 2
 MINOR_VERSION	:= 0
 PATCH_VERSION	:= 0
 LIB_NAME	:= libteec.so
