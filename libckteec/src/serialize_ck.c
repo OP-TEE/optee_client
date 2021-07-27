@@ -298,7 +298,12 @@ static CK_RV deserialize_ck_attribute(struct pkcs11_attribute_head *in,
 			return CKR_ATTRIBUTE_TYPE_INVALID;
 
 		memcpy(&pkcs11_data32, data, sizeof(uint32_t));
-		ck_ulong = pkcs11_data32;
+		if (out->type == CKA_KEY_GEN_MECHANISM &&
+		    pkcs11_data32 == PKCS11_CK_UNAVAILABLE_INFORMATION)
+			ck_ulong = CK_UNAVAILABLE_INFORMATION;
+		else
+			ck_ulong = pkcs11_data32;
+
 		memcpy(out->pValue, &ck_ulong, sizeof(CK_ULONG));
 		out->ulValueLen = sizeof(CK_ULONG);
 		return CKR_OK;
