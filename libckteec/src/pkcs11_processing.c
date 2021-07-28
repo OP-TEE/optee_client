@@ -1621,8 +1621,11 @@ CK_RV ck_unwrap_key(CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism,
 	size_t out_size = 0;
 
 	if (!handle || !mechanism || (count && !attribs) ||
-	    !unwrapping_key || (wrapped_key_len && !wrapped_key))
+	    (wrapped_key_len && !wrapped_key))
 		return CKR_ARGUMENTS_BAD;
+
+	if (!unwrapping_key)
+		return CKR_UNWRAPPING_KEY_HANDLE_INVALID;
 
 	rv = serialize_ck_mecha_params(&smecha, mechanism);
 	if (rv)
