@@ -385,6 +385,10 @@ out:
 
 /**
  * ck_open_session - Wrap C_OpenSession into PKCS11_CMD_OPEN_{RW|RO}_SESSION
+ *
+ * Note: cookie and callback are not utilized by libckteec and are silently
+ * sinked in to have better out-of-box compatibility with 3rd party libraries
+ * and applications which provides the callback.
  */
 CK_RV ck_open_session(CK_SLOT_ID slot, CK_FLAGS flags, CK_VOID_PTR cookie,
 		      CK_NOTIFY callback, CK_SESSION_HANDLE_PTR session)
@@ -398,11 +402,12 @@ CK_RV ck_open_session(CK_SLOT_ID slot, CK_FLAGS flags, CK_VOID_PTR cookie,
 	size_t out_size = 0;
 	uint8_t *buf;
 
+	/* Ignore notify callback */
+	(void)cookie;
+	(void)callback;
+
 	if ((flags & ~(CKF_RW_SESSION | CKF_SERIAL_SESSION)) || !session)
 		return CKR_ARGUMENTS_BAD;
-
-	if (cookie || callback)
-		return CKR_FUNCTION_NOT_SUPPORTED;
 
 	/* Shm io0: (in/out) ctrl = [slot-id][flags] / [status] */
 	ctrl = ckteec_alloc_shm(sizeof(slot_id) + sizeof(u32_flags),
