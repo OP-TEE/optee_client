@@ -19,6 +19,7 @@ struct plugin {
 	struct plugin *next;
 };
 
+#ifdef TEE_SUPP_PLUGINS
 /*
  * Loads all shared objects from 'CFG_TEE_PLUGIN_LOAD_PATH'
  * and binds all functions.
@@ -29,6 +30,21 @@ TEEC_Result plugin_load_all(void);
 
 /* Plugin RPC handler */
 TEEC_Result plugin_process(size_t num_params, struct tee_ioctl_param *params);
+#else
+static inline TEEC_Result plugin_load_all(void)
+{
+	return TEEC_SUCCESS;
+}
+
+static inline TEEC_Result plugin_process(size_t num_params,
+					 struct tee_ioctl_param *params)
+{
+	(void)num_params;
+	(void)params;
+
+	return TEEC_ERROR_NOT_SUPPORTED;
+}
+#endif /*TEE_SUPP_PLUGINS*/
 
 #endif /* PLUGIN_H */
 
