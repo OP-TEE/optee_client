@@ -242,6 +242,27 @@ typedef CK_KEY_TYPE *CK_KEY_TYPE_PTR;
 #define CKK_SHA224_HMAC			0x02e
 
 /*
+ * Certificates
+ */
+typedef CK_ULONG CK_CERTIFICATE_TYPE;
+typedef CK_ULONG CK_CERTIFICATE_CATEGORY;
+
+/*
+ * Valid values for attribute CKA_CERTIFICATE_TYPE
+ */
+#define CKC_X_509			0x00000000UL
+#define CKC_X_509_ATTR_CERT		0x00000001UL
+#define CKC_WTLS			0x00000002UL
+
+/*
+ * Valid values for attribute CKA_CERTIFICATE_CATEGORY
+ */
+#define CK_CERTIFICATE_CATEGORY_UNSPECIFIED	0UL
+#define CK_CERTIFICATE_CATEGORY_TOKEN_USER	1UL
+#define CK_CERTIFICATE_CATEGORY_AUTHORITY	2UL
+#define CK_CERTIFICATE_CATEGORY_OTHER_ENTITY	3UL
+
+/*
  * Mechanisms
  *
  * Note: a mechanism can be referenced as object reference in some PKCS#11 API
