@@ -517,6 +517,8 @@ static TEEC_Result ioctl_errno_to_res(int err)
 	switch (err) {
 	case ENOMEM:
 		return TEEC_ERROR_OUT_OF_MEMORY;
+	case EINVAL:
+		return TEEC_ERROR_BAD_PARAMETERS;
 	default:
 		return TEEC_ERROR_GENERIC;
 	}
