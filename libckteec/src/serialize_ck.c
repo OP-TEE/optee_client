@@ -659,6 +659,7 @@ CK_RV serialize_ck_mecha_params(struct serializer *obj,
 	case CKM_RSA_PKCS_OAEP:
 		return serialize_mecha_rsa_oaep_param(obj, &mecha);
 
+	case CKM_AES_CMAC_GENERAL:
 	case CKM_MD5_HMAC_GENERAL:
 	case CKM_SHA_1_HMAC_GENERAL:
 	case CKM_SHA224_HMAC_GENERAL:
