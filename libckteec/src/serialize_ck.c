@@ -195,7 +195,7 @@ static CK_RV serialize_ck_attribute(struct serializer *obj, CK_ATTRIBUTE *attr)
 			CK_ULONG ck_ulong = 0;
 
 			if (attr->ulValueLen < sizeof(CK_ULONG))
-				return CKR_ATTRIBUTE_TYPE_INVALID;
+				return CKR_ATTRIBUTE_VALUE_INVALID;
 
 			memcpy(&ck_ulong, attr->pValue, sizeof(ck_ulong));
 			pkcs11_data32 = ck_ulong;
@@ -297,7 +297,7 @@ static CK_RV deserialize_ck_attribute(struct pkcs11_attribute_head *in,
 	/* Specific ulong encoded as 32bit in PKCS11 TA API */
 	if (ck_attr_is_ulong(out->type)) {
 		if (out->ulValueLen < sizeof(CK_ULONG))
-			return CKR_ATTRIBUTE_TYPE_INVALID;
+			return CKR_ATTRIBUTE_VALUE_INVALID;
 
 		memcpy(&pkcs11_data32, data, sizeof(uint32_t));
 		if (out->type == CKA_KEY_GEN_MECHANISM &&
