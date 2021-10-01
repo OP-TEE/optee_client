@@ -136,6 +136,7 @@ static int ck_attr_is_ulong(CK_ATTRIBUTE_TYPE attribute_id)
 	switch (attribute_id) {
 	case CKA_CLASS:
 	case CKA_CERTIFICATE_TYPE:
+	case CKA_NAME_HASH_ALGORITHM:
 	case CKA_KEY_TYPE:
 	case CKA_HW_FEATURE_TYPE:
 	case CKA_MECHANISM_TYPE:
