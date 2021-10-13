@@ -8,6 +8,8 @@ Debug
 GPATH
 GRTAGS
 GTAGS
+tags
+TAGS
 /libs
 /obj
 out
