@@ -460,6 +460,10 @@ CK_RV ck_digest_update(CK_SESSION_HANDLE session, CK_BYTE_PTR in,
 	 * Shm io0: (in/out) ctrl = [session-handle] / [status]
 	 */
 	ctrl = ckteec_alloc_shm(sizeof(session_handle), CKTEEC_SHM_INOUT);
+	if (!ctrl) {
+		rv = CKR_HOST_MEMORY;
+		goto bail;
+	}
 	buf = ctrl->buffer;
 
 	memcpy(buf, &session_handle, sizeof(session_handle));
