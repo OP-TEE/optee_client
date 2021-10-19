@@ -85,6 +85,7 @@ static int try_load_secure_module(const char* prefix,
 	FILE *file = NULL;
 	bool first_try = true;
 	size_t s = 0;
+	long l = 0;
 	int n = 0;
 
 	if (!ta_size || !destination) {
@@ -137,7 +138,14 @@ again:
 		return TA_BINARY_NOT_FOUND;
 	}
 
-	s = ftell(file);
+	l = ftell(file);
+	if (l < 0) {
+		DMSG("failed to ftell the ta %s TA-file", fname);
+		fclose(file);
+		return TA_BINARY_NOT_FOUND;
+	}
+
+	s = l;
 	if (s > *ta_size || !ta) {
 		/*
 		 * Buffer isn't large enough, return the required size to
