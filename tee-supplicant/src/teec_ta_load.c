@@ -88,7 +88,7 @@ static int try_load_secure_module(const char* prefix,
 	int n = 0;
 
 	if (!ta_size || !destination) {
-		printf("wrong inparameter to TEECI_LoadSecureModule\n");
+		DMSG("wrong inparameter to TEECI_LoadSecureModule");
 		return TA_BINARY_NOT_FOUND;
 	}
 
@@ -153,7 +153,7 @@ again:
 	}
 
 	if (s != fread(ta, 1, s, file)) {
-		printf("error fread TA file\n");
+		DMSG("failed to fread the ta %s TA-file", fname);
 		fclose(file);
 		return TA_BINARY_NOT_FOUND;
 	}
