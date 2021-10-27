@@ -57,6 +57,20 @@
 #endif
 #include <linux/tee.h>
 
+/*
+ * Used when checking how much data we have queued.
+ *
+ * For SOCK_DGRAM we try to be accurate up to 4096 bytes as
+ * that's our arbitrary chosen sensible upper size (with
+ * some margin). Larger size doesn't make much sense since
+ * anything larger than the MTU is bound to cause trouble
+ * on a congested network.
+ *
+ * For SOCK_STREAM we chose the same upper limit for
+ * simplicity. It doesn't matter if there's more queued,
+ * no data will be lost.
+ */
+#define SUPP_MAX_PEEK_LEN 4096
 
 struct sock_instance {
 	uint32_t id;
@@ -479,25 +493,91 @@ static TEEC_Result tee_socket_send(size_t num_params,
 	return res;
 }
 
+static ssize_t recv_with_out_flags(int fd, void *buf, size_t len, int inflags,
+				   int *out_flags)
+{
+	struct iovec iov = { .iov_base = buf, .iov_len = len, };
+	struct msghdr msg = { .msg_iov = &iov, .msg_iovlen = 1, };
+	ssize_t r = recvmsg(fd, &msg, inflags);
+
+	if (r >= 0)
+		*out_flags = msg.msg_flags;
+	return r;
+}
+
 static TEEC_Result read_with_timeout(int fd, void *buf, size_t *blen,
 				     uint32_t timeout)
 {
 	TEEC_Result res = TEEC_ERROR_GENERIC;
 	struct pollfd pfd = { .fd = fd, .events = POLLIN };
+	int socktype = 0;
+	socklen_t l = sizeof(socktype);
+	size_t peek_len = 0;
+	int out_flags = 0;
 	ssize_t r = 0;
+	int e = 0;
 
-	res = poll_with_timeout(&pfd, 1, timeout);
-	if (res != TEEC_SUCCESS)
-		return res;
-
-	r = read(fd, buf, *blen);
-	if (r == -1) {
-		if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)
-			return TEE_ISOCKET_ERROR_TIMEOUT;
+	if (getsockopt(fd, SOL_SOCKET, SO_TYPE, &socktype, &l))
 		return TEEC_ERROR_BAD_PARAMETERS;
+
+	if (*blen) {
+		/* If *blen == 0, the timeout parameter has no effect. */
+		res = poll_with_timeout(&pfd, 1, timeout);
+		if (res != TEEC_SUCCESS)
+			return res;
 	}
-	*blen = r;
+
+	if ((socktype == SOCK_DGRAM && *blen < SUPP_MAX_PEEK_LEN) || !*blen) {
+		/* Check how much data we have queued. */
+		void *b = malloc(SUPP_MAX_PEEK_LEN);
+
+		if (!b)
+			return TEEC_ERROR_OUT_OF_MEMORY;
+		r = recv_with_out_flags(fd, b, SUPP_MAX_PEEK_LEN,
+					MSG_PEEK | MSG_DONTWAIT, &out_flags);
+		e = errno;
+		free(b);
+		if (r < 0)
+			goto err;
+
+		/*
+		 * If the message was truncated we know that it's at least
+		 * one byte larger.
+		 */
+		if (out_flags & MSG_TRUNC)
+			r++;
+
+		if (!*blen) {
+			*blen = r;
+			return TEEC_SUCCESS;
+		}
+
+		peek_len = r;
+	}
+
+	r = recv_with_out_flags(fd, buf, *blen, MSG_DONTWAIT, &out_flags);
+	if (r == -1) {
+		e = errno;
+		goto err;
+	}
+	if (socktype == SOCK_DGRAM && (out_flags & MSG_TRUNC)) {
+		/*
+		 * The datagram has been truncated, return the best length
+		 * we have to indicate that.
+		 */
+		if (peek_len > (size_t)r)
+			*blen = peek_len;
+		else
+			*blen = r + 1;
+	} else {
+		*blen = r;
+	}
 	return TEEC_SUCCESS;
+
+err:
+	if (e == EAGAIN || e == EWOULDBLOCK || e == EINTR)
+		return TEE_ISOCKET_ERROR_TIMEOUT;
+	return TEEC_ERROR_BAD_PARAMETERS;
 }
 
 static TEEC_Result tee_socket_recv(size_t num_params,
