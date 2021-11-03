@@ -16,7 +16,7 @@ SBINDIR ?= /usr/sbin
 LIBDIR ?= /usr/lib
 INCLUDEDIR ?= /usr/include
 
-.PHONY: all build build-libteec build-libckteec install copy_export \
+.PHONY: all build build-libteec build-libckteec build-libseteec install copy_export \
 	clean cscope clean-cscope \
 	checkpatch-pre-req checkpatch-modified-patch checkpatch-modified-file \
 	checkpatch-last-commit-patch checkpatch-last-commit-file \
@@ -34,15 +34,19 @@ build-tee-supplicant: build-libteec
 	@echo "Building tee-supplicant"
 	$(MAKE) --directory=tee-supplicant  --no-print-directory --no-builtin-variables CFG_TEE_SUPP_LOG_LEVEL=$(CFG_TEE_SUPP_LOG_LEVEL)
 
-build: build-libteec build-tee-supplicant build-libckteec
+build: build-libteec build-tee-supplicant build-libckteec build-libseteec
 
 build-libckteec: build-libteec
 	@echo "Building libckteec.so"
 	@$(MAKE) --directory=libckteec --no-print-directory --no-builtin-variables
 
+build-libseteec: build-libteec
+	@echo "Building libseteec.so"
+	@$(MAKE) --directory=libseteec --no-print-directory --no-builtin-variables
+
 install: copy_export
 
-clean: clean-libteec clean-tee-supplicant clean-cscope clean-libckteec
+clean: clean-libteec clean-tee-supplicant clean-cscope clean-libckteec clean-libseteec
 
 clean-libteec:
 	@$(MAKE) --directory=libteec --no-print-directory clean
@@ -52,6 +56,9 @@ clean-tee-supplicant:
 
 clean-libckteec:
 	@$(MAKE) --directory=libckteec --no-print-directory clean
+
+clean-libseteec:
+	@$(MAKE) --directory=libseteec --no-print-directory clean
 
 cscope:
 	@echo "  CSCOPE"
@@ -137,3 +144,6 @@ copy_export: build
 	cp libckteec/include/*.h $(DESTDIR)$(INCLUDEDIR)
 	cp -a ${O}/libckteec/libckteec.so* $(DESTDIR)$(LIBDIR)
 	cp -a ${O}/libckteec/libckteec.a $(DESTDIR)$(LIBDIR)
+	cp libseteec/include/*.h $(DESTDIR)$(INCLUDEDIR)
+	cp -a ${O}/libseteec/libseteec.so* $(DESTDIR)$(LIBDIR)
+	cp -a ${O}/libseteec/libseteec.a $(DESTDIR)$(LIBDIR)
