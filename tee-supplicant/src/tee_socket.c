@@ -496,13 +496,26 @@ static TEEC_Result tee_socket_send(size_t num_params,
 static ssize_t recv_with_out_flags(int fd, void *buf, size_t len, int inflags,
 				   int *out_flags)
 {
-	struct iovec iov = { .iov_base = buf, .iov_len = len, };
-	struct msghdr msg = { .msg_iov = &iov, .msg_iovlen = 1, };
-	ssize_t r = recvmsg(fd, &msg, inflags);
+	ssize_t r = 0;
 
-	if (r >= 0)
+	while (true) {
+		struct iovec iov = { .iov_base = buf, .iov_len = len, };
+		struct msghdr msg = { .msg_iov = &iov, .msg_iovlen = 1, };
+
+		r = recvmsg(fd, &msg, inflags);
+		if (r < 0) {
+			/*
+			 * If the syscall was just interrupted by a signal
+			 * delivery, try again.
+			 */
+			if (errno == EINTR)
+				continue;
+			return r;
+		}
+
 		*out_flags = msg.msg_flags;
-	return r;
+		return r;
+	}
 }
 
 static TEEC_Result read_with_timeout(int fd, void *buf, size_t *blen,
@@ -575,7 +588,7 @@ static TEEC_Result read_with_timeout(int fd, void *buf, size_t *blen,
 	return TEEC_SUCCESS;
 
 err:
-	if (e == EAGAIN || e == EWOULDBLOCK || e == EINTR)
+	if (e == EAGAIN || e == EWOULDBLOCK)
 		return TEE_ISOCKET_ERROR_TIMEOUT;
 	return TEEC_ERROR_BAD_PARAMETERS;
 }
