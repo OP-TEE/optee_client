@@ -588,8 +588,17 @@ static TEEC_Result read_with_timeout(int fd, void *buf, size_t *blen,
 	return TEEC_SUCCESS;
 
 err:
-	if (e == EAGAIN || e == EWOULDBLOCK)
+	if (e == EAGAIN || e == EWOULDBLOCK) {
+		/*
+		 * If *blen is supplied as 0 then we're not supposed wait
+		 * for data so the call to poll has been skipped. In case
+		 * there is no data available recvmsg() will return an
+		 * error with errno set to EAGAIN or EWOULDBLOCK.
+		 */
+		if (!*blen)
+			return TEEC_SUCCESS;
 		return TEE_ISOCKET_ERROR_TIMEOUT;
+	}
 	return TEEC_ERROR_BAD_PARAMETERS;
 }
 
