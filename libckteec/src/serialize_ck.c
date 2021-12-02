@@ -451,6 +451,43 @@ static CK_RV serialize_mecha_key_deriv_str(struct serializer *obj,
 	return serialize_buffer(obj, param->pData, param->ulLen);
 }
 
+static CK_RV serialize_mecha_ecdh1_derive_param(struct serializer *obj,
+						CK_MECHANISM_PTR mecha)
+{
+	CK_ECDH1_DERIVE_PARAMS *params = mecha->pParameter;
+	CK_RV rv = CKR_GENERAL_ERROR;
+	size_t params_size = 3 * sizeof(uint32_t) + params->ulSharedDataLen +
+			     params->ulPublicDataLen;
+
+	rv = serialize_32b(obj, obj->type);
+	if (rv)
+		return rv;
+
+	rv = serialize_32b(obj, params_size);
+	if (rv)
+		return rv;
+
+	rv = serialize_32b(obj, params->kdf);
+	if (rv)
+		return rv;
+
+	rv = serialize_32b(obj, params->ulSharedDataLen);
+	if (rv)
+		return rv;
+
+	rv = serialize_buffer(obj, params->pSharedData,
+			      params->ulSharedDataLen);
+	if (rv)
+		return rv;
+
+	rv = serialize_32b(obj, params->ulPublicDataLen);
+	if (rv)
+		return rv;
+
+	return serialize_buffer(obj, params->pPublicData,
+				params->ulPublicDataLen);
+}
+
 static CK_RV serialize_mecha_aes_cbc_encrypt_data(struct serializer *obj,
 						  CK_MECHANISM_PTR mecha)
 {
@@ -649,6 +686,10 @@ CK_RV serialize_ck_mecha_params(struct serializer *obj,
 
 	case CKM_AES_CBC_ENCRYPT_DATA:
 		return serialize_mecha_aes_cbc_encrypt_data(obj, &mecha);
+
+	case CKM_ECDH1_DERIVE:
+	case CKM_ECDH1_COFACTOR_DERIVE:
+		return serialize_mecha_ecdh1_derive_param(obj, &mecha);
 
 	case CKM_RSA_PKCS_PSS:
 	case CKM_SHA1_RSA_PKCS_PSS:

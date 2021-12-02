@@ -438,6 +438,27 @@ typedef CK_ULONG CK_RSA_PKCS_OAEP_SOURCE_TYPE;
 typedef CK_ULONG CK_MAC_GENERAL_PARAMS;
 typedef CK_MAC_GENERAL_PARAMS *CK_MAC_GENERAL_PARAMS_PTR;
 
+/*
+ * CK_EC_KDF_TYPE is used to indicate the Key Derivation Function (KDF) applied
+ * to derive keying data from a shared secret.
+ */
+typedef CK_ULONG CK_EC_KDF_TYPE;
+
+/*
+ * Elliptic curve Diffie-Hellman key derivation
+ * Elliptic curve Diffie-Hellman cofactor key derivation parameters
+ */
+typedef struct CK_ECDH1_DERIVE_PARAMS CK_ECDH1_DERIVE_PARAMS;
+typedef struct CK_ECDH1_DERIVE_PARAMS *CK_ECDH1_DERIVE_PARAMS_PTR;
+
+struct CK_ECDH1_DERIVE_PARAMS {
+	CK_EC_KDF_TYPE		kdf;
+	CK_ULONG		ulSharedDataLen;
+	CK_BYTE_PTR		pSharedData;
+	CK_ULONG		ulPublicDataLen;
+	CK_BYTE_PTR		pPublicData;
+};
+
 /* AES CBC encryption parameters */
 typedef struct CK_AES_CBC_ENCRYPT_DATA_PARAMS CK_AES_CBC_ENCRYPT_DATA_PARAMS;
 typedef struct CK_AES_CBC_ENCRYPT_DATA_PARAMS
