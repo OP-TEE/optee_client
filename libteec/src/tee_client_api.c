@@ -48,6 +48,8 @@
 
 #include "teec_benchmark.h"
 
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
 /* How many device sequence numbers will be tried before giving up */
 #define TEEC_MAX_DEV_SEQ	10
 
@@ -398,10 +400,9 @@ static void teec_post_process_tmpref(uint32_t param_type,
 			TEEC_SharedMemory *shm)
 {
 	if (param_type != TEEC_MEMREF_TEMP_INPUT) {
-		if (MEMREF_SIZE(param) <= tmpref->size && tmpref->buffer &&
-		    shm->shadow_buffer)
+		if (tmpref->buffer && shm->shadow_buffer)
 			memcpy(tmpref->buffer, shm->shadow_buffer,
-			       MEMREF_SIZE(param));
+			       MIN(MEMREF_SIZE(param), tmpref->size));
 
 		tmpref->size = MEMREF_SIZE(param);
 	}
