@@ -113,9 +113,10 @@ TEEC_Result plugin_load_all(void)
 	TEEC_Result teec_res = TEEC_SUCCESS;
 	struct dirent *entry = NULL;
 
-	dir = opendir(TEE_PLUGIN_LOAD_PATH);
+	dir = opendir(supplicant_params.plugin_load_path);
+
 	if (!dir) {
-		IMSG("could not open directory %s", TEE_PLUGIN_LOAD_PATH);
+		IMSG("could not open directory %s", supplicant_params.plugin_load_path);
 
 		/* don't generate error if there is no the dir */
 		return TEEC_SUCCESS;

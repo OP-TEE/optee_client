@@ -98,7 +98,11 @@ struct param_value {
 static pthread_mutex_t shm_mutex = PTHREAD_MUTEX_INITIALIZER;
 static struct tee_shm *shm_head;
 
-static const char *ta_dir;
+struct tee_supplicant_params supplicant_params = {
+	.ta_dir = "optee_armtz",
+	.plugin_load_path = TEE_PLUGIN_LOAD_PATH,
+	.fs_parent_path  = TEE_FS_PARENT_PATH,
+};
 
 static void *thread_main(void *a);
 
@@ -290,7 +294,7 @@ static uint32_t load_ta(size_t num_params, struct tee_ioctl_param *params)
 	uuid_from_octets(&uuid, (void *)val_cmd);
 
 	size = shm_ta.size;
-	ta_found = TEECI_LoadSecureModule(ta_dir, &uuid, shm_ta.buffer, &size);
+	ta_found = TEECI_LoadSecureModule(supplicant_params.ta_dir, &uuid, shm_ta.buffer, &size);
 	if (ta_found != TA_BINARY_FOUND) {
 		EMSG("  TA not found");
 		return TEEC_ERROR_ITEM_NOT_FOUND;
@@ -453,7 +457,6 @@ static int open_dev(const char *devname, uint32_t *gen_caps)
 	if (vers.impl_id != TEE_IMPL_ID_OPTEE)
 		goto err;
 
-	ta_dir = "optee_armtz";
 	if (gen_caps)
 		*gen_caps = vers.gen_caps;
 
