@@ -31,6 +31,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <getopt.h>
 #include <inttypes.h>
 #include <prof.h>
 #include <plugin.h>
@@ -484,9 +485,16 @@ static int get_dev_fd(uint32_t *gen_caps)
 
 static int usage(int status)
 {
-	fprintf(stderr, "Usage: tee-supplicant [-d] [<device-name>]\n");
-	fprintf(stderr, "       -d: run as a daemon (fork after successful "
+	fprintf(stderr, "Usage: tee-supplicant [options] [<device-name>]\n");
+	fprintf(stderr, "\t-h, --help: this help\n");
+	fprintf(stderr, "\t-d, --daemonize: run as a daemon (fork after successful "
 			"initialization)\n");
+	fprintf(stderr, "\t-f, --fs-parent-path: secure fs parent path [%s]\n",
+			supplicant_params.fs_parent_path);
+	fprintf(stderr, "\t-t, --ta-dir: TAs dirname under %s [%s]\n", TEEC_LOAD_PATH,
+			supplicant_params.ta_dir);
+	fprintf(stderr, "\t-p, --plugin-path: plugin load path [%s]\n",
+			supplicant_params.plugin_load_path);
 	return status;
 }
 
@@ -688,7 +696,8 @@ int main(int argc, char *argv[])
 	bool daemonize = false;
 	char *dev = NULL;
 	int e = 0;
-	int i = 0;
+	int long_index = 0;
+	int opt = 0;
 
 	e = pthread_mutex_init(&arg.mutex, NULL);
 	if (e) {
@@ -697,16 +706,48 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	if (argc > 3)
-		return usage(EXIT_FAILURE);
+	static struct option long_options[] = {
+		/* long name      | has argument  | flag | short value */
+		{ "help",            no_argument,       0, 'h' },
+		{ "daemonize",       no_argument,       0, 'd' },
+		{ "fs-parent-path",  required_argument, 0, 'f' },
+		{ "ta-dir",          required_argument, 0, 't' },
+		{ "plugin-path",     required_argument, 0, 'p' },
+		{ 0, 0, 0, 0 }
+	};
 
-	for (i = 1; i < argc; i++) {
-		if (!strcmp(argv[i], "-d"))
-			daemonize = true;
-		else if (!strcmp(argv[i], "-h"))
-			return usage(EXIT_SUCCESS);
-		else
-			dev = argv[i];
+	while ((opt = getopt_long(argc, argv, "hdf:t:p:",
+				long_options, &long_index )) != -1) {
+		switch (opt) {
+			case 'h' :
+				return usage(EXIT_SUCCESS);
+				break;
+			case 'd':
+				daemonize = true;
+				break;
+			case 'f':
+				supplicant_params.fs_parent_path = optarg;
+				break;
+			case 't':
+				supplicant_params.ta_dir = optarg;
+				break;
+			case 'p':
+				supplicant_params.plugin_load_path = optarg;
+				break;
+			default:
+				return usage(EXIT_FAILURE);
+		}
+	}
+	/* check for non option argument, which is device name */
+	if (argv[optind]) {
+		fprintf(stderr, "Using device %s.\n", argv[optind]);
+		dev = argv[optind];
+		/* check that we do not have too many arguments */
+		if (argv[optind + 1]) {
+			fprintf(stderr, "Too many arguments passed: extra argument: %s.\n",
+					argv[optind+1]);
+			return usage(EXIT_FAILURE);
+		}
 	}
 
 	if (daemonize && daemon(0, 0) < 0) {
