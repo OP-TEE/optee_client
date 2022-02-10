@@ -112,6 +112,7 @@ TEEC_Result plugin_load_all(void)
 	enum plugin_err res = PLUGIN_OK;
 	TEEC_Result teec_res = TEEC_SUCCESS;
 	struct dirent *entry = NULL;
+	char path[PATH_MAX] = { 0 };
 
 	dir = opendir(supplicant_params.plugin_load_path);
 
@@ -124,6 +125,7 @@ TEEC_Result plugin_load_all(void)
 
 	while ((entry = readdir(dir))) {
 		struct plugin *p;
+		int r;
 
 		if (!strcmp(entry->d_name, "..") || !strcmp(entry->d_name, "."))
 			continue;
@@ -135,8 +137,15 @@ TEEC_Result plugin_load_all(void)
 			closedir(dir);
 			return TEEC_ERROR_OUT_OF_MEMORY;
 		}
-
-		res = load_plugin((const char *)entry->d_name, p);
+		r = snprintf(path, sizeof(path), "%s/%s",
+		             supplicant_params.plugin_load_path, entry->d_name);
+		if (r < 0 || r >= (int)sizeof(path)) {
+			EMSG("assemble of full path for plugin <%s> failed",
+			     entry->d_name);
+			closedir(dir);
+			return TEEC_ERROR_GENERIC ;
+		}
+		res = load_plugin(path, p);
 		switch (res) {
 		case PLUGIN_DL_OPEN_ERR:
 			EMSG("open plugin <%s> failed: %s",
