@@ -43,6 +43,7 @@ struct tee_supplicant_params {
     const char *ta_dir;
     const char *plugin_load_path;
     const char *fs_parent_path;
+    const char *rpmb_cid;
 };
 
 extern struct tee_supplicant_params supplicant_params;

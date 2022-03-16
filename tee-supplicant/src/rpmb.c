@@ -25,6 +25,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dirent.h>
 #include <fcntl.h>
 #include <linux/types.h>
 #include <linux/mmc/ioctl.h>
@@ -303,6 +304,69 @@ static TEEC_Result read_cid(uint16_t dev_id, uint8_t *cid)
 		cid[i] = v;
 	}
 	return TEEC_SUCCESS;
+}
+
+/*
+ * - If --rpmb-cid is given, find the eMMC RPMB device number with the specified
+ * CID, cache the number, copy it to @ndev_id and return true. If not found
+ * return false.
+ * - If --rpmb-cid is not given, copy @dev_id to @ndev_id and return true.
+ */
+static bool remap_rpmb_dev_id(uint16_t dev_id, uint16_t *ndev_id)
+{
+	TEEC_Result res = TEEC_ERROR_GENERIC;
+	static bool found = false;
+	static bool err = false;
+	static uint16_t id = 0;
+	char cid[CID_STR_SZ + 1] = { };
+	struct dirent *dent = NULL;
+	DIR *dir = NULL;
+	int num = 0;
+
+	if (err || found)
+		goto out;
+
+	if (!supplicant_params.rpmb_cid) {
+		id = dev_id;
+		found = true;
+		goto out;
+	}
+
+	dir = opendir("/sys/class/mmc_host");
+	if (!dir) {
+		EMSG("Could not open /sys/class/mmc_host (%s)",
+		     strerror(errno));
+		err = true;
+		goto out;
+	}
+
+	while ((dent = readdir(dir))) {
+		if (sscanf(dent->d_name, "%*[^0123456789]%d", &num) != 1)
+			continue;
+		if (num > UINT16_MAX) {
+			EMSG("Too many MMC devices");
+			err = true;
+			break;
+		}
+		id = (uint16_t)num;
+		res = read_cid_str(id, cid);
+		if (res)
+			continue;
+		if (strcmp(cid, supplicant_params.rpmb_cid))
+			continue;
+		IMSG("RPMB device %s is at /dev/mmcblk%urpmb\n", cid, id);
+		found = true;
+		break;
+	}
+
+	closedir(dir);
+
+	if (!found)
+		err = true;
+out:
+	if (found)
+		*ndev_id = id;
+	return found;
 }
 
 #else /* RPMB_EMU */
@@ -693,6 +757,12 @@ static void close_mmc_fd(int fd)
 	(void)fd;
 }
 
+static bool remap_rpmb_dev_id(uint16_t dev_id, uint16_t *ndev_id)
+{
+	*ndev_id = dev_id;
+	return true;
+}
+
 #endif /* RPMB_EMU */
 
 /*
@@ -877,17 +947,21 @@ static uint32_t rpmb_process_request_unlocked(void *req, size_t req_size,
 	struct rpmb_req *sreq = req;
 	size_t req_nfrm = 0;
 	size_t rsp_nfrm = 0;
+	uint16_t dev_id = 0;
 	uint32_t res = 0;
 	int fd = 0;
 
 	if (req_size < sizeof(*sreq))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
+	if (!remap_rpmb_dev_id(sreq->dev_id, &dev_id))
+		return TEEC_ERROR_ITEM_NOT_FOUND;
+
 	switch (sreq->cmd) {
 	case RPMB_CMD_DATA_REQ:
 		req_nfrm = (req_size - sizeof(struct rpmb_req)) / 512;
 		rsp_nfrm = rsp_size / 512;
-		fd = mmc_rpmb_fd(sreq->dev_id);
+		fd = mmc_rpmb_fd(dev_id);
 		if (fd < 0)
 			return TEEC_ERROR_BAD_PARAMETERS;
 		res = rpmb_data_req(fd, RPMB_REQ_DATA(req), req_nfrm, rsp,
@@ -900,8 +974,7 @@ static uint32_t rpmb_process_request_unlocked(void *req, size_t req_size,
 			EMSG("Invalid req/rsp size");
 			return TEEC_ERROR_BAD_PARAMETERS;
 		}
-		res = rpmb_get_dev_info(sreq->dev_id,
-					(struct rpmb_dev_info *)rsp);
+		res = rpmb_get_dev_info(dev_id, (struct rpmb_dev_info *)rsp);
 		break;
 
 	default:
