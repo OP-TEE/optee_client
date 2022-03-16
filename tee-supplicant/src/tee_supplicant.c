@@ -495,6 +495,8 @@ static int usage(int status)
 			supplicant_params.ta_dir);
 	fprintf(stderr, "\t-p, --plugin-path: plugin load path [%s]\n",
 			supplicant_params.plugin_load_path);
+	fprintf(stderr, "\t-r, --rpmb-cid: RPMB device identification register "
+			"(CID) in hexadecimal\n");
 	return status;
 }
 
@@ -713,6 +715,7 @@ int main(int argc, char *argv[])
 		{ "fs-parent-path",  required_argument, 0, 'f' },
 		{ "ta-dir",          required_argument, 0, 't' },
 		{ "plugin-path",     required_argument, 0, 'p' },
+		{ "rpmb-cid",        required_argument, 0, 'r' },
 		{ 0, 0, 0, 0 }
 	};
 
@@ -733,6 +736,9 @@ int main(int argc, char *argv[])
 				break;
 			case 'p':
 				supplicant_params.plugin_load_path = optarg;
+				break;
+			case 'r':
+				supplicant_params.rpmb_cid = optarg;
 				break;
 			default:
 				return usage(EXIT_FAILURE);
