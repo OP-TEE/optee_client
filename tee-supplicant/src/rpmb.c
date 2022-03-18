@@ -201,6 +201,35 @@ static void close_mmc_fd(int fd)
 	close(fd);
 }
 
+/*
+ * Read @n bytes from @fd, takes care of short reads and EINTR.
+ * Adapted from “Advanced Programming In the UNIX Environment” by W. Richard
+ * Stevens and Stephen A. Rago, 2013, 3rd Edition, Addison-Wesley
+ * (EINTR handling was added)
+ */
+static ssize_t readn(int fd, void *ptr, size_t n)
+{
+	size_t nleft = n;
+	ssize_t nread = 0;
+	uint8_t *p = ptr;
+
+	while (nleft > 0) {
+		if ((nread = read(fd, p, nleft)) < 0) {
+			if (errno == EINTR)
+				continue;
+			if (nleft == n)
+				return -1; /* error, nothing read, return -1 */
+			else
+				break; /* error, return amount read so far */
+		} else if (nread == 0) {
+			break; /* EOF */
+		}
+		nleft -= nread;
+		p += nread;
+	}
+	return n - nleft; /* return >= 0 */
+}
+
 /* Device Identification (CID) register is 16 bytes. It is read from sysfs. */
 static uint32_t read_cid(uint16_t dev_id, uint8_t *cid)
 {
@@ -220,9 +249,11 @@ static uint32_t read_cid(uint16_t dev_id, uint8_t *cid)
 	}
 
 	for (i = 0; i < 16; i++) {
-		st = read(fd, hex, 2);
-		if (st < 0) {
-			EMSG("Read CID error (%s)", strerror(errno));
+		st = readn(fd, hex, 2);
+		if (st != 2) {
+			EMSG("Read CID error");
+			if (errno)
+				EMSG("%s", strerror(errno));
 			res = TEEC_ERROR_NO_DATA;
 			goto err;
 		}
