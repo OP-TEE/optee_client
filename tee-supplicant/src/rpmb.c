@@ -64,9 +64,11 @@ struct rpmb_req {
 };
 #define RPMB_REQ_DATA(req) ((void *)((struct rpmb_req *)(req) + 1))
 
+#define RPMB_CID_SZ 16
+
 /* Response to device info request */
 struct rpmb_dev_info {
-	uint8_t cid[16];
+	uint8_t cid[RPMB_CID_SZ];
 	uint8_t rpmb_size_mult;	/* EXT CSD-slice 168: RPMB Size */
 	uint8_t rel_wr_sec_c;	/* EXT CSD-slice 222: Reliable Write Sector */
 				/*                    Count */
@@ -230,39 +232,77 @@ static ssize_t readn(int fd, void *ptr, size_t n)
 	return n - nleft; /* return >= 0 */
 }
 
-/* Device Identification (CID) register is 16 bytes. It is read from sysfs. */
-static uint32_t read_cid(uint16_t dev_id, uint8_t *cid)
+/* Size of CID printed in hexadecimal */
+#define CID_STR_SZ (2 * RPMB_CID_SZ)
+
+static TEEC_Result read_cid_str(uint16_t dev_id, char cid[CID_STR_SZ + 1])
 {
 	TEEC_Result res = TEEC_ERROR_GENERIC;
 	char path[48] = { 0 };
-	char hex[3] = { 0 };
-	int st = 0;
 	int fd = 0;
-	int i = 0;
+	int st = 0;
 
 	snprintf(path, sizeof(path),
 		 "/sys/class/mmc_host/mmc%u/mmc%u:0001/cid", dev_id, dev_id);
 	fd = open(path, O_RDONLY);
-	if (fd < 0) {
-		EMSG("Could not open %s (%s)", path, strerror(errno));
+	if (fd < 0)
 		return TEEC_ERROR_ITEM_NOT_FOUND;
-	}
-
-	for (i = 0; i < 16; i++) {
-		st = readn(fd, hex, 2);
-		if (st != 2) {
-			EMSG("Read CID error");
-			if (errno)
-				EMSG("%s", strerror(errno));
-			res = TEEC_ERROR_NO_DATA;
-			goto err;
-		}
-		cid[i] = (uint8_t)strtol(hex, NULL, 16);
+	st = readn(fd, cid, CID_STR_SZ);
+	if (st != CID_STR_SZ) {
+		EMSG("Read CID error");
+		if (errno)
+			EMSG("%s", strerror(errno));
+		res = TEEC_ERROR_NO_DATA;
+		goto out;
 	}
 	res = TEEC_SUCCESS;
-err:
+out:
 	close(fd);
 	return res;
+}
+
+static int hexchar2int(char c)
+{
+	if (c >= '0' && c <= '9')
+		return c - '0';
+	if (c >= 'a' && c <= 'f')
+		return c - 'a' + 10;
+	if (c >= 'A' && c <= 'F')
+		return c - 'A' + 10;
+	return -1;
+}
+
+static int hexbyte2int(char *hex)
+{
+	int v1 = hexchar2int(hex[0]);
+	int v2 = hexchar2int(hex[1]);
+
+	if (v1 < 0 || v2 < 0)
+		return -1;
+	return 16 * v1 + v2;
+}
+
+/* Device Identification (CID) register is 16 bytes. It is read from sysfs. */
+static TEEC_Result read_cid(uint16_t dev_id, uint8_t *cid)
+{
+	TEEC_Result res = TEEC_ERROR_GENERIC;
+	char cid_str[CID_STR_SZ + 1] = { };
+	int i = 0;
+	int v = 0;
+
+	res = read_cid_str(dev_id, cid_str);
+	if (res)
+		return res;
+
+	for (i = 0; i < RPMB_CID_SZ; i++) {
+		v = hexbyte2int(cid_str + 2 * i);
+		if (v < 0) {
+			EMSG("Invalid CID string: %s", cid_str);
+			return TEEC_ERROR_NO_DATA;
+		}
+		cid[i] = v;
+	}
+	return TEEC_SUCCESS;
 }
 
 #else /* RPMB_EMU */
