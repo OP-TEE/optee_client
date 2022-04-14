@@ -393,7 +393,7 @@ typedef struct {
  *
  * @param   started     Client must initialize to zero if it needs to cancel
  *                      an operation about to be performed.
- * @param   paramTypes  Type of data passed. Use TEEC_PARAMS_TYPE macro to
+ * @param   paramTypes  Type of data passed. Use TEEC_PARAM_TYPES macro to
  *                      create the correct flags.
  *                      0 means TEEC_NONE is passed for all params.
  * @param   params      Array of parameters of type TEEC_Parameter.
