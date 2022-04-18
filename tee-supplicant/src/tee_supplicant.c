@@ -67,6 +67,9 @@
 #define RPC_BUF_SIZE	(sizeof(struct tee_iocl_supp_send_arg) + \
 			 RPC_NUM_PARAMS * sizeof(struct tee_ioctl_param))
 
+char **ta_path;
+char *ta_path_str;
+
 union tee_rpc_invoke {
 	uint64_t buf[(RPC_BUF_SIZE - 1) / sizeof(uint64_t) + 1];
 	struct tee_iocl_supp_recv_arg recv;
@@ -693,6 +696,46 @@ static void *thread_main(void *a)
 	return NULL;
 }
 
+#define TEEC_TEST_LOAD_PATH "/foo:/bar::/baz"
+
+static void set_ta_path(void)
+{
+	char *p = NULL;
+	char *saveptr = NULL;
+	const char *path = (char *)
+#ifdef TEEC_TEST_LOAD_PATH
+		TEEC_TEST_LOAD_PATH ":"
+#endif
+		TEEC_LOAD_PATH;
+	size_t n = 0;
+
+	ta_path_str = strdup(path);
+	if (!ta_path_str)
+		goto err;
+
+	p = ta_path_str;
+	while (strtok_r(p, ":", &saveptr)) {
+		p = NULL;
+		n++;
+	}
+	n++; /* NULL terminator */
+
+	ta_path = malloc(n * sizeof(char *));
+	if (!ta_path)
+		goto err;
+
+	n = 0;
+	strcpy(ta_path_str, path);
+	p = ta_path_str;
+	while ((ta_path[n++] = strtok_r(p, ":", &saveptr)))
+	       p = NULL;
+
+	return;
+err:
+	EMSG("out of memory");
+	exit(EXIT_FAILURE);
+}
+
 int main(int argc, char *argv[])
 {
 	struct thread_arg arg = { .fd = -1 };
@@ -761,6 +804,8 @@ int main(int argc, char *argv[])
 		EMSG("daemon(): %s", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
+
+	set_ta_path();
 
 	if (dev) {
 		arg.fd = open_dev(dev, &arg.gen_caps);

@@ -31,6 +31,11 @@
 #define TA_BINARY_FOUND 0
 #define TA_BINARY_NOT_FOUND -1
 
+/* Heap copy of TA load paths, separated by '\0' (access via ta_path) */
+extern char *ta_path_str;
+/* NULL-terminated list of paths (pointers into ta_path_str) */
+extern char **ta_path;
+
 /**
  * Based on the uuid this function will try to find a TA-binary on the
  * filesystem and return it back to the caller in the parameter ta.

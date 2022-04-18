@@ -67,6 +67,9 @@ struct tee_rpc_cmd {
  * Based on the uuid this function will try to find a TA-binary on the
  * filesystem and return it back to the caller in the parameter ta.
  *
+ * @param: prefix       Prefix for TA load path
+ * @param: dev_path     Where to load the TA from. The full path to the TA
+ *                      binary is @prefix/@dev_path/@destination.ta.
  * @param: destination  The uuid of the TA we are searching for.
  * @param: ta           A pointer which this function will allocate and copy
  *                      the TA from the filesystem to the pointer itself. It is
@@ -176,15 +179,14 @@ int TEECI_LoadSecureModule(const char* dev_path,
 			   const TEEC_UUID *destination, void *ta,
 			   size_t *ta_size)
 {
-#ifdef TEEC_TEST_LOAD_PATH
-	int res = 0;
+	int res = TA_BINARY_NOT_FOUND;
+	char **path = NULL;
 
-	res = try_load_secure_module(TEEC_TEST_LOAD_PATH,
-				     dev_path, destination, ta, ta_size);
-	if (res != TA_BINARY_NOT_FOUND)
-		return res;
-#endif
-
-	return try_load_secure_module(TEEC_LOAD_PATH,
-				      dev_path, destination, ta, ta_size);
+	for (path = ta_path; *path; path++) {
+		res = try_load_secure_module(*path, dev_path, destination, ta,
+					     ta_size);
+		if (res == TA_BINARY_FOUND)
+			break;
+	}
+	return res;
 }
