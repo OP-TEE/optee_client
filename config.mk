@@ -31,6 +31,8 @@ CFG_TEE_CLIENT_LOG_FILE ?= $(CFG_TEE_FS_PARENT_PATH)/teec.log
 
 # CFG_TEE_CLIENT_LOAD_PATH
 #   The location of the client library file.
+#   Suport multiple ta load path
+#   CFG_TEE_CLIENT_LOAD_PATH ?= /lib:/vendor/lib
 CFG_TEE_CLIENT_LOAD_PATH ?= /lib
 
 # CFG_TEE_SUPP_PLUGINS

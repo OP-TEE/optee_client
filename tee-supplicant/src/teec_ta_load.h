@@ -31,6 +31,10 @@
 #define TA_BINARY_FOUND 0
 #define TA_BINARY_NOT_FOUND -1
 
+/* Support multiple TA load paths */
+extern char **ta_prefix;
+extern int num_ta_prefix;
+
 /**
  * Based on the uuid this function will try to find a TA-binary on the
  * filesystem and return it back to the caller in the parameter ta.
