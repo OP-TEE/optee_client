@@ -30,7 +30,10 @@ CFG_TEE_FS_PARENT_PATH ?= /data/tee
 CFG_TEE_CLIENT_LOG_FILE ?= $(CFG_TEE_FS_PARENT_PATH)/teec.log
 
 # CFG_TEE_CLIENT_LOAD_PATH
-#   The location of the client library file.
+#   Colon-separated list of paths where tee-supplicant loads TAs from.
+#   For example: CFG_TEE_CLIENT_LOAD_PATH ?= /lib:/vendor/lib
+#   Note that the TA files are typically in a sub-directory (see the
+#   --ta-dir option).
 CFG_TEE_CLIENT_LOAD_PATH ?= /lib
 
 # CFG_TEE_SUPP_PLUGINS

@@ -11,7 +11,7 @@ option (CFG_TEE_SUPP_PLUGINS "Enable tee-supplicant plugin support" ON)
 
 set (CFG_TEE_SUPP_LOG_LEVEL "1" CACHE STRING "tee-supplicant log level")
 # FIXME: Question is, is this really needed? Should just use defaults from # GNUInstallDirs?
-set (CFG_TEE_CLIENT_LOAD_PATH "/lib" CACHE STRING "Location of libteec.so")
+set (CFG_TEE_CLIENT_LOAD_PATH "/lib" CACHE STRING "Colon-separated list of paths where to look for TAs (see also --ta-dir)")
 set (CFG_TEE_FS_PARENT_PATH "/data/tee" CACHE STRING "Location of TEE filesystem (secure storage)")
 # FIXME: Why do we have if defined(CFG_GP_SOCKETS) && CFG_GP_SOCKETS == 1 in the c-file?
 set (CFG_GP_SOCKETS "1" CACHE STRING "Enable GlobalPlatform Socket API support")
