@@ -101,7 +101,9 @@ static struct tee_shm *shm_head;
 
 struct tee_supplicant_params supplicant_params = {
 	.ta_dir = "optee_armtz",
+#ifdef TEE_PLUGIN_LOAD_PATH
 	.plugin_load_path = TEE_PLUGIN_LOAD_PATH,
+#endif
 	.fs_parent_path  = TEE_FS_PARENT_PATH,
 };
 
