@@ -420,19 +420,18 @@ static uint32_t process_free(size_t num_params, struct tee_ioctl_param *params)
 	if (!shm)
 		return TEEC_ERROR_BAD_PARAMETERS;
 
+	close(shm->fd);
 	if (shm->registered) {
 		free(shm->p);
 	} else  {
 		if (munmap(shm->p, shm->size) != 0) {
 			EMSG("munmap(%p, %zu) failed - Error = %s",
 			     shm->p, shm->size, strerror(errno));
-			close(shm->fd);
 			free(shm);
 			return TEEC_ERROR_BAD_PARAMETERS;
 		}
 	}
 
-	close(shm->fd);
 	free(shm);
 	return TEEC_SUCCESS;
 }
