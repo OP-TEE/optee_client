@@ -176,15 +176,13 @@ int TEECI_LoadSecureModule(const char* dev_path,
 			   const TEEC_UUID *destination, void *ta,
 			   size_t *ta_size)
 {
-#ifdef TEEC_TEST_LOAD_PATH
-	int res = 0;
+	int res = TA_BINARY_NOT_FOUND;
 
-	res = try_load_secure_module(TEEC_TEST_LOAD_PATH,
-				     dev_path, destination, ta, ta_size);
-	if (res != TA_BINARY_NOT_FOUND)
-		return res;
-#endif
-
-	return try_load_secure_module(TEEC_LOAD_PATH,
-				      dev_path, destination, ta, ta_size);
+	for (int i = 0; i < num_ta_prefix; i++) {
+		res = try_load_secure_module(ta_prefix[i],
+				dev_path, destination, ta, ta_size);
+		if (res == TA_BINARY_FOUND)
+			break;
+	}
+	return res;
 }

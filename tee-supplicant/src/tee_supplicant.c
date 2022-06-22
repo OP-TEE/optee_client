@@ -67,6 +67,9 @@
 #define RPC_BUF_SIZE	(sizeof(struct tee_iocl_supp_send_arg) + \
 			 RPC_NUM_PARAMS * sizeof(struct tee_ioctl_param))
 
+char **ta_prefix;
+int num_ta_prefix;
+
 union tee_rpc_invoke {
 	uint64_t buf[(RPC_BUF_SIZE - 1) / sizeof(uint64_t) + 1];
 	struct tee_iocl_supp_recv_arg recv;
@@ -701,6 +704,10 @@ int main(int argc, char *argv[])
 	int e = 0;
 	int long_index = 0;
 	int opt = 0;
+	char *test_ta_prefix_multipath = NULL;
+	char *ta_prefix_multipath = NULL;
+	char *temp;
+	int i, len;
 
 	e = pthread_mutex_init(&arg.mutex, NULL);
 	if (e) {
@@ -762,23 +769,70 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
+	/* Support multiple ta load paths */
+#ifdef TEEC_TEST_LOAD_PATH
+	if (TEEC_TEST_LOAD_PATH) {
+		num_ta_prefix++;
+		len = strlen(TEEC_TEST_LOAD_PATH);
+		for (i = 0; i < len; i++) {
+			if (TEEC_TEST_LOAD_PATH[i] == ':') {
+				num_ta_prefix++;
+			}
+		}
+	}
+#endif
+	if (TEEC_LOAD_PATH) {
+		num_ta_prefix++;
+		len = strlen(TEEC_LOAD_PATH);
+		for (i = 0; i < len; i++) {
+			if (TEEC_LOAD_PATH[i] == ':') {
+				num_ta_prefix++;
+			}
+		}
+	}
+	ta_prefix = (char **)malloc(sizeof(char *) * num_ta_prefix);
+	if (!ta_prefix) {
+		EMSG("out of memory");
+		goto exit;
+	}
+
+	i = 0;
+#ifdef TEEC_TEST_LOAD_PATH
+	test_ta_prefix_multipath = strdup(TEEC_TEST_LOAD_PATH);
+	if (!test_ta_prefix) {
+		EMSG("out of memory");
+		goto exit;
+	}
+	while ((temp = strsep(&test_ta_prefix_multipath, ":")) != NULL) {
+		ta_prefix[i++] = temp;
+	}
+#endif
+	ta_prefix_multipath = strdup(TEEC_LOAD_PATH);
+	if (!ta_prefix_multipath) {
+		EMSG("out of memory");
+		goto exit;
+	}
+	while ((temp = strsep(&ta_prefix_multipath, ":")) != NULL) {
+		ta_prefix[i++] = temp;
+	}
+
 	if (dev) {
 		arg.fd = open_dev(dev, &arg.gen_caps);
 		if (arg.fd < 0) {
 			EMSG("failed to open \"%s\"", argv[1]);
-			exit(EXIT_FAILURE);
+			goto exit;
 		}
 	} else {
 		arg.fd = get_dev_fd(&arg.gen_caps);
 		if (arg.fd < 0) {
 			EMSG("failed to find an OP-TEE supplicant device");
-			exit(EXIT_FAILURE);
+			goto exit;
 		}
 	}
 
 	if (plugin_load_all() != 0) {
 		EMSG("failed to load plugins");
-		exit(EXIT_FAILURE);
+		goto exit;
 	}
 
 	while (!arg.abort) {
@@ -786,6 +840,10 @@ int main(int argc, char *argv[])
 			arg.abort = true;
 	}
 
+exit:
+	free(test_ta_prefix_multipath);
+	free(ta_prefix_multipath);
+	free(ta_prefix);
 	close(arg.fd);
 
 	return EXIT_FAILURE;
