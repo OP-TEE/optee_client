@@ -60,6 +60,19 @@ static pthread_mutex_t dir_handle_db_mutex = PTHREAD_MUTEX_INITIALIZER;
 static struct handle_db dir_handle_db =
 		HANDLE_DB_INITIALIZER_WITH_MUTEX(&dir_handle_db_mutex);
 
+static TEEC_Result errno_to_teec(int err)
+{
+	switch (err) {
+	case ENOSPC:
+		return TEEC_ERROR_STORAGE_NO_SPACE;
+	case ENOENT:
+		return TEEC_ERROR_ITEM_NOT_FOUND;
+	default:
+		break;
+	}
+	return TEEC_ERROR_GENERIC;
+}
+
 static size_t tee_fs_get_absolute_filename(char *file, char *out,
 					   size_t out_size)
 {
@@ -213,13 +226,15 @@ static TEEC_Result ree_fs_new_create(size_t num_params,
 	if (fd >= 0)
 		goto out;
 	if (errno != ENOENT)
-		return TEEC_ERROR_GENERIC;
+		return errno_to_teec(errno);
 
 	/* Directory for file missing, try make to it */
 	strncpy(abs_dir, abs_filename, sizeof(abs_dir));
 	abs_dir[sizeof(abs_dir) - 1] = '\0';
 	d = dirname(abs_dir);
 	if (!mkdir(d, 0700)) {
+		int err = 0;
+
 		fd = open_wrapper(abs_filename, flags);
 		if (fd >= 0)
 			goto out;
@@ -227,33 +242,38 @@ static TEEC_Result ree_fs_new_create(size_t num_params,
 		 * The directory was made but the file could still not be
 		 * created.
 		 */
+		err = errno;
 		rmdir(d);
-		return TEEC_ERROR_GENERIC;
+		return errno_to_teec(err);
 	}
 	if (errno != ENOENT)
-		return TEEC_ERROR_GENERIC;
+		return errno_to_teec(errno);
 
 	/* Parent directory for file missing, try to make it */
 	d = dirname(d);
 	if (mkdir(d, 0700))
-		return TEEC_ERROR_GENERIC;
+		return errno_to_teec(errno);
 
 	/* Try to make directory for file again */
 	strncpy(abs_dir, abs_filename, sizeof(abs_dir));
 	abs_dir[sizeof(abs_dir) - 1] = '\0';
 	d = dirname(abs_dir);
 	if (mkdir(d, 0700)) {
+		int err = errno;
+
 		d = dirname(d);
 		rmdir(d);
-		return TEEC_ERROR_GENERIC;
+		return errno_to_teec(err);
 	}
 
 	fd = open_wrapper(abs_filename, flags);
 	if (fd < 0) {
+		int err = errno;
+
 		rmdir(d);
 		d = dirname(d);
 		rmdir(d);
-		return TEEC_ERROR_GENERIC;
+		return errno_to_teec(err);
 	}
 
 out:
@@ -274,7 +294,7 @@ static TEEC_Result ree_fs_new_close(size_t num_params,
 	fd = params[0].b;
 	while (close(fd)) {
 		if (errno != EINTR)
-			return TEEC_ERROR_GENERIC;
+			return errno_to_teec(errno);
 	}
 	return TEEC_SUCCESS;
 }
@@ -311,7 +331,7 @@ static TEEC_Result ree_fs_new_read(size_t num_params,
 		if (r < 0) {
 			if (errno == EINTR)
 				continue;
-			return TEEC_ERROR_GENERIC;
+			return errno_to_teec(errno);
 		}
 		assert((size_t)r <= len);
 		buf += r;
@@ -353,7 +373,7 @@ static TEEC_Result ree_fs_new_write(size_t num_params,
 		if (r < 0) {
 			if (errno == EINTR)
 				continue;
-			return TEEC_ERROR_GENERIC;
+			return errno_to_teec(errno);
 		}
 		assert((size_t)r <= len);
 		buf += r;
@@ -380,7 +400,7 @@ static TEEC_Result ree_fs_new_truncate(size_t num_params,
 
 	while (ftruncate(fd, len)) {
 		if (errno != EINTR)
-			return TEEC_ERROR_GENERIC;
+			return errno_to_teec(errno);
 	}
 
 	return TEEC_SUCCESS;
@@ -408,11 +428,8 @@ static TEEC_Result ree_fs_new_remove(size_t num_params,
 					  sizeof(abs_filename)))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	if (unlink(abs_filename)) {
-		if (errno == ENOENT)
-			return TEEC_ERROR_ITEM_NOT_FOUND;
-		return TEEC_ERROR_GENERIC;
-	}
+	if (unlink(abs_filename))
+		return errno_to_teec(errno);
 
 	/* If a file is removed, maybe the directory can be removed to? */
 	d = dirname(abs_filename);
