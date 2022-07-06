@@ -120,7 +120,6 @@ static pthread_mutex_t rpmb_mutex = PTHREAD_MUTEX_INITIALIZER;
 #define MMC_BLOCK_MAJOR	179
 
 /* mmc_ioc_cmd.opcode */
-#define MMC_SEND_EXT_CSD		 8
 #define MMC_READ_MULTIPLE_BLOCK		18
 #define MMC_WRITE_MULTIPLE_BLOCK	25
 
@@ -178,30 +177,6 @@ static int mmc_rpmb_fd(uint16_t dev_id)
 		return -1;
 	}
 	return fd;
-}
-
-/* Open eMMC device dev_id */
-static int mmc_fd(uint16_t dev_id)
-{
-	int fd = 0;
-	char path[PATH_MAX] = { 0 };
-
-	DMSG("dev_id = %u", dev_id);
-#ifdef __ANDROID__
-	snprintf(path, sizeof(path), "/dev/block/mmcblk%u", dev_id);
-#else
-	snprintf(path, sizeof(path), "/dev/mmcblk%u", dev_id);
-#endif
-	fd = open(path, O_RDONLY);
-	if (fd < 0)
-		EMSG("Could not open %s (%s)", path, strerror(errno));
-
-	return fd;
-}
-
-static void close_mmc_fd(int fd)
-{
-	close(fd);
 }
 
 /*
@@ -304,6 +279,51 @@ static TEEC_Result read_cid(uint16_t dev_id, uint8_t *cid)
 		cid[i] = v;
 	}
 	return TEEC_SUCCESS;
+}
+
+static TEEC_Result read_mmc_sysfs_hex(uint16_t dev_id, const char *file, uint8_t *value)
+{
+	TEEC_Result status = TEEC_SUCCESS;
+	char path[255] = { 0 };
+	char buf[255] = { 0 };
+	char *endp = buf;
+	int fd = 0;
+	int ret = 0;
+
+	snprintf(path, sizeof(path), "/sys/class/mmc_host/mmc%u/mmc%u:0001/%s",
+		 dev_id, dev_id, file);
+
+	fd = open(path, O_RDONLY);
+	if (fd < 0) {
+		EMSG("Could not open %s (%s)", path, strerror(errno));
+		return TEEC_ERROR_ITEM_NOT_FOUND;
+	}
+
+	ret = readn(fd, buf, sizeof(buf));
+	if (ret < 0) {
+		EMSG("Read error (%s)", strerror(errno));
+		status = TEEC_ERROR_NO_DATA;
+		goto out;
+	}
+
+	errno = 0;
+	*value = strtol(buf, &endp, 16);
+	if (errno || endp == buf)
+		status = TEEC_ERROR_GENERIC;
+
+out:
+	close(fd);
+	return status;
+}
+
+static TEEC_Result read_size_mult(uint16_t dev_id, uint8_t *value)
+{
+	return read_mmc_sysfs_hex(dev_id, "raw_rpmb_size_mult", value);
+}
+
+static TEEC_Result read_rel_wr_sec_c(uint16_t dev_id, uint8_t *value)
+{
+	return read_mmc_sysfs_hex(dev_id, "rel_sectors", value);
 }
 
 /*
@@ -620,12 +640,6 @@ static uint32_t read_cid(uint16_t dev_id, uint8_t *cid)
 	return TEEC_SUCCESS;
 }
 
-static void ioctl_emu_set_ext_csd(uint8_t *ext_csd)
-{
-	ext_csd[168] = EMU_RPMB_SIZE_MULT;
-	ext_csd[222] = EMU_RPMB_REL_WR_SEC_C;
-}
-
 /* A crude emulation of the MMC ioc commands we need for RPMB */
 static int ioctl_emu_cmd(int fd, struct mmc_ioc_cmd *cmd)
 {
@@ -637,10 +651,6 @@ static int ioctl_emu_cmd(int fd, struct mmc_ioc_cmd *cmd)
 		return -1;
 
 	switch (cmd->opcode) {
-	case MMC_SEND_EXT_CSD:
-		ioctl_emu_set_ext_csd((uint8_t *)(uintptr_t)cmd->data_ptr);
-		break;
-
 	case MMC_WRITE_MULTIPLE_BLOCK:
 		frm = (struct rpmb_data_frame *)(uintptr_t)cmd->data_ptr;
 		msg_type = ntohs(frm->msg_type);
@@ -745,16 +755,20 @@ static int mmc_rpmb_fd(uint16_t dev_id)
 	return 0;
 }
 
-static int mmc_fd(uint16_t dev_id)
+static TEEC_Result read_size_mult(uint16_t dev_id, uint8_t *value)
 {
 	(void)dev_id;
 
-	return 0;
+	*value = EMU_RPMB_SIZE_MULT;
+	return TEEC_SUCCESS;
 }
 
-static void close_mmc_fd(int fd)
+static TEEC_Result read_rel_wr_sec_c(uint16_t dev_id, uint8_t *value)
 {
-	(void)fd;
+	(void)dev_id;
+
+	*value = EMU_RPMB_REL_WR_SEC_C;
+	return TEEC_SUCCESS;
 }
 
 static bool remap_rpmb_dev_id(uint16_t dev_id, uint16_t *ndev_id)
@@ -764,29 +778,6 @@ static bool remap_rpmb_dev_id(uint16_t dev_id, uint16_t *ndev_id)
 }
 
 #endif /* RPMB_EMU */
-
-/*
- * Extended CSD Register is 512 bytes and defines device properties
- * and selected modes.
- */
-static uint32_t read_ext_csd(int fd, uint8_t *ext_csd)
-{
-	int st = 0;
-	struct mmc_ioc_cmd cmd = {
-		.blksz = 512,
-		.blocks = 1,
-		.flags = MMC_RSP_R1 | MMC_CMD_ADTC,
-		.opcode = MMC_SEND_EXT_CSD,
-	};
-
-	mmc_ioc_cmd_set_data(cmd, ext_csd);
-
-	st = IOCTL(fd, MMC_IOC_CMD, &cmd);
-	if (st < 0)
-		return TEEC_ERROR_GENERIC;
-
-	return TEEC_SUCCESS;
-}
 
 static inline void set_mmc_io_cmd(struct mmc_ioc_cmd *cmd, unsigned int blocks,
 				  __u32 opcode, int write_flag)
@@ -911,28 +902,26 @@ out:
 
 static uint32_t rpmb_get_dev_info(uint16_t dev_id, struct rpmb_dev_info *info)
 {
-	int fd = 0;
-	uint32_t res = 0;
-	uint8_t ext_csd[512] = { 0 };
+	TEEC_Result res = TEEC_SUCCESS;
+	uint8_t rpmb_size_mult = 0;
+	uint8_t rel_wr_sec_c = 0;
 
 	res = read_cid(dev_id, info->cid);
 	if (res != TEEC_SUCCESS)
 		return res;
 
-	fd = mmc_fd(dev_id);
-	if (fd < 0)
-		return TEEC_ERROR_BAD_PARAMETERS;
-
-	res = read_ext_csd(fd, ext_csd);
+	res = read_size_mult(dev_id, &rpmb_size_mult);
 	if (res != TEEC_SUCCESS)
-		goto err;
+		return res;
+	info->rpmb_size_mult = rpmb_size_mult;
 
-	info->rel_wr_sec_c = ext_csd[222];
-	info->rpmb_size_mult = ext_csd[168];
+	res = read_rel_wr_sec_c(dev_id, &rel_wr_sec_c);
+	if (res != TEEC_SUCCESS)
+		return res;
+	info->rel_wr_sec_c = rel_wr_sec_c;
+
 	info->ret_code = RPMB_CMD_GET_DEV_INFO_RET_OK;
 
-err:
-	close_mmc_fd(fd);
 	return res;
 }
 
