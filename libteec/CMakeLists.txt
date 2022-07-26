@@ -45,7 +45,7 @@ set_target_properties (teec PROPERTIES
 ################################################################################
 target_compile_definitions (teec
 	PRIVATE -D_GNU_SOURCE
-	PRIVATE -DCFG_TEE_CLIENT_LOG_LEVEL=${CFG_TEE_CLIENT_LOG_LEVEL}
+	PRIVATE -DDEBUGLEVEL_${CFG_TEE_CLIENT_LOG_LEVEL}
 	PRIVATE -DTEEC_LOG_FILE="${CFG_TEE_CLIENT_LOG_FILE}"
 	PRIVATE -DBINARY_PREFIX="LT"
 )

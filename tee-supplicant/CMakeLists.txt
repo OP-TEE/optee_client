@@ -55,7 +55,7 @@ add_executable (${PROJECT_NAME} ${SRC})
 # Flags always set
 ################################################################################
 target_compile_definitions (${PROJECT_NAME}
-	PRIVATE -DCFG_TEE_SUPP_LOG_LEVEL=${CFG_TEE_SUPP_LOG_LEVEL}
+	PRIVATE -DDEBUGLEVEL_${CFG_TEE_SUPP_LOG_LEVEL}
 	PRIVATE -DTEEC_LOAD_PATH="${CFG_TEE_CLIENT_LOAD_PATH}"
 	PRIVATE -DTEE_FS_PARENT_PATH="${CFG_TEE_FS_PARENT_PATH}"
 	PRIVATE -DBINARY_PREFIX="TSUP"
