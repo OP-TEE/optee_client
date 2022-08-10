@@ -491,8 +491,8 @@ static int usage(int status)
 {
 	fprintf(stderr, "Usage: tee-supplicant [options] [<device-name>]\n");
 	fprintf(stderr, "\t-h, --help: this help\n");
-	fprintf(stderr, "\t-d, --daemonize: run as a daemon (fork after successful "
-			"initialization)\n");
+	fprintf(stderr, "\t-d, --daemonize: run as a daemon (fork and return "
+			"after child has opened the TEE device or on error)\n");
 	fprintf(stderr, "\t-f, --fs-parent-path: secure fs parent path [%s]\n",
 			supplicant_params.fs_parent_path);
 	fprintf(stderr, "\t-t, --ta-dir: TAs dirname under %s [%s]\n", TEEC_LOAD_PATH,
@@ -736,9 +736,61 @@ err:
 	exit(EXIT_FAILURE);
 }
 
+/*
+ * Similar to the standard libc function daemon(0, 0) but the parent process
+ * issues a blocking read on pipefd[0] before exiting.
+ * Returns 0 on success, <0 on error.
+ */
+static int make_daemon(int pipefd[2])
+{
+	int fd = 0;
+	char c = 0;
+	int n = 0;
+
+	switch (fork()) {
+	case -1:
+		return -1;
+	case 0:
+		/* In child */
+		close(pipefd[0]);
+		break;
+	default:
+		/* In parent */
+		close(pipefd[1]);
+		n = read(pipefd[0], &c, 1);
+		close(pipefd[0]);
+		if (!n) {
+			/*
+			 * Nothing has been read: child has closed without
+			 * writing (either exited on error or crashed)
+			 */
+			return -1;
+		}
+		/* Child is done with the opening of the TEE device */
+		_exit(EXIT_SUCCESS);
+	}
+
+	if (setsid() < 0)
+		return -2;
+
+	if (chdir("/") < 0)
+		return -3;
+
+	fd = open("/dev/null", O_RDWR);
+	if (fd < 0)
+		return -4;
+	dup2(fd, 0);
+	dup2(fd, 1);
+	dup2(fd, 2);
+	close(fd);
+
+	return 0;
+}
+
 int main(int argc, char *argv[])
 {
 	struct thread_arg arg = { .fd = -1 };
+	int pipefd[2] = { 0, };
 	bool daemonize = false;
 	char *dev = NULL;
 	int e = 0;
@@ -800,12 +852,25 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (daemonize && daemon(0, 0) < 0) {
-		EMSG("daemon(): %s", strerror(errno));
+
+	set_ta_path();
+
+	if (plugin_load_all() != 0) {
+		EMSG("failed to load plugins");
 		exit(EXIT_FAILURE);
 	}
 
-	set_ta_path();
+	if (daemonize) {
+		if (pipe(pipefd) < 0) {
+			EMSG("pipe(): %s", strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+		e = make_daemon(pipefd);
+		if (e < 0) {
+			EMSG("make_daemon(): %d", e);
+			exit(EXIT_FAILURE);
+		}
+	}
 
 	if (dev) {
 		arg.fd = open_dev(dev, &arg.gen_caps);
@@ -821,9 +886,13 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (plugin_load_all() != 0) {
-		EMSG("failed to load plugins");
-		exit(EXIT_FAILURE);
+	if (daemonize) {
+		/* Release parent */
+		if (write(pipefd[1], "", 1) != 1) {
+			EMSG("write(): %s", strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+		close(pipefd[1]);
 	}
 
 	while (!arg.abort) {
