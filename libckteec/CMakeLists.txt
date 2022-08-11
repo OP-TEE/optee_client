@@ -52,7 +52,8 @@ target_compile_definitions (ckteec
 # Public and private header and library dependencies
 ################################################################################
 target_include_directories(ckteec
-	PUBLIC include
+	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+	$<INSTALL_INTERFACE:include>
 	PRIVATE src
 )
 

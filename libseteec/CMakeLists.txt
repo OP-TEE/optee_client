@@ -45,7 +45,8 @@ target_compile_definitions (seteec
 # Public and private header and library dependencies
 ################################################################################
 target_include_directories(seteec
-	PUBLIC include
+	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+	$<INSTALL_INTERFACE:include>
 	PRIVATE src
 )
 
