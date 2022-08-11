@@ -49,10 +49,6 @@ target_include_directories(seteec
 	PRIVATE src
 )
 
-target_include_directories(teec
-	PUBLIC include
-)
-
 target_link_libraries (seteec
 	PRIVATE pthread
 	PRIVATE teec
