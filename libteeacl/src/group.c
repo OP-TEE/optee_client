@@ -25,15 +25,15 @@ int teeacl_gid_from_name(gid_t *gid_out, const char *group_name)
 	struct group grp = { 0 };
 	char *buffer = NULL;
 	struct group *grpResult = NULL;
-	size_t getgr_r_size_max = 0;
+	size_t b_size = 0;
 	int rv = 0;
-	getgr_r_size_max = teeacl_getgr_r_size_max();
-	buffer = (char *)(malloc(getgr_r_size_max));
+	b_size = teeacl_getgr_r_size_max();
+	buffer = (char *)(malloc(b_size));
 	if (buffer == NULL)
 		return errno ? errno : -1;
-	memset(buffer, 0, getgr_r_size_max);
+	memset(buffer, 0, b_size);
 
-	rv = getgrnam_r(group_name, &grp, buffer, getgr_r_size_max, &grpResult);
+	rv = getgrnam_r(group_name, &grp, buffer, b_size, &grpResult);
 
 	free(buffer);
 	if (grpResult == NULL) {
