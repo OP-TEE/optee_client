@@ -13,11 +13,11 @@
 
 static long teeacl_getgr_r_size_max(void)
 {
-	long getgr_r_size_max = sysconf(_SC_GETGR_R_SIZE_MAX);
-	if (getgr_r_size_max == -1) {
+	long s = sysconf(_SC_GETGR_R_SIZE_MAX);
+	if (s == -1) {
 		return 1024;
 	}
-	return getgr_r_size_max;
+	return s;
 };
 
 int teeacl_gid_from_name(gid_t *gid_out, const char *group_name)
