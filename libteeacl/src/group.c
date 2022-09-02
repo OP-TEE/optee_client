@@ -24,7 +24,7 @@ int teeacl_gid_from_name(gid_t *gid_out, const char *group_name)
 {
 	struct group grp = { 0 };
 	char *buffer = NULL;
-	struct group *grpResult = NULL;
+	struct group *result = NULL;
 	size_t b_size = 0;
 	int rv = 0;
 	b_size = teeacl_getgr_r_size_max();
@@ -32,10 +32,10 @@ int teeacl_gid_from_name(gid_t *gid_out, const char *group_name)
 	if (!buffer)
 		return -ENOMEM;
 
-	rv = getgrnam_r(group_name, &grp, buffer, b_size, &grpResult);
+	rv = getgrnam_r(group_name, &grp, buffer, b_size, &result);
 
 	free(buffer);
-	if (grpResult == NULL) {
+	if (result == NULL) {
 		*gid_out = TEEACL_NO_GROUP;
 		return rv;
 	} else {
