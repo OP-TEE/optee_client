@@ -49,7 +49,7 @@ extern "C" {
  * - Group id or
  * - TEEACL_NO_GROUP
  * @param group_name Name of group to resolve.
- * @return Zero on success, errno otherwise.
+ * @return Zero on success, -ENOMEM if no memory, errno otherwise.
  */
 int teeacl_gid_from_name(gid_t *gid_out, const char *group_name);
 
