@@ -28,10 +28,9 @@ int teeacl_gid_from_name(gid_t *gid_out, const char *group_name)
 	size_t b_size = 0;
 	int rv = 0;
 	b_size = teeacl_getgr_r_size_max();
-	buffer = (char *)(malloc(b_size));
+	buffer = (char *)(calloc(b_size, 1));
 	if (buffer == NULL)
 		return errno ? errno : -1;
-	memset(buffer, 0, b_size);
 
 	rv = getgrnam_r(group_name, &grp, buffer, b_size, &grpResult);
 
