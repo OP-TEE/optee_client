@@ -16,8 +16,8 @@ SBINDIR ?= /usr/sbin
 LIBDIR ?= /usr/lib
 INCLUDEDIR ?= /usr/include
 
-.PHONY: all build build-libteec build-libckteec build-libseteec install copy_export \
-	clean cscope clean-cscope \
+.PHONY: all build build-libteec build-libckteec build-libseteec \
+	build-libteeacl install copy_export clean cscope clean-cscope \
 	checkpatch-pre-req checkpatch-modified-patch checkpatch-modified-file \
 	checkpatch-last-commit-patch checkpatch-last-commit-file \
 	checkpatch-base-commit-patch checkpatch-base-commit-file \
@@ -34,7 +34,8 @@ build-tee-supplicant: build-libteec
 	@echo "Building tee-supplicant"
 	$(MAKE) --directory=tee-supplicant  --no-print-directory --no-builtin-variables CFG_TEE_SUPP_LOG_LEVEL=$(CFG_TEE_SUPP_LOG_LEVEL)
 
-build: build-libteec build-tee-supplicant build-libckteec build-libseteec
+build: build-libteec build-tee-supplicant build-libckteec build-libseteec \
+	build-libteeacl
 
 build-libckteec: build-libteec
 	@echo "Building libckteec.so"
@@ -44,9 +45,14 @@ build-libseteec: build-libteec
 	@echo "Building libseteec.so"
 	@$(MAKE) --directory=libseteec --no-print-directory --no-builtin-variables
 
+build-libteeacl:
+	@echo "Building libteeacl.so"
+	@$(MAKE) --directory=libteeacl --no-print-directory --no-builtin-variables
+
 install: copy_export
 
-clean: clean-libteec clean-tee-supplicant clean-cscope clean-libckteec clean-libseteec
+clean: clean-libteec clean-tee-supplicant clean-cscope clean-libckteec \
+	clean-libseteec clean-libteeacl
 
 clean-libteec:
 	@$(MAKE) --directory=libteec --no-print-directory clean
@@ -59,6 +65,9 @@ clean-libckteec:
 
 clean-libseteec:
 	@$(MAKE) --directory=libseteec --no-print-directory clean
+
+clean-libteeacl:
+	@$(MAKE) --directory=libteeacl --no-print-directory clean
 
 cscope:
 	@echo "  CSCOPE"
@@ -144,6 +153,9 @@ copy_export: build
 	cp libckteec/include/*.h $(DESTDIR)$(INCLUDEDIR)
 	cp -d ${O}/libckteec/libckteec.so* $(DESTDIR)$(LIBDIR)
 	cp -d ${O}/libckteec/libckteec.a $(DESTDIR)$(LIBDIR)
+	cp libteeacl/include/*.h $(DESTDIR)$(INCLUDEDIR)
+	cp -d ${O}/libteeacl/libteeacl.so* $(DESTDIR)$(LIBDIR)
+	cp -d ${O}/libteeacl/libteeacl.a $(DESTDIR)$(LIBDIR)
 	cp libseteec/include/*.h $(DESTDIR)$(INCLUDEDIR)
 	cp -d ${O}/libseteec/libseteec.so* $(DESTDIR)$(LIBDIR)
 	cp -d ${O}/libseteec/libseteec.a $(DESTDIR)$(LIBDIR)
