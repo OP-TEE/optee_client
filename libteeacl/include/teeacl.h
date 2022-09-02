@@ -41,15 +41,20 @@ extern "C" {
 /**
  * teeacl_gid_from_name - Try to resolve gid_t for a given `group_name`.
  *
- * Note that zero is returned also when specified the `group_name` does not map
- * to any specified group. This case must always be checked by comparing if
- * `git_out` equals TEEACL_NO_GROUP.
+ * If a matching group is found, zero is returned and `gid_out` will be set to
+ * the found value.
+ * If no group is found, -ENOENT is returned and `gid_out` will be set to
+ * TEEACL_NO_GROUP.
+ * If memory allocation fails, -ENOMEM is returned.
+ * For other failures, errno is returned and `gid_out` will be set to
+ * TEEACL_NO_GROUP.
  *
  * @param gid_out Ptr to gid result. After the call the value will be either
  * - Group id or
  * - TEEACL_NO_GROUP
  * @param group_name Name of group to resolve.
- * @return Zero on success, -ENOMEM if no memory, errno otherwise.
+ * @return 0 if matching group is found, see function description for other
+ * cases.
  */
 int teeacl_gid_from_name(gid_t *gid_out, const char *group_name);
 
