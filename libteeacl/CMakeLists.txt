@@ -1,0 +1,53 @@
+project(teeacl
+	VERSION 0.1.0
+	LANGUAGES C
+)
+
+add_compile_options(${C_COMPILE_OPTIONS})
+
+include(GNUInstallDirs)
+
+################################################################################
+# Source files
+################################################################################
+set(SRC
+	src/group.c
+)
+
+################################################################################
+# Built library
+################################################################################
+add_library(teeacl ${SRC})
+
+set_target_properties(teeacl PROPERTIES
+	VERSION ${PROJECT_VERSION}
+	SOVERSION ${PROJECT_VERSION_MAJOR}
+	C_STANDARD 11
+	C_STANDARD_REQUIRED ON
+	C_EXTENSIONS ON
+)
+
+################################################################################
+# Flags always set
+################################################################################
+target_compile_definitions(teeacl
+	PRIVATE -D_GNU_SOURCE
+	PRIVATE -DBINARY_PREFIX="LT"
+)
+
+################################################################################
+# Public and private header and library dependencies
+################################################################################
+target_include_directories(teeacl PUBLIC
+	$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+	$<INSTALL_INTERFACE:include>
+)
+
+################################################################################
+# Install targets
+################################################################################
+install(TARGETS teeacl
+	DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
