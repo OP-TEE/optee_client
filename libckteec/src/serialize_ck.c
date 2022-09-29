@@ -582,6 +582,31 @@ static CK_RV serialize_mecha_rsa_oaep_param(struct serializer *obj,
 				params->ulSourceDataLen);
 }
 
+static CK_RV serialize_mecha_eddsa(struct serializer *obj,
+				   CK_MECHANISM_PTR mecha)
+{
+	CK_RV rv = CKR_GENERAL_ERROR;
+	CK_EDDSA_PARAMS *params = mecha->pParameter;
+
+	rv = serialize_32b(obj, obj->type);
+	if (rv)
+		return rv;
+
+	rv = serialize_32b(obj, 2 * sizeof(uint32_t) + params->ulContextDataLen);
+	if (rv)
+		return rv;
+
+	rv = serialize_32b(obj, params->phFlag);
+	if (rv)
+		return rv;
+
+	rv = serialize_32b(obj, params->ulContextDataLen);
+	if (rv)
+		return rv;
+
+	return serialize_buffer(obj, params->pContextData, params->ulContextDataLen);
+}
+
 static CK_RV serialize_mecha_mac_general_param(struct serializer *obj,
 					       CK_MECHANISM_PTR mecha)
 {
@@ -649,6 +674,7 @@ CK_RV serialize_ck_mecha_params(struct serializer *obj,
 	case CKM_SHA384_HMAC:
 	case CKM_SHA512_HMAC:
 	case CKM_EC_KEY_PAIR_GEN:
+	case CKM_EC_EDWARDS_KEY_PAIR_GEN:
 	case CKM_ECDSA:
 	case CKM_ECDSA_SHA1:
 	case CKM_ECDSA_SHA224:
@@ -672,6 +698,9 @@ CK_RV serialize_ck_mecha_params(struct serializer *obj,
 			return rv;
 
 		return serialize_32b(obj, 0);
+
+	case CKM_EDDSA:
+		return serialize_mecha_eddsa(obj, &mecha);
 
 	case CKM_AES_CBC:
 	case CKM_AES_CBC_PAD:
