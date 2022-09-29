@@ -240,6 +240,7 @@ typedef CK_KEY_TYPE *CK_KEY_TYPE_PTR;
 #define CKK_SHA384_HMAC			0x02c
 #define CKK_SHA512_HMAC			0x02d
 #define CKK_SHA224_HMAC			0x02e
+#define CKK_EC_EDWARDS			0x040 /* PKCS#11 v3.1-cs01 */
 
 /*
  * Certificates
@@ -351,6 +352,8 @@ typedef CK_MECHANISM_TYPE *CK_MECHANISM_TYPE_PTR;
 #define CKM_ECMQV_DERIVE		0x01052
 #define CKM_ECDH_AES_KEY_WRAP		0x01053
 #define CKM_RSA_AES_KEY_WRAP		0x01054
+#define CKM_EC_EDWARDS_KEY_PAIR_GEN	0x01055
+#define CKM_EDDSA			0x01057
 #define CKM_AES_KEY_GEN			0x01080
 #define CKM_AES_ECB			0x01081
 #define CKM_AES_CBC			0x01082
@@ -491,6 +494,15 @@ struct CK_GCM_PARAMS {
 	CK_ULONG		ulAADLen;
 	CK_ULONG		ulTagBits;
 };
+
+/* EdDSA (RFC 8032) */
+typedef struct CK_EDDSA_PARAMS {
+	CK_BYTE phFlag;
+	CK_ULONG ulContextDataLen;
+	CK_BYTE_PTR pContextData;
+} CK_EDDSA_PARAMS;
+
+typedef CK_EDDSA_PARAMS *CK_EDDSA_PARAMS_PTR;
 
 /* AES CCM parameters */
 typedef struct CK_CCM_PARAMS CK_CCM_PARAMS;
