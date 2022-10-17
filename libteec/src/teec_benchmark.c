@@ -130,7 +130,7 @@ static void *mmap_paddr(intptr_t paddr, uint64_t size)
 	offset = (off_t)paddr % getpagesize();
 	page_addr = (off_t)(paddr - offset);
 
-	hw_addr = (intptr_t *)mmap(0, size, PROT_READ|PROT_WRITE,
+	hw_addr = (intptr_t *)mmap(0, size + offset, PROT_READ|PROT_WRITE,
 					MAP_SHARED, devmem, page_addr);
 	if (hw_addr == MAP_FAILED) {
 		close(devmem);
