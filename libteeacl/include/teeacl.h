@@ -12,7 +12,7 @@
 #define TEEACL_H
 
 #include <grp.h>
-#include <uuid/uuid.h>
+#include <uuid.h>
 
 #ifdef __cplusplus
 extern "C" {
