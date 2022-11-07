@@ -3,7 +3,7 @@ include ../config.mk
 
 OUT_DIR := $(OO)/libteeacl
 
-.PHONY: all libteeacl clean
+.PHONY: all libteeacl check-libuuid clean
 
 all: libteeacl
 install: libteeacl
@@ -39,6 +39,12 @@ $(LIBTEEACL_OBJ_DIR)/%.o: ${LIBTEEACL_SRC_DIR}/%.c
 	$(VPREFIX)mkdir -p $(LIBTEEACL_OBJ_DIR)
 	@echo "  CC      $<"
 	$(VPREFIX)$(CC) $(LIBTEEACL_CFLAGS) -c $< -o $@
+
+libteeacl: check-libuuid
+
+check-libuuid:
+	@echo "  Finding uuid.pc"
+	$(VPREFIX)$(PKG_CONFIG) --atleast-version=2.34 uuid
 
 libteeacl: $(OUT_DIR)/$(LIBTEEACL_SO_LIBRARY)
 
