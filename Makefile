@@ -19,7 +19,7 @@ INCLUDEDIR ?= /usr/include
 WITH_TEEACL ?= 1
 
 .PHONY: all build build-libteec build-libckteec build-libseteec \
-	build-libteeacl check-libuuid install copy_export clean cscope \
+	build-libteeacl install copy_export clean cscope \
 	clean-cscope \
 	checkpatch-pre-req checkpatch-modified-patch checkpatch-modified-file \
 	checkpatch-last-commit-patch checkpatch-last-commit-file \
@@ -50,13 +50,9 @@ build-libseteec: build-libteec
 	@echo "Building libseteec.so"
 	@$(MAKE) --directory=libseteec --no-print-directory --no-builtin-variables
 
-build-libteeacl: check-libuuid
+build-libteeacl:
 	@echo "Building libteeacl.so"
 	@$(MAKE) --directory=libteeacl --no-print-directory --no-builtin-variables
-
-check-libuuid:
-	@echo "Finding uuid.pc"
-	$(PKG_CONFIG) --atleast-version=2.34 uuid
 
 install: copy_export
 
