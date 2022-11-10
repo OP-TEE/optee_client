@@ -16,6 +16,8 @@ SBINDIR ?= /usr/sbin
 LIBDIR ?= /usr/lib
 INCLUDEDIR ?= /usr/include
 
+WITH_TEEACL ?= 1
+
 .PHONY: all build build-libteec build-libckteec build-libseteec \
 	build-libteeacl check-libuuid install copy_export clean cscope \
 	clean-cscope \
@@ -35,8 +37,10 @@ build-tee-supplicant: build-libteec
 	@echo "Building tee-supplicant"
 	$(MAKE) --directory=tee-supplicant  --no-print-directory --no-builtin-variables CFG_TEE_SUPP_LOG_LEVEL=$(CFG_TEE_SUPP_LOG_LEVEL)
 
-build: build-libteec build-tee-supplicant build-libckteec build-libseteec \
-	build-libteeacl
+build: build-libteec build-tee-supplicant build-libckteec build-libseteec
+ifeq ($(WITH_TEEACL),1)
+build: build-libteeacl
+endif
 
 build-libckteec: build-libteec
 	@echo "Building libckteec.so"
@@ -57,7 +61,10 @@ check-libuuid:
 install: copy_export
 
 clean: clean-libteec clean-tee-supplicant clean-cscope clean-libckteec \
-	clean-libseteec clean-libteeacl
+	clean-libseteec
+ifeq ($(WITH_TEEACL),1)
+clean: clean-libteeacl
+endif
 
 clean-libteec:
 	@$(MAKE) --directory=libteec --no-print-directory clean
@@ -158,9 +165,11 @@ copy_export: build
 	cp libckteec/include/*.h $(DESTDIR)$(INCLUDEDIR)
 	cp -d ${O}/libckteec/libckteec.so* $(DESTDIR)$(LIBDIR)
 	cp -d ${O}/libckteec/libckteec.a $(DESTDIR)$(LIBDIR)
+ifeq ($(WITH_TEEACL),1)
 	cp libteeacl/include/*.h $(DESTDIR)$(INCLUDEDIR)
 	cp -d ${O}/libteeacl/libteeacl.so* $(DESTDIR)$(LIBDIR)
 	cp -d ${O}/libteeacl/libteeacl.a $(DESTDIR)$(LIBDIR)
+endif
 	cp libseteec/include/*.h $(DESTDIR)$(INCLUDEDIR)
 	cp -d ${O}/libseteec/libseteec.so* $(DESTDIR)$(LIBDIR)
 	cp -d ${O}/libseteec/libseteec.a $(DESTDIR)$(LIBDIR)
