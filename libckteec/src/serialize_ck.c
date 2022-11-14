@@ -582,6 +582,49 @@ static CK_RV serialize_mecha_rsa_oaep_param(struct serializer *obj,
 				params->ulSourceDataLen);
 }
 
+static CK_RV serialize_mecha_rsa_aes_key_wrap(struct serializer *obj,
+					      CK_MECHANISM_PTR mecha)
+{
+	CK_RSA_AES_KEY_WRAP_PARAMS *params = mecha->pParameter;
+	CK_RSA_PKCS_OAEP_PARAMS *aes_params = params->pOAEPParams;
+	CK_RV rv = CKR_GENERAL_ERROR;
+	size_t params_size = 5 * sizeof(uint32_t) + aes_params->ulSourceDataLen;
+
+	if (mecha->ulParameterLen != sizeof(*params))
+		return CKR_ARGUMENTS_BAD;
+
+	rv = serialize_32b(obj, obj->type);
+	if (rv)
+		return rv;
+
+	rv = serialize_32b(obj, params_size);
+	if (rv)
+		return rv;
+
+	rv = serialize_ck_ulong(obj, params->ulAESKeyBits);
+	if (rv)
+		return rv;
+
+	rv = serialize_ck_ulong(obj, aes_params->hashAlg);
+	if (rv)
+		return rv;
+
+	rv = serialize_ck_ulong(obj, aes_params->mgf);
+	if (rv)
+		return rv;
+
+	rv = serialize_ck_ulong(obj, aes_params->source);
+	if (rv)
+		return rv;
+
+	rv = serialize_ck_ulong(obj, aes_params->ulSourceDataLen);
+	if (rv)
+		return rv;
+
+	return serialize_buffer(obj, aes_params->pSourceData,
+				aes_params->ulSourceDataLen);
+}
+
 static CK_RV serialize_mecha_eddsa(struct serializer *obj,
 				   CK_MECHANISM_PTR mecha)
 {
@@ -739,6 +782,8 @@ CK_RV serialize_ck_mecha_params(struct serializer *obj,
 	case CKM_SHA384_HMAC_GENERAL:
 	case CKM_SHA512_HMAC_GENERAL:
 		return serialize_mecha_mac_general_param(obj, &mecha);
+	case CKM_RSA_AES_KEY_WRAP:
+		return serialize_mecha_rsa_aes_key_wrap(obj, &mecha);
 
 	default:
 		return CKR_MECHANISM_INVALID;
