@@ -548,6 +548,13 @@ struct CK_RSA_PKCS_OAEP_PARAMS {
 	CK_ULONG		ulSourceDataLen;
 };
 
+typedef struct CK_RSA_AES_KEY_WRAP_PARAMS {
+	CK_ULONG ulAESKeyBits;
+	CK_RSA_PKCS_OAEP_PARAMS_PTR pOAEPParams;
+} CK_RSA_AES_KEY_WRAP_PARAMS;
+
+typedef CK_RSA_AES_KEY_WRAP_PARAMS *CK_RSA_AES_KEY_WRAP_PARAMS_PTR;
+
 /*
  * PKCS#11 return values
  */
