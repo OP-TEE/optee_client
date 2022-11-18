@@ -35,6 +35,9 @@ endif()
 ################################################################################
 add_library (teec ${SRC})
 
+set(libteectgt teec)
+configure_file(libteec.pc.in libteec.pc @ONLY)
+
 set_target_properties (teec PROPERTIES
 	VERSION ${PROJECT_VERSION}
 	SOVERSION ${PROJECT_VERSION_MAJOR}
