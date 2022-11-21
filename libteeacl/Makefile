@@ -27,10 +27,10 @@ LIBTEEACL_SRCS	+= tee_uuid.c
 LIBTEEACL_INCLUDES	= ${CURDIR}/include
 
 LIBTEEACL_CFLAGS	:= $(addprefix -I, $(LIBTEEACL_INCLUDES)) \
-			$(shell pkg-config --cflags uuid) \
+			$(shell $(PKG_CONFIG) --cflags uuid) \
 			$(CFLAGS) -D_GNU_SOURCE -fPIC
 
-LIBTEEACL_LFLAGS	:= $(LDFLAGS) $(shell pkg-config --libs uuid)
+LIBTEEACL_LFLAGS	:= $(LDFLAGS) $(shell $(PKG_CONFIG) --libs uuid)
 
 LIBTEEACL_OBJ_DIR	:= $(OUT_DIR)
 LIBTEEACL_OBJS	:= $(patsubst %.c,$(LIBTEEACL_OBJ_DIR)/%.o, $(LIBTEEACL_SRCS))
