@@ -52,7 +52,7 @@ build-libteeacl: check-libuuid
 
 check-libuuid:
 	@echo "Finding uuid.pc"
-	pkg-config --atleast-version=2.34 uuid
+	$(PKG_CONFIG) --atleast-version=2.34 uuid
 
 install: copy_export
 
