@@ -1,0 +1,30 @@
+# Dockerfile for CI image used in ../.github/workflows/ci.yml
+
+FROM ubuntu:22.04
+MAINTAINER Jerome Forissier <jerome.forissier@linaro.org>
+
+ENV LANG=C.UTF-8
+
+RUN dpkg --add-architecture armhf
+RUN dpkg --add-architecture arm64
+
+RUN echo 'deb [arch=amd64] http://archive.ubuntu.com/ubuntu/ jammy main restricted universe multiverse' > /etc/apt/sources.list
+RUN echo 'deb [arch=amd64] http://archive.ubuntu.com/ubuntu/ jammy-updates main restricted universe multiverse' >> /etc/apt/sources.list
+RUN echo 'deb [arch=amd64] http://archive.ubuntu.com/ubuntu/ jammy-backports main restricted universe multiverse' >> /etc/apt/sources.list
+RUN echo 'deb [arch=amd64] http://security.ubuntu.com/ubuntu/ jammy-security main restricted universe multiverse' >> /etc/apt/sources.list
+RUN echo 'deb [arch=armhf,arm64] http://ports.ubuntu.com/ubuntu-ports/ jammy main restricted universe multiverse' >> /etc/apt/sources.list
+RUN echo 'deb [arch=armhf,arm64] http://ports.ubuntu.com/ubuntu-ports/ jammy-updates main restricted universe multiverse' >> /etc/apt/sources.list
+RUN echo 'deb [arch=armhf,arm64] http://ports.ubuntu.com/ubuntu-ports/ jammy-backports main restricted universe multiverse' >> /etc/apt/sources.list
+RUN echo 'deb [arch=armhf,arm64] http://ports.ubuntu.com/ubuntu-ports/ jammy-security main restricted universe multiverse' >> /etc/apt/sources.list
+
+RUN apt update
+RUN apt upgrade -y
+RUN apt install -y \
+  cmake \
+  dpkg-dev \
+  gcc-aarch64-linux-gnu \
+  gcc-arm-linux-gnueabihf \
+  make \
+  pkg-config \
+  uuid-dev:armhf \
+  uuid-dev:arm64

@@ -1,0 +1,21 @@
+# Dockerfile for CI image used in ../.github/workflows/ci.yml
+
+FROM debian:bullseye-slim
+MAINTAINER Jerome Forissier <jerome.forissier@linaro.org>
+
+ENV LANG=C.UTF-8
+
+RUN dpkg --add-architecture armhf
+RUN dpkg --add-architecture arm64
+
+RUN apt update
+RUN apt upgrade -y
+RUN apt install -y \
+  cmake \
+  dpkg-dev \
+  gcc-aarch64-linux-gnu \
+  gcc-arm-linux-gnueabihf \
+  make \
+  pkg-config \
+  uuid-dev:armhf \
+  uuid-dev:arm64

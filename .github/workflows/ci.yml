@@ -1,0 +1,51 @@
+name: CI
+on: [push, pull_request]
+permissions:
+  contents: read # to fetch code (actions/checkout)
+jobs:
+  debian:
+    name: build (Debian)
+    runs-on: ubuntu-latest
+    container: jforissier/optee_client_ci_debian
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: arm64 with make
+        run: make -j O=out-make-aarch64 CROSS_COMPILE=aarch64-linux-gnu-
+      - name: armhf with make
+        run: make -j O=out-make-armhf CROSS_COMPILE=arm-linux-gnueabihf-
+      - name: arm64 with cmake
+        run: |
+          set -e -v
+          mkdir out-cmake-aarch64 && cd out-cmake-aarch64
+          PKG_CONFIG=aarch64-linux-gnu-pkg-config cmake .. -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc
+          make -j
+      - name: armhf with cmake
+        run: |
+          set -e -v
+          mkdir out-cmake-armhf && cd out-cmake-armhf
+          PKG_CONFIG=arm-linux-gnueabihf-pkg-config cmake .. -DCMAKE_C_COMPILER=arm-linux-gnueabihf-gcc
+          make -j
+  ubuntu:
+    name: build (Ubuntu)
+    runs-on: ubuntu-latest
+    container: jforissier/optee_client_ci_ubuntu
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: arm64 with make
+        run: make -j O=out-make-aarch64 CROSS_COMPILE=aarch64-linux-gnu-
+      - name: armhf with make
+        run: make -j O=out-make-armhf CROSS_COMPILE=arm-linux-gnueabihf-
+      - name: arm64 with cmake
+        run: |
+          set -e -v
+          mkdir out-cmake-aarch64 && cd out-cmake-aarch64
+          PKG_CONFIG=aarch64-linux-gnu-pkg-config cmake .. -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc
+          make -j
+      - name: armhf with cmake
+        run: |
+          set -e -v
+          mkdir out-cmake-armhf && cd out-cmake-armhf
+          PKG_CONFIG=arm-linux-gnueabihf-pkg-config cmake .. -DCMAKE_C_COMPILER=arm-linux-gnueabihf-gcc
+          make -j
