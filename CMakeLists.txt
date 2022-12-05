@@ -4,7 +4,7 @@ project (optee_client C)
 # https://cmake.org/Wiki/CMake_Useful_Variables
 set (CMAKE_TOOLCHAIN_FILE CMakeToolchain.txt)
 
-set (CFG_WERROR 1 CACHE BOOL "Build with -Werror")
+option (CFG_WERROR "Build with -Werror" TRUE)
 option (WITH_TEEACL "Build libteeacl" TRUE)
 
 include(GNUInstallDirs)
