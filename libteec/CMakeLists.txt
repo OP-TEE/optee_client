@@ -2,6 +2,9 @@ project(libteec
 	VERSION 1.0.0
 	LANGUAGES C)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(JoinPaths)
+
 ################################################################################
 # Packages
 ################################################################################
@@ -35,6 +38,8 @@ endif()
 ################################################################################
 add_library (teec ${SRC})
 
+join_paths(teec_libdir "\${prefix}" "${CMAKE_INSTALL_LIBDIR}")
+join_paths(teec_incdir "\${prefix}" "${CMAKE_INSTALL_INCLUDEDIR}")
 set(libteectgt teec)
 configure_file(libteec.pc.in libteec.pc @ONLY)
 
