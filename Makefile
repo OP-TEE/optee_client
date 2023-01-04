@@ -15,6 +15,9 @@ DESTDIR ?= $(EXPORT_DIR)
 SBINDIR ?= /usr/sbin
 LIBDIR ?= /usr/lib
 INCLUDEDIR ?= /usr/include
+sbindir ?= $(SBINDIR)
+libdir ?= $(LIBDIR)
+includedir ?= $(INCLUDEDIR)
 
 WITH_TEEACL ?= 1
 
@@ -152,20 +155,20 @@ checkpatch-all-files: checkpatch-pre-req
 distclean: clean
 
 copy_export: build
-	mkdir -p $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(INCLUDEDIR)
-	cp config.mk $(DESTDIR)/$(INCLUDEDIR)/optee_client_config.mk
-	cp -d ${O}/libteec/libteec.so* $(DESTDIR)$(LIBDIR)
-	cp -d ${O}/libteec/libteec.a $(DESTDIR)$(LIBDIR)
-	cp ${O}/tee-supplicant/tee-supplicant $(DESTDIR)$(SBINDIR)
-	cp public/*.h $(DESTDIR)$(INCLUDEDIR)
-	cp libckteec/include/*.h $(DESTDIR)$(INCLUDEDIR)
-	cp -d ${O}/libckteec/libckteec.so* $(DESTDIR)$(LIBDIR)
-	cp -d ${O}/libckteec/libckteec.a $(DESTDIR)$(LIBDIR)
+	mkdir -p $(DESTDIR)$(sbindir) $(DESTDIR)$(libdir) $(DESTDIR)$(includedir)
+	cp config.mk $(DESTDIR)/$(includedir)/optee_client_config.mk
+	cp -d ${O}/libteec/libteec.so* $(DESTDIR)$(libdir)
+	cp -d ${O}/libteec/libteec.a $(DESTDIR)$(libdir)
+	cp ${O}/tee-supplicant/tee-supplicant $(DESTDIR)$(sbindir)
+	cp public/*.h $(DESTDIR)$(includedir)
+	cp libckteec/include/*.h $(DESTDIR)$(includedir)
+	cp -d ${O}/libckteec/libckteec.so* $(DESTDIR)$(libdir)
+	cp -d ${O}/libckteec/libckteec.a $(DESTDIR)$(libdir)
 ifeq ($(WITH_TEEACL),1)
-	cp libteeacl/include/*.h $(DESTDIR)$(INCLUDEDIR)
-	cp -d ${O}/libteeacl/libteeacl.so* $(DESTDIR)$(LIBDIR)
-	cp -d ${O}/libteeacl/libteeacl.a $(DESTDIR)$(LIBDIR)
+	cp libteeacl/include/*.h $(DESTDIR)$(includedir)
+	cp -d ${O}/libteeacl/libteeacl.so* $(DESTDIR)$(libdir)
+	cp -d ${O}/libteeacl/libteeacl.a $(DESTDIR)$(libdir)
 endif
-	cp libseteec/include/*.h $(DESTDIR)$(INCLUDEDIR)
-	cp -d ${O}/libseteec/libseteec.so* $(DESTDIR)$(LIBDIR)
-	cp -d ${O}/libseteec/libseteec.a $(DESTDIR)$(LIBDIR)
+	cp libseteec/include/*.h $(DESTDIR)$(includedir)
+	cp -d ${O}/libseteec/libseteec.so* $(DESTDIR)$(libdir)
+	cp -d ${O}/libseteec/libseteec.a $(DESTDIR)$(libdir)
