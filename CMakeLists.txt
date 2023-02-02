@@ -20,9 +20,13 @@ add_compile_options (
 	-Wmissing-format-attribute -Wmissing-include-dirs
 	-Wmissing-noreturn -Wmissing-prototypes -Wnested-externs
 	-Wpointer-arith -Wshadow -Wstrict-prototypes
-	-Wswitch-default -Wunsafe-loop-optimizations
-	-Wwrite-strings -fPIC
+	-Wswitch-default -Wwrite-strings -fPIC
 )
+if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+    add_compile_options(
+        -Wunsafe-loop-optimizations
+    )
+endif()
 if(CFG_WERROR)
     add_compile_options(-Werror)
 endif(CFG_WERROR)
