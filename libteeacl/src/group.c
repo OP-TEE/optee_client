@@ -72,7 +72,8 @@ enum rv_groupmember teeacl_user_is_member_of(const char *user, gid_t group)
 	if (ret == -1) {
 		p_groups = groups;
 
-		groups = reallocarray(groups, grouplistsize, sizeof(gid_t));
+		/* we use realloc, since uClibc does not implement reallocarray */
+		groups = realloc(groups, grouplistsize * sizeof(gid_t));
 		if (!groups) {
 			free(p_groups);
 			return E_MEMORY;
