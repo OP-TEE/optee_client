@@ -7,6 +7,8 @@ CC              ?= $(CROSS_COMPILE)gcc
 AR		?= $(CROSS_COMPILE)ar
 PKG_CONFIG	?= $(CROSS_COMPILE)pkg-config
 
+C_COMPILER=$(shell readlink -f $$(which $(CC)))
+
 override CFLAGS += -Wall -Wbad-function-cast -Wcast-align \
 		   -Werror-implicit-function-declaration -Wextra \
 		   -Wfloat-equal -Wformat-nonliteral -Wformat-security \
@@ -14,8 +16,10 @@ override CFLAGS += -Wall -Wbad-function-cast -Wcast-align \
 		   -Wmissing-format-attribute -Wmissing-include-dirs \
 		   -Wmissing-noreturn -Wmissing-prototypes -Wnested-externs \
 		   -Wpointer-arith -Wshadow -Wstrict-prototypes \
-		   -Wswitch-default -Wunsafe-loop-optimizations \
-		   -Wwrite-strings -D_FILE_OFFSET_BITS=64
+		   -Wswitch-default -Wwrite-strings -D_FILE_OFFSET_BITS=64
+ifneq (,$(findstring gcc,$(C_COMPILER)))
+override CFLAGS	+= -Wunsafe-loop-optimizations
+endif
 ifeq ($(CFG_WERROR),y)
 override CFLAGS	+= -Werror
 endif
