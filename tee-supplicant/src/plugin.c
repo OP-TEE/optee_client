@@ -80,12 +80,13 @@ static enum plugin_err load_plugin(const char *name, struct plugin *p)
 	if (!handle)
 		return PLUGIN_DL_OPEN_ERR;
 
-	p->handle = handle;
-
 	m = (struct plugin_method *)dlsym(handle, "plugin_method");
-	if (!m || !m->name || !m->invoke)
+	if (!m || !m->name || !m->invoke) {
+		dlclose(handle);
 		return PLUGIN_DL_SYM_ERR;
+	}
 
+	p->handle = handle;
 	p->method = m;
 
 	return PLUGIN_OK;
