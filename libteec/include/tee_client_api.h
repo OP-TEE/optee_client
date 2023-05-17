@@ -255,9 +255,11 @@ typedef uint32_t TEEC_Result;
  */
 typedef struct {
 	/* Implementation defined */
-	int fd;
-	bool reg_mem;
-	bool memref_null;
+	struct {
+		int fd;
+		bool reg_mem;
+		bool memref_null;
+	} imp;
 } TEEC_Context;
 
 /**
@@ -293,16 +295,15 @@ typedef struct {
 	size_t size;
 	uint32_t flags;
 	/*
-	 * Implementation-Defined
+	 * Implementation defined
 	 */
-	int id;
-	size_t alloced_size;
-	void *shadow_buffer;
-	int registered_fd;
-	union {
-		bool dummy;
-		uint8_t flags;
-	} internal;
+	struct {
+		int id;
+		size_t alloced_size;
+		void *shadow_buffer;
+		int registered_fd;
+		uint32_t flags;
+	} imp;
 } TEEC_SharedMemory;
 
 /**
@@ -384,8 +385,10 @@ typedef union {
  */
 typedef struct {
 	/* Implementation defined */
-	TEEC_Context *ctx;
-	uint32_t session_id;
+	struct {
+		TEEC_Context *ctx;
+		uint32_t session_id;
+	} imp;
 } TEEC_Session;
 
 /**
@@ -398,7 +401,9 @@ typedef struct {
  *                      create the correct flags.
  *                      0 means TEEC_NONE is passed for all params.
  * @param   params      Array of parameters of type TEEC_Parameter.
- * @param   session     Internal pointer to the last session used by
+ * @param   imp         Implementation defined parameter. Here it is a struct
+ *                      containing one parameter: session. session is an
+ *                      internal pointer to the last session used by
  *                      TEEC_InvokeCommand with this operation.
  *
  */
@@ -406,8 +411,10 @@ typedef struct {
 	uint32_t started;
 	uint32_t paramTypes;
 	TEEC_Parameter params[TEEC_CONFIG_PAYLOAD_REF_COUNT];
-	/* Implementation-Defined */
-	TEEC_Session *session;
+	/* Implementation defined */
+	struct {
+		TEEC_Session *session;
+	} imp;
 } TEEC_Operation;
 
 /**
