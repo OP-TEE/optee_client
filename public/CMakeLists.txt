@@ -1,4 +1,4 @@
-project (optee-client-headers C)
+project(optee-client-headers C)
 
 ################################################################################
 # Header files to be exported
@@ -22,4 +22,4 @@ target_include_directories(
 ################################################################################
 # Install targets
 ################################################################################
-install (FILES ${INSTALL_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(FILES ${INSTALL_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

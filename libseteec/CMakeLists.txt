@@ -15,16 +15,16 @@ include(GNUInstallDirs)
 ################################################################################
 # Source files
 ################################################################################
-set (SRC
+set(SRC
 	src/se.c
 )
 
 ################################################################################
 # Built library
 ################################################################################
-add_library (seteec ${SRC})
+add_library(seteec ${SRC})
 
-set_target_properties (seteec PROPERTIES
+set_target_properties(seteec PROPERTIES
 	VERSION ${PROJECT_VERSION}
 	SOVERSION ${PROJECT_VERSION_MAJOR}
 )
@@ -32,7 +32,7 @@ set_target_properties (seteec PROPERTIES
 ################################################################################
 # Flags always set
 ################################################################################
-target_compile_definitions (seteec
+target_compile_definitions(seteec
 	PRIVATE -D_GNU_SOURCE
 	PRIVATE -DBINARY_PREFIX="LT"
 )
@@ -50,7 +50,7 @@ target_include_directories(seteec
 	PRIVATE src
 )
 
-target_link_libraries (seteec
+target_link_libraries(seteec
 	PRIVATE pthread
 	PRIVATE teec
 )
@@ -58,7 +58,7 @@ target_link_libraries (seteec
 ################################################################################
 # Install targets
 ################################################################################
-install (TARGETS seteec
+install(TARGETS seteec
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
