@@ -40,7 +40,7 @@ TEES_OBJ_DIR	:= $(OUT_DIR)
 TEES_OBJS 	:= $(patsubst %.c,$(TEES_OBJ_DIR)/%.o, $(TEES_SRCS))
 TEES_INCLUDES 	:= ${CURDIR}/../libteec/include \
 		   ${CURDIR}/src \
-		   ${CURDIR}/../public \
+		   ${CURDIR}/../libteec/include \
 
 TEES_CFLAGS	:= $(addprefix -I, $(TEES_INCLUDES)) $(CFLAGS) \
 		   -DDEBUGLEVEL_$(CFG_TEE_SUPP_LOG_LEVEL) \

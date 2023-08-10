@@ -31,7 +31,7 @@ LIBCKTEEC_SRCS		+= serializer.c
 LIBCKTEEC_SRCS		+= serialize_ck.c
 
 LIBCKTEEC_INCLUDES	= ${CURDIR}/include
-LIBCKTEEC_INCLUDES 	+= ${CURDIR}/../public
+LIBCKTEEC_INCLUDES 	+= ${CURDIR}/../libteec/include
 
 LIBCKTEEC_CFLAGS	:= $(addprefix -I, $(LIBCKTEEC_INCLUDES)) \
 			$(CFLAGS) -D_GNU_SOURCE -fPIC

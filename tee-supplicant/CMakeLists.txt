@@ -103,7 +103,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE src)
 
 target_link_libraries(${PROJECT_NAME}
 	PRIVATE teec
-	PRIVATE optee-client-headers
 )
 
 if(CFG_TEE_SUPP_PLUGINS)
