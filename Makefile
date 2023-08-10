@@ -160,7 +160,7 @@ copy_export: build
 	cp -d ${O}/libteec/libteec.so* $(DESTDIR)$(libdir)
 	cp -d ${O}/libteec/libteec.a $(DESTDIR)$(libdir)
 	cp ${O}/tee-supplicant/tee-supplicant $(DESTDIR)$(sbindir)
-	cp public/*.h $(DESTDIR)$(includedir)
+	cp optee-client-headers/*.h $(DESTDIR)$(includedir)
 	cp libckteec/include/*.h $(DESTDIR)$(includedir)
 	cp -d ${O}/libckteec/libckteec.so* $(DESTDIR)$(libdir)
 	cp -d ${O}/libckteec/libckteec.a $(DESTDIR)$(libdir)

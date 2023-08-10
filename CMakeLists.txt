@@ -40,7 +40,7 @@ endif(CCACHE_FOUND)
 
 add_subdirectory(libteec)
 add_subdirectory(tee-supplicant)
-add_subdirectory(public)
+add_subdirectory(optee-client-headers)
 add_subdirectory(libckteec)
 if(WITH_TEEACL)
     find_package(PkgConfig REQUIRED)

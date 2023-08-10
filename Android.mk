@@ -49,7 +49,7 @@ LOCAL_CFLAGS += -DCFG_TEE_BENCHMARK
 LOCAL_SRC_FILES += teec_benchmark.c
 endif
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH)/public \
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/optee-client-headers \
                     $(LOCAL_PATH)/libteec/include \
 
 LOCAL_PRELINK_MODULE := false
@@ -62,7 +62,7 @@ LOCAL_VENDOR_MODULE := true
 LOCAL_MULTILIB := both
 LOCAL_MODULE_TARGET_ARCH := arm arm64
 
-LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/public
+LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/optee-client-headers
 
 include $(BUILD_SHARED_LIBRARY)
 
@@ -82,7 +82,7 @@ LOCAL_SRC_FILES := libckteec/src/pkcs11_api.c \
                    libckteec/src/serializer.c \
                    libckteec/src/serialize_ck.c
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH)/public \
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/optee-client-headers \
                     $(LOCAL_PATH)/libckteec/include
 
 LOCAL_SHARED_LIBRARIES := libteec
