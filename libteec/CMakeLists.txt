@@ -67,7 +67,7 @@ target_include_directories(teec PUBLIC include)
 
 target_link_libraries(teec
 	PUBLIC ${CMAKE_THREAD_LIBS_INIT} # this is pthreads
-	PRIVATE optee-client-headers)
+	PUBLIC optee-client-headers)
 
 ################################################################################
 # Install targets
