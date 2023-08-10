@@ -15,7 +15,7 @@ include(GNUInstallDirs)
 ################################################################################
 # Source files
 ################################################################################
-set (SRC
+set(SRC
 	src/pkcs11_api.c
 	src/ck_debug.c
 	src/ck_helpers.c
@@ -29,9 +29,9 @@ set (SRC
 ################################################################################
 # Built library
 ################################################################################
-add_library (ckteec ${SRC})
+add_library(ckteec ${SRC})
 
-set_target_properties (ckteec PROPERTIES
+set_target_properties(ckteec PROPERTIES
 	VERSION ${PROJECT_VERSION}
 	SOVERSION ${PROJECT_VERSION_MAJOR}
 )
@@ -39,7 +39,7 @@ set_target_properties (ckteec PROPERTIES
 ################################################################################
 # Flags always set
 ################################################################################
-target_compile_definitions (ckteec
+target_compile_definitions(ckteec
 	PRIVATE -D_GNU_SOURCE
 	PRIVATE -DBINARY_PREFIX="LT"
 )
@@ -61,7 +61,7 @@ target_include_directories(teec
 	PUBLIC include
 )
 
-target_link_libraries (ckteec
+target_link_libraries(ckteec
 	PRIVATE pthread
 	PRIVATE teec
 	PRIVATE m
@@ -70,7 +70,7 @@ target_link_libraries (ckteec
 ################################################################################
 # Install targets
 ################################################################################
-install (TARGETS ckteec
+install(TARGETS ckteec
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 

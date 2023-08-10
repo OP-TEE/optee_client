@@ -1,4 +1,4 @@
-project (libckteec-headers C)
+project(libckteec-headers C)
 
 FILE(GLOB INSTALL_HEADERS "*.h")
 
@@ -9,4 +9,4 @@ target_include_directories(
         $<INSTALL_INTERFACE:{CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-install (FILES ${INSTALL_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(FILES ${INSTALL_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
