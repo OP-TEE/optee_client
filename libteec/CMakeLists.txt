@@ -63,11 +63,14 @@ endif()
 ################################################################################
 # Public and private header and library dependencies
 ################################################################################
-target_include_directories(teec PUBLIC include)
+target_include_directories(teec
+	PUBLIC include
+	PRIVATE src
+)
 
 target_link_libraries(teec
 	PUBLIC ${CMAKE_THREAD_LIBS_INIT} # this is pthreads
-	PRIVATE optee-client-headers)
+)
 
 ################################################################################
 # Install targets
@@ -76,3 +79,7 @@ target_link_libraries(teec
 # FIXME: Should we change this to /usr/local/lib?
 install(TARGETS teec LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
                       ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+
+install(DIRECTORY include
+	DESTINATION ${CMAKE_INSTALL_PREFIX}
+)

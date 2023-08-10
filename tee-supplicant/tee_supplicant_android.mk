@@ -62,7 +62,7 @@ ifeq ($(CFG_FTRACE_SUPPORT),y)
 LOCAL_CFLAGS += -DCFG_FTRACE_SUPPORT
 endif
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH)/../public \
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/../libteec/include \
                     $(LOCAL_PATH)/../libteec/include \
                     $(LOCAL_PATH)/src
 
