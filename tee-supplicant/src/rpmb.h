@@ -34,4 +34,6 @@
 uint32_t rpmb_process_request(void *req, size_t req_size, void *rsp,
 			      size_t rsp_size);
 
+int rpmb_init(void);
+
 #endif /* RPMB_H */

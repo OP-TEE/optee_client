@@ -493,6 +493,7 @@ static int usage(int status)
 	fprintf(stderr, "\t-h, --help: this help\n");
 	fprintf(stderr, "\t-d, --daemonize: run as a daemon (fork and return "
 			"after child has opened the TEE device or on error)\n");
+	fprintf(stderr, "\t-e, --rpmb-emu-disable: RPMB emunation disable\n");
 	fprintf(stderr, "\t-f, --fs-parent-path: secure fs parent path [%s]\n",
 			supplicant_params.fs_parent_path);
 	fprintf(stderr, "\t-t, --ta-dir: TAs dirname under %s [%s]\n", TEEC_LOAD_PATH,
@@ -808,6 +809,7 @@ int main(int argc, char *argv[])
 		/* long name      | has argument  | flag | short value */
 		{ "help",            no_argument,       0, 'h' },
 		{ "daemonize",       no_argument,       0, 'd' },
+		{ "rpmb-emu-disable", no_argument,      0, 'e' },
 		{ "fs-parent-path",  required_argument, 0, 'f' },
 		{ "ta-dir",          required_argument, 0, 't' },
 		{ "plugin-path",     required_argument, 0, 'p' },
@@ -815,7 +817,7 @@ int main(int argc, char *argv[])
 		{ 0, 0, 0, 0 }
 	};
 
-	while ((opt = getopt_long(argc, argv, "hdf:t:p:r:",
+	while ((opt = getopt_long(argc, argv, "hde:f:t:p:r:",
 				long_options, &long_index )) != -1) {
 		switch (opt) {
 			case 'h' :
@@ -823,6 +825,9 @@ int main(int argc, char *argv[])
 				break;
 			case 'd':
 				daemonize = true;
+				break;
+			case 'e':
+				supplicant_params.rpmb_emu_disable = true;
 				break;
 			case 'f':
 				supplicant_params.fs_parent_path = optarg;
@@ -894,6 +899,8 @@ int main(int argc, char *argv[])
 		}
 		close(pipefd[1]);
 	}
+
+	rpmb_init();
 
 	while (!arg.abort) {
 		if (!process_one_request(&arg))

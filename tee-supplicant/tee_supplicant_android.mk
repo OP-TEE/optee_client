@@ -30,11 +30,7 @@ LOCAL_SRC_FILES += src/tee_socket.c
 LOCAL_CFLAGS += -DCFG_GP_SOCKETS=1
 endif
 
-RPMB_EMU ?= 1
-ifeq ($(RPMB_EMU),1)
 LOCAL_SRC_FILES += src/sha2.c src/hmac_sha2.c
-LOCAL_CFLAGS += -DRPMB_EMU=1
-endif
 
 ifneq (,$(filter y,$(CFG_TA_GPROF_SUPPORT) $(CFG_FTRACE_SUPPORT)))
 LOCAL_SRC_FILES += src/prof.c

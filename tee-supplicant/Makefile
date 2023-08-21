@@ -3,9 +3,6 @@ include ../config.mk
 
 OUT_DIR := $(OO)/tee-supplicant
 
-# Emulate RPMB ioctl's by default
-RPMB_EMU	?= 1
-
 .PHONY: all tee-supplicant clean
 
 all: tee-supplicant
@@ -24,9 +21,8 @@ ifeq ($(CFG_GP_SOCKETS),y)
 TEES_SRCS 	+= tee_socket.c
 endif
 
-ifeq ($(RPMB_EMU),1)
 TEES_SRCS	+= sha2.c hmac_sha2.c
-endif
+
 ifneq (,$(filter y,$(CFG_TA_GPROF_SUPPORT) $(CFG_FTRACE_SUPPORT)))
 TEES_SRCS	+= prof.c
 endif
@@ -50,9 +46,6 @@ TEES_CFLAGS	:= $(addprefix -I, $(TEES_INCLUDES)) $(CFLAGS) \
 
 ifeq ($(CFG_GP_SOCKETS),y)
 TEES_CFLAGS	+= -DCFG_GP_SOCKETS=1
-endif
-ifeq ($(RPMB_EMU),1)
-TEES_CFLAGS	+= -DRPMB_EMU=1
 endif
 ifeq ($(CFG_TA_TEST_PATH),y)
 TEES_CFLAGS	+= -DCFG_TA_TEST_PATH=1
