@@ -76,3 +76,7 @@ target_link_libraries(teec
 # FIXME: Should we change this to /usr/local/lib?
 install(TARGETS teec LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
                       ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libteec.pc"
+	DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
+)
