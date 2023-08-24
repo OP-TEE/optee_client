@@ -22,7 +22,7 @@ includedir ?= $(INCLUDEDIR)
 WITH_TEEACL ?= 1
 
 .PHONY: all build build-libteec build-libckteec build-libseteec \
-	build-libteeacl install copy_export clean cscope \
+	build-libteeacl built-libptateec install copy_export clean cscope \
 	clean-cscope \
 	checkpatch-pre-req checkpatch-modified-patch checkpatch-modified-file \
 	checkpatch-last-commit-patch checkpatch-last-commit-file \
@@ -40,7 +40,7 @@ build-tee-supplicant: build-libteec
 	@echo "Building tee-supplicant"
 	$(MAKE) --directory=tee-supplicant  --no-print-directory --no-builtin-variables CFG_TEE_SUPP_LOG_LEVEL=$(CFG_TEE_SUPP_LOG_LEVEL)
 
-build: build-libteec build-tee-supplicant build-libckteec build-libseteec
+build: build-libteec build-tee-supplicant build-libckteec build-libseteec build-libptateec
 ifeq ($(WITH_TEEACL),1)
 build: build-libteeacl
 endif
@@ -57,10 +57,14 @@ build-libteeacl:
 	@echo "Building libteeacl.so"
 	@$(MAKE) --directory=libteeacl --no-print-directory --no-builtin-variables
 
+build-libptateec: build-libteec
+	@echo "Building libptateec.so"
+	@$(MAKE) --directory=libptateec --no-print-directory --no-builtin-variables
+
 install: copy_export
 
 clean: clean-libteec clean-tee-supplicant clean-cscope clean-libckteec \
-	clean-libseteec
+	clean-libseteec clean-libptateec
 ifeq ($(WITH_TEEACL),1)
 clean: clean-libteeacl
 endif
@@ -79,6 +83,9 @@ clean-libseteec:
 
 clean-libteeacl:
 	@$(MAKE) --directory=libteeacl --no-print-directory clean
+
+clean-libptateec:
+	@$(MAKE) --directory=libptateec --no-print-directory clean
 
 cscope:
 	@echo "  CSCOPE"
@@ -172,3 +179,6 @@ endif
 	cp libseteec/include/*.h $(DESTDIR)$(includedir)
 	cp -d ${O}/libseteec/libseteec.so* $(DESTDIR)$(libdir)
 	cp -d ${O}/libseteec/libseteec.a $(DESTDIR)$(libdir)
+	cp libptateec/include/*.h $(DESTDIR)$(INCLUDEDIR)
+	cp -d ${O}/libptateec/libptateec.so* $(DESTDIR)$(LIBDIR)
+	cp -d ${O}/libptateec/libptateec.a $(DESTDIR)$(LIBDIR)
