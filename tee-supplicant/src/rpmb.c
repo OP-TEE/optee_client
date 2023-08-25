@@ -26,6 +26,7 @@
  */
 
 #include <dirent.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <linux/types.h>
 #include <linux/mmc/ioctl.h>
@@ -46,8 +47,6 @@
 #ifdef RPMB_EMU
 #include <stdarg.h>
 #include "hmac_sha2.h"
-#else
-#include <errno.h>
 #endif
 
 /*
@@ -138,18 +137,6 @@ static pthread_mutex_t rpmb_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* Maximum number of commands used in a multiple ioc command request */
 #define RPMB_MAX_IOC_MULTI_CMDS		3
-
-#ifndef RPMB_EMU
-
-#define IOCTL(fd, request, ...)					   \
-	({							   \
-		int ret;					   \
-		ret = ioctl((fd), (request), ##__VA_ARGS__);	   \
-		if (ret < 0)					   \
-			EMSG("ioctl ret=%d errno=%d", ret, errno); \
-		ret;						   \
-	})
-
 
 /* Open and/or return file descriptor to RPMB partition of device dev_id */
 static int mmc_rpmb_fd(uint16_t dev_id)
@@ -389,9 +376,9 @@ out:
 	return found;
 }
 
-#else /* RPMB_EMU */
+#ifdef RPMB_EMU
 
-#define IOCTL(fd, request, ...) ioctl_emu((fd), (request), ##__VA_ARGS__)
+#define use_rpmb_emu()	supplicant_params.rpmb_emu
 
 /* Emulated rel_wr_sec_c value (reliable write size, *256 bytes) */
 #define EMU_RPMB_REL_WR_SEC_C	1
@@ -609,7 +596,7 @@ static void ioctl_emu_read_ctr(struct rpmb_emu *mem,
 	frm->op_result = compute_hmac(mem, frm, 1);
 }
 
-static uint32_t read_cid(uint16_t dev_id, uint8_t *cid)
+static uint32_t read_cid_emu(uint16_t dev_id, uint8_t *cid)
 {
 	/* Taken from an actual eMMC chip */
 	static const uint8_t test_cid[] = {
@@ -747,7 +734,7 @@ static int ioctl_emu(int fd, unsigned long request, ...)
 	return res;
 }
 
-static int mmc_rpmb_fd(uint16_t dev_id)
+static int mmc_rpmb_fd_emu(uint16_t dev_id)
 {
 	(void)dev_id;
 
@@ -755,7 +742,7 @@ static int mmc_rpmb_fd(uint16_t dev_id)
 	return 0;
 }
 
-static TEEC_Result read_size_mult(uint16_t dev_id, uint8_t *value)
+static TEEC_Result read_size_mult_emu(uint16_t dev_id, uint8_t *value)
 {
 	(void)dev_id;
 
@@ -763,7 +750,7 @@ static TEEC_Result read_size_mult(uint16_t dev_id, uint8_t *value)
 	return TEEC_SUCCESS;
 }
 
-static TEEC_Result read_rel_wr_sec_c(uint16_t dev_id, uint8_t *value)
+static TEEC_Result read_rel_wr_sec_c_emu(uint16_t dev_id, uint8_t *value)
 {
 	(void)dev_id;
 
@@ -771,11 +758,21 @@ static TEEC_Result read_rel_wr_sec_c(uint16_t dev_id, uint8_t *value)
 	return TEEC_SUCCESS;
 }
 
-static bool remap_rpmb_dev_id(uint16_t dev_id, uint16_t *ndev_id)
+static bool remap_rpmb_dev_id_emu(uint16_t dev_id, uint16_t *ndev_id)
 {
 	*ndev_id = dev_id;
 	return true;
 }
+
+#else /* !RPMB_EMU */
+
+#define use_rpmb_emu()				(0)
+#define read_cid_emu(dev_id, cid)		(TEEC_ERROR_GENERIC)
+#define ioctl_emu(fd, request, ...)		(-1)
+#define mmc_rpmb_fd_emu(dev_id)			(-1)
+#define read_size_mult_emu(dev_id, value)	(TEEC_ERROR_GENERIC)
+#define read_rel_wr_sec_c_emu(dev_id, value)	(TEEC_ERROR_GENERIC)
+#define remap_rpmb_dev_id_emu(dev_id, ndev_id)	(false)
 
 #endif /* RPMB_EMU */
 
@@ -890,7 +887,13 @@ static uint32_t rpmb_data_req(int fd, struct rpmb_data_frame *req_frm,
 		goto out;
 	}
 
-	st = IOCTL(fd, MMC_IOC_MULTI_CMD, mcmd);
+	if (use_rpmb_emu()) {
+		st = ioctl_emu(fd, MMC_IOC_MULTI_CMD, mcmd);
+	} else {
+		st = ioctl(fd, MMC_IOC_MULTI_CMD, mcmd);
+		if (st < 0)
+			EMSG("ioctl ret=%d errno=%d", st, errno);
+	}
 	if (st < 0)
 		res = TEEC_ERROR_GENERIC;
 
@@ -906,16 +909,25 @@ static uint32_t rpmb_get_dev_info(uint16_t dev_id, struct rpmb_dev_info *info)
 	uint8_t rpmb_size_mult = 0;
 	uint8_t rel_wr_sec_c = 0;
 
-	res = read_cid(dev_id, info->cid);
+	if (use_rpmb_emu())
+		res = read_cid_emu(dev_id, info->cid);
+	else
+		res = read_cid(dev_id, info->cid);
 	if (res != TEEC_SUCCESS)
 		return res;
 
-	res = read_size_mult(dev_id, &rpmb_size_mult);
+	if (use_rpmb_emu())
+		res = read_size_mult_emu(dev_id, &rpmb_size_mult);
+	else
+		res = read_size_mult(dev_id, &rpmb_size_mult);
 	if (res != TEEC_SUCCESS)
 		return res;
 	info->rpmb_size_mult = rpmb_size_mult;
 
-	res = read_rel_wr_sec_c(dev_id, &rel_wr_sec_c);
+	if (use_rpmb_emu())
+		res = read_rel_wr_sec_c_emu(dev_id, &rel_wr_sec_c);
+	else
+		res = read_rel_wr_sec_c(dev_id, &rel_wr_sec_c);
 	if (res != TEEC_SUCCESS)
 		return res;
 	info->rel_wr_sec_c = rel_wr_sec_c;
@@ -938,19 +950,27 @@ static uint32_t rpmb_process_request_unlocked(void *req, size_t req_size,
 	size_t rsp_nfrm = 0;
 	uint16_t dev_id = 0;
 	uint32_t res = 0;
+	bool success;
 	int fd = 0;
 
 	if (req_size < sizeof(*sreq))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	if (!remap_rpmb_dev_id(sreq->dev_id, &dev_id))
+	if (use_rpmb_emu())
+		success = remap_rpmb_dev_id_emu(sreq->dev_id, &dev_id);
+	else
+		success = remap_rpmb_dev_id(sreq->dev_id, &dev_id);
+	if (!success)
 		return TEEC_ERROR_ITEM_NOT_FOUND;
 
 	switch (sreq->cmd) {
 	case RPMB_CMD_DATA_REQ:
 		req_nfrm = (req_size - sizeof(struct rpmb_req)) / 512;
 		rsp_nfrm = rsp_size / 512;
-		fd = mmc_rpmb_fd(dev_id);
+		if (use_rpmb_emu())
+			fd = mmc_rpmb_fd_emu(dev_id);
+		else
+			fd = mmc_rpmb_fd(dev_id);
 		if (fd < 0)
 			return TEEC_ERROR_BAD_PARAMETERS;
 		res = rpmb_data_req(fd, RPMB_REQ_DATA(req), req_nfrm, rsp,

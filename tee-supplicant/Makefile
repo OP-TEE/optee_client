@@ -3,7 +3,7 @@ include ../config.mk
 
 OUT_DIR := $(OO)/tee-supplicant
 
-# Emulate RPMB ioctl's by default
+# Support RPMB emulation by default (--rpmb-emu command line argument)
 RPMB_EMU	?= 1
 
 .PHONY: all tee-supplicant clean

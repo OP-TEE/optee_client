@@ -44,6 +44,9 @@ struct tee_supplicant_params {
     const char *plugin_load_path;
     const char *fs_parent_path;
     const char *rpmb_cid;
+#ifdef RPMB_EMU
+    bool rpmb_emu;
+#endif
 };
 
 extern struct tee_supplicant_params supplicant_params;
