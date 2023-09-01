@@ -1,0 +1,18 @@
+Description: Fix ldconfig-symlink-referencing-wrong-file
+ Let libsetee.so.0 link to libsetee.so.0.x.x
+Author: Ying-Chun Liu (PaulLiu) <paulliu@debian.org>
+Last-Update: 2022-02-05
+
+Index: optee-client-3.16.0/libseteec/Makefile
+===================================================================
+--- optee-client-3.16.0.orig/libseteec/Makefile
++++ optee-client-3.16.0/libseteec/Makefile
+@@ -54,7 +54,7 @@ $(OUT_DIR)/$(LIBSETEEC_AR_LIBRARY): $(LI
+ 
+ libseteec:
+ 	$(VPREFIX)ln -sf $(LIB_MAJ_MIN_PAT) $(OUT_DIR)/$(LIB_MAJ_MIN)
+-	$(VPREFIX)ln -sf $(LIB_MAJ_MIN) $(OUT_DIR)/$(LIB_MAJOR)
++	$(VPREFIX)ln -sf $(LIB_MAJ_MIN_PAT) $(OUT_DIR)/$(LIB_MAJOR)
+ 	$(VPREFIX)ln -sf $(LIB_MAJOR) $(OUT_DIR)/$(LIB_NAME).so
+ 
+ ################################################################################

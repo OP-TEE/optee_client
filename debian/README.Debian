@@ -1,0 +1,35 @@
+optee-client for Debian
+-----------------------
+
+## Data dir
+
+Origin version of optee-client put data to /data/tee.
+In Debian, we move the data directory to /var/lib/optee-client/data/tee
+for FHS compliance.
+
+## How to use this package with optee_test
+
+If you want to build optee_test (xtest) with this package.
+Please get export-ta_* from the optee_os's build first.
+Remember you have to use exactly the *same* build of export-ta_* with the
+optee_os you run on your system because there's private key inside.
+If you try to build another optee_os to generate export-ta_* for building
+optee_test, usually this won't work because your testing TA won't be verified
+by your optee_os.
+
+So let's assume you have export-ta_* in your home directory.
+And you should install "optee-client-dev" and "tee-supplicant" package.
+To build optee_test, please use the following command
+
+'''
+make TA_DEV_KIT_DIR=~/export-ta_* OPTEE_CLIENT_EXPORT=/usr
+'''
+
+And before you run ./out/xtest/xtest, you have to install all the
+*.ta files in ./out to /lib/optee_armtz
+
+'''
+sudo find ./out -name '*.ta' -exec cp -f {} /lib/optee_armtz \;
+'''
+
+ -- Ying-Chun Liu (PaulLiu) <paulliu@debian.org>  Thu, 20 May 2021 09:18:38 +0800

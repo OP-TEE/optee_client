@@ -1,0 +1,36 @@
+#!/usr/bin/make -f
+# See debhelper(7) (uncomment to enable)
+# output every command that modifies files on the build system.
+#export DH_VERBOSE = 1
+
+
+# see FEATURE AREAS in dpkg-buildflags(1)
+#export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+# see ENVIRONMENT in dpkg-buildflags(1)
+# package maintainers to append CFLAGS
+#export DEB_CFLAGS_MAINT_APPEND  = -Wall -pedantic
+# package maintainers to append LDFLAGS
+#export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
+
+
+%:
+	dh $@ --exclude=.a
+
+override_dh_auto_build: tee-supplicant.8
+	dh_auto_build -- LIBDIR=/usr/lib/$(DEB_HOST_MULTIARCH) \
+		CFG_TEE_FS_PARENT_PATH=/var/lib/optee-client/data/tee
+
+override_dh_auto_install:
+	dh_auto_install -- LIBDIR=/usr/lib/$(DEB_HOST_MULTIARCH) \
+		CFG_TEE_FS_PARENT_PATH=/var/lib/optee-client/data/tee
+
+override_dh_auto_clean:
+	dh_auto_clean
+	rm -rf $(CURDIR)/out
+
+DB2MAN = /usr/share/sgml/docbook/stylesheet/xsl/docbook-xsl/manpages/docbook.xsl
+XP     = xsltproc -''-nonet -''-param man.charmap.use.subset "0"
+
+tee-supplicant.8: debian/tee-supplicant.8.xml
+	$(XP) $(DB2MAN) $<

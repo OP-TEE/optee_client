@@ -1,0 +1,26 @@
+optee-client (3.16.0-2) unstable; urgency=low
+
+  * Nothing changed. Just re-upload.
+    For previous upload, we add a new package so we have to send binary
+    upload to the new queue. This time we upload source-only package.
+
+ -- Ying-Chun Liu (PaulLiu) <paulliu@debian.org>  Mon, 07 Feb 2022 10:18:56 +0800
+
+optee-client (3.16.0-1) unstable; urgency=low
+
+  * New upstream release.
+    - Add libseteec0 package.
+
+ -- Ying-Chun Liu (PaulLiu) <paulliu@debian.org>  Fri, 04 Feb 2022 23:49:24 +0800
+
+optee-client (3.15.0-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Ying-Chun Liu (PaulLiu) <paulliu@debian.org>  Sun, 14 Nov 2021 17:50:01 +0800
+
+optee-client (3.13.0-1) unstable; urgency=low
+
+  * Initial release (Closes: #868215)
+
+ -- Ying-Chun Liu (PaulLiu) <paulliu@debian.org>  Thu, 20 May 2021 09:18:38 +0800

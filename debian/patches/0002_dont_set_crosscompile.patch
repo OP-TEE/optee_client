@@ -1,0 +1,20 @@
+Description: don't set default cross compile
+ The original makefile will set cross compile to armhf if CROSS_COMPILE
+ is empty. But we want to use native compiler thus we remove that settings.
+Author: Ying-Chun Liu (PaulLiu) <paulliu@debian.org>
+Bug-Debian: https://bugs.debian.org/868215
+Last-Update: 2021-05-20
+
+Index: optee-client-3.16.0/flags.mk
+===================================================================
+--- optee-client-3.16.0.orig/flags.mk
++++ optee-client-3.16.0/flags.mk
+@@ -2,7 +2,7 @@
+ # COMMON COMPILATION FLAGS                                              #
+ #########################################################################
+ 
+-CROSS_COMPILE   ?= arm-linux-gnueabihf-
++CROSS_COMPILE   ?= 
+ CC              ?= $(CROSS_COMPILE)gcc
+ AR		?= $(CROSS_COMPILE)ar
+ 
