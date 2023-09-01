@@ -1,3 +1,9 @@
+optee-client (3.22.1-1) unstable; urgency=low
+
+  * Fix build for upstream version 3.22
+
+ -- Liming Sun <limings@nvidia.com>  Fri, 01 Sep 2023 11:08:50 -0400
+
 optee-client (3.16.0-2) unstable; urgency=low
 
   * Nothing changed. Just re-upload.
