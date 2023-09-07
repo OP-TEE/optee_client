@@ -89,6 +89,10 @@ make %{?_smp_mflags} V=1
 
 %install
 %cmake_install
+mkdir -p %{buildroot}/%{_sysconfdir}/modprobe.d
+%{__install} -m 0644 tee-supplicant/conf/tpm_ftpm_tee.conf %{buildroot}%{_sysconfdir}/modprobe.d/tpm_ftpm_tee.conf
+%{__install} -d %{buildroot}%{_unitdir}
+%{__install} -m 0644 debian/tee-supplicant.service %{buildroot}%{_unitdir}
 
 %post -n %{libname} -p /sbin/ldconfig
 %postun -n %{libname} -p /sbin/ldconfig
@@ -102,10 +106,15 @@ make %{?_smp_mflags} V=1
 %post -n %{libname4} -p /sbin/ldconfig
 %postun -n %{libname4} -p /sbin/ldconfig
 
+%postun
+systemctl daemon-reload >/dev/null 2>&1 || :
+
 %files
 %license LICENSE
 %doc README.md
 %{_sbindir}/tee-supplicant
+%{_sysconfdir}/modprobe.d/tpm_ftpm_tee.conf
+%{_unitdir}/tee-supplicant.service
 
 %files devel
 %{_includedir}/*.h
