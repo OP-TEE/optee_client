@@ -14,7 +14,7 @@ Index: optee-client-3.16.0/flags.mk
  #########################################################################
  
 -CROSS_COMPILE   ?= arm-linux-gnueabihf-
-+CROSS_COMPILE   ?= 
++CROSS_COMPILE   ?=
  CC              ?= $(CROSS_COMPILE)gcc
  AR		?= $(CROSS_COMPILE)ar
- 
+ PKG_CONFIG	?= $(CROSS_COMPILE)pkg-config

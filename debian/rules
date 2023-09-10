@@ -19,11 +19,15 @@
 
 override_dh_auto_build: tee-supplicant.8
 	dh_auto_build -- LIBDIR=/usr/lib/$(DEB_HOST_MULTIARCH) \
-		CFG_TEE_FS_PARENT_PATH=/var/lib/optee-client/data/tee
+		CFG_TEE_FS_PARENT_PATH=/var/lib/optee-client/data/tee \
+		RPMB_EMU=0
 
 override_dh_auto_install:
 	dh_auto_install -- LIBDIR=/usr/lib/$(DEB_HOST_MULTIARCH) \
 		CFG_TEE_FS_PARENT_PATH=/var/lib/optee-client/data/tee
+	dh_installdirs -ptee-supplicant etc/modprobe.d
+	install -m 0644 tee-supplicant/conf/tpm_ftpm_tee.conf debian/tee-supplicant/etc/modprobe.d/
+	cp -r debian/tee-supplicant/etc debian/tmp
 
 override_dh_auto_clean:
 	dh_auto_clean
