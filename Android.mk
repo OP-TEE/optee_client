@@ -9,7 +9,6 @@ CFG_TEE_SUPP_LOG_LEVEL ?= 2
 
 # Define Android-specific configuration before including config.mk
 CFG_TEE_CLIENT_LOAD_PATH ?= /vendor/lib
-TEEC_TEST_LOAD_PATH ?= /data/vendor/tee
 CFG_TEE_FS_PARENT_PATH ?= /data/vendor/tee
 CFG_TEE_SUPP_PLUGINS ?= y
 ifneq ($(strip $($(combo_2nd_arch_prefix)TARGET_TOOLS_PREFIX)),)

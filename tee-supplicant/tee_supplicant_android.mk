@@ -11,14 +11,6 @@ LOCAL_CFLAGS += -DDEBUGLEVEL_$(CFG_TEE_SUPP_LOG_LEVEL) \
 		-DTEE_FS_PARENT_PATH=\"$(CFG_TEE_FS_PARENT_PATH)\" \
 		-DTEEC_LOAD_PATH=\"$(CFG_TEE_CLIENT_LOAD_PATH)\"
 
-ifneq ($(TEEC_TEST_LOAD_PATH),)
-LOCAL_CFLAGS += -DTEEC_TEST_LOAD_PATH=\"$(TEEC_TEST_LOAD_PATH)\"
-endif
-
-ifeq ($(CFG_TA_TEST_PATH),y)
-LOCAL_CFLAGS += -DCFG_TA_TEST_PATH=1
-endif
-
 LOCAL_SRC_FILES += src/tee_supplicant.c \
 		   src/teec_ta_load.c \
 		   src/tee_supp_fs.c \
