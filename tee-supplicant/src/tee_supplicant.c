@@ -696,17 +696,11 @@ static void *thread_main(void *a)
 	return NULL;
 }
 
-#define TEEC_TEST_LOAD_PATH "/foo:/bar::/baz"
-
 static void set_ta_path(void)
 {
 	char *p = NULL;
 	char *saveptr = NULL;
-	const char *path = (char *)
-#ifdef TEEC_TEST_LOAD_PATH
-		TEEC_TEST_LOAD_PATH ":"
-#endif
-		TEEC_LOAD_PATH;
+	const char *path = (char *)TEEC_LOAD_PATH;
 	size_t n = 0;
 
 	ta_path_str = strdup(path);

@@ -36,22 +36,6 @@
 #include <teec_trace.h>
 #include <teec_ta_load.h>
 
-/*
- * Attempt to first load TAs from a writable directory.  This is
- * intended for testing (xtest 1008, load_corrupt_ta specifically),
- * and should not be enabled in a production system, as it would
- * greatly facilitate loading rogue TA code.
- */
-#ifdef CFG_TA_TEST_PATH
-# ifndef TEEC_TEST_LOAD_PATH
-#  ifdef __ANDROID__
-#   define TEEC_TEST_LOAD_PATH "/data/vendor/tee"
-#  else
-#   define TEEC_TEST_LOAD_PATH "/tmp"
-#  endif
-# endif
-#endif
-
 #ifndef PATH_MAX
 #define PATH_MAX 255
 #endif

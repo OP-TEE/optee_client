@@ -44,12 +44,6 @@ CFG_TEE_SUPP_PLUGINS ?= y
 #   The location of the user plugins
 CFG_TEE_PLUGIN_LOAD_PATH ?= /usr/lib/tee-supplicant/plugins/
 
-# CFG_TA_TEST_PATH
-#   Enable the tee test path.  When enabled, the supplicant will try
-#   loading from a debug path before the regular path.  This allows test
-#   such as 1008.5 that test loading of corrupt TAs.
-CFG_TA_TEST_PATH ?= n
-
 # CFG_GP_SOCKETS
 #   Enable Global Platform Sockets support
 CFG_GP_SOCKETS ?= y
