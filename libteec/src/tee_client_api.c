@@ -79,8 +79,10 @@ static void teec_mutex_unlock(pthread_mutex_t *mu)
 static void *teec_paged_aligned_alloc(size_t sz)
 {
 	void *p = NULL;
+	size_t page_sz = sysconf(_SC_PAGESIZE);
+	size_t aligned_sz = ((sz + page_sz - 1) / page_sz) * page_sz;
 
-	if (!posix_memalign(&p, sysconf(_SC_PAGESIZE), sz))
+	if (!posix_memalign(&p, page_sz, aligned_sz))
 		return p;
 
 	return NULL;
