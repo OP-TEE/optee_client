@@ -86,10 +86,10 @@ extern "C" {
  * TEEC_MEMREF_WHOLE           The Parameter is a Registered Memory Reference
  *                             that refers to the entirety of its parent Shared
  *                             Memory block. The parameter structure is a
- *                             TEEC_MemoryReference. In this structure, the
- *                             Implementation MUST read only the parent field
- *                             and MAY update the size field when the operation
- *                             completes.
+ *                             TEEC_RegisteredMemoryReference. In this
+ *                             structure, the Implementation MUST read only the
+ *                             parent field and MAY update the size field when
+ *                             the operation completes.
  *
  * TEEC_MEMREF_PARTIAL_INPUT   A Registered Memory Reference structure that
  *                             refers to a partial region of its parent Shared
