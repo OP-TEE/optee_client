@@ -411,6 +411,48 @@ static CK_RV serialize_mecha_aes_ctr(struct serializer *obj,
 	return rv;
 }
 
+static CK_RV serialize_mecha_aes_gcm(struct serializer *obj,
+				     CK_MECHANISM_PTR mecha)
+{
+	CK_GCM_PARAMS_PTR param = mecha->pParameter;
+	CK_RV rv = CKR_GENERAL_ERROR;
+	CK_ULONG aad_len = 0;
+
+	/* AAD is not manadatory */
+	if (param->pAAD)
+		aad_len = param->ulAADLen;
+
+	if (!param->pIv)
+		return CKR_MECHANISM_PARAM_INVALID;
+
+	rv = serialize_32b(obj, obj->type);
+	if (rv)
+		return rv;
+
+	rv = serialize_32b(obj, 3 * sizeof(uint32_t) +
+				param->ulIvLen + aad_len);
+	if (rv)
+		return rv;
+
+	rv = serialize_ck_ulong(obj, param->ulIvLen);
+	if (rv)
+		return rv;
+
+	rv = serialize_buffer(obj, param->pIv, param->ulIvLen);
+	if (rv)
+		return rv;
+
+	rv = serialize_ck_ulong(obj, aad_len);
+	if (rv)
+		return rv;
+
+	rv = serialize_buffer(obj, param->pAAD, aad_len);
+	if (rv)
+		return rv;
+
+	return serialize_ck_ulong(obj, param->ulTagBits);
+}
+
 static CK_RV serialize_mecha_aes_iv(struct serializer *obj,
 				    CK_MECHANISM_PTR mecha)
 {
@@ -752,6 +794,9 @@ CK_RV serialize_ck_mecha_params(struct serializer *obj,
 
 	case CKM_AES_CTR:
 		return serialize_mecha_aes_ctr(obj, &mecha);
+
+	case CKM_AES_GCM:
+		return serialize_mecha_aes_gcm(obj, &mecha);
 
 	case CKM_AES_ECB_ENCRYPT_DATA:
 		return serialize_mecha_key_deriv_str(obj, &mecha);
