@@ -31,9 +31,7 @@
 #define TA_BINARY_FOUND 0
 #define TA_BINARY_NOT_FOUND -1
 
-/* Heap copy of TA load paths, separated by '\0' (access via ta_path) */
-extern char *ta_path_str;
-/* NULL-terminated list of paths (pointers into ta_path_str) */
+/* NULL-terminated list of paths */
 extern char **ta_path;
 
 /**
@@ -49,7 +47,6 @@ extern char **ta_path;
  *
  * @return              0 if TA was found, otherwise -1.
  */
-int TEECI_LoadSecureModule(const char *name,
-			   const TEEC_UUID *destination, void *ta,
+int TEECI_LoadSecureModule(const TEEC_UUID *destination, void *ta,
 			   size_t *ta_size);
 #endif

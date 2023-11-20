@@ -64,11 +64,12 @@
 
 #define RPC_NUM_PARAMS	5
 
+#define DEFAULT_TA_DIR "optee_armtz"
+
 #define RPC_BUF_SIZE	(sizeof(struct tee_iocl_supp_send_arg) + \
 			 RPC_NUM_PARAMS * sizeof(struct tee_ioctl_param))
 
 char **ta_path;
-char *ta_path_str;
 
 union tee_rpc_invoke {
 	uint64_t buf[(RPC_BUF_SIZE - 1) / sizeof(uint64_t) + 1];
@@ -103,7 +104,6 @@ static pthread_mutex_t shm_mutex = PTHREAD_MUTEX_INITIALIZER;
 static struct tee_shm *shm_head;
 
 struct tee_supplicant_params supplicant_params = {
-	.ta_dir = "optee_armtz",
 #ifdef TEE_PLUGIN_LOAD_PATH
 	.plugin_load_path = TEE_PLUGIN_LOAD_PATH,
 #endif
@@ -300,7 +300,7 @@ static uint32_t load_ta(size_t num_params, struct tee_ioctl_param *params)
 	uuid_from_octets(&uuid, (void *)val_cmd);
 
 	size = shm_ta.size;
-	ta_found = TEECI_LoadSecureModule(supplicant_params.ta_dir, &uuid, shm_ta.buffer, &size);
+	ta_found = TEECI_LoadSecureModule(&uuid, shm_ta.buffer, &size);
 	if (ta_found != TA_BINARY_FOUND) {
 		EMSG("  TA not found");
 		return TEEC_ERROR_ITEM_NOT_FOUND;
@@ -495,8 +495,10 @@ static int usage(int status)
 			"after child has opened the TEE device or on error)\n");
 	fprintf(stderr, "\t-f, --fs-parent-path: secure fs parent path [%s]\n",
 			supplicant_params.fs_parent_path);
-	fprintf(stderr, "\t-t, --ta-dir: TAs dirname under %s [%s]\n", TEEC_LOAD_PATH,
-			supplicant_params.ta_dir);
+	fprintf(stderr, "\t-l, --ta-path: TA load path\n");
+	fprintf(stderr, "\t-t, --ta-dir: TAs dirname under %s [%s]"
+			" (deprecated, cannot be used with --ta-path)\n",
+			TEEC_LOAD_PATH, DEFAULT_TA_DIR);
 	fprintf(stderr, "\t-p, --plugin-path: plugin load path [%s]\n",
 			supplicant_params.plugin_load_path);
 	fprintf(stderr, "\t-r, --rpmb-cid: RPMB device identification register "
@@ -698,10 +700,15 @@ static void *thread_main(void *a)
 
 static void set_ta_path(void)
 {
+	char *ta_path_str = NULL;
 	char *p = NULL;
 	char *saveptr = NULL;
-	const char *path = (char *)TEEC_LOAD_PATH;
+	char *new_path = NULL;
 	size_t n = 0;
+	const char *path = supplicant_params.ta_load_path;
+
+	if (!path)
+		path = TEEC_LOAD_PATH;
 
 	ta_path_str = strdup(path);
 	if (!ta_path_str)
@@ -721,8 +728,22 @@ static void set_ta_path(void)
 	n = 0;
 	strcpy(ta_path_str, path);
 	p = ta_path_str;
-	while ((ta_path[n++] = strtok_r(p, ":", &saveptr)))
-	       p = NULL;
+
+	while ((new_path = strtok_r(p, ":", &saveptr))) {
+		if (!supplicant_params.ta_load_path) {
+			char full_path[PATH_MAX] = { 0 };
+
+			snprintf(full_path, PATH_MAX, "%s/%s", new_path,
+					supplicant_params.ta_dir);
+			ta_path[n++] = strdup(full_path);
+		} else {
+			ta_path[n++] = strdup(new_path);
+		}
+
+		p = NULL;
+	}
+
+	free(ta_path_str);
 
 	return;
 err:
@@ -803,13 +824,14 @@ int main(int argc, char *argv[])
 		{ "help",            no_argument,       0, 'h' },
 		{ "daemonize",       no_argument,       0, 'd' },
 		{ "fs-parent-path",  required_argument, 0, 'f' },
+		{ "ta-path",         required_argument, 0, 'l' },
 		{ "ta-dir",          required_argument, 0, 't' },
 		{ "plugin-path",     required_argument, 0, 'p' },
 		{ "rpmb-cid",        required_argument, 0, 'r' },
 		{ 0, 0, 0, 0 }
 	};
 
-	while ((opt = getopt_long(argc, argv, "hdf:t:p:r:",
+	while ((opt = getopt_long(argc, argv, "hdf:l:t:p:r:",
 				long_options, &long_index )) != -1) {
 		switch (opt) {
 			case 'h' :
@@ -820,6 +842,9 @@ int main(int argc, char *argv[])
 				break;
 			case 'f':
 				supplicant_params.fs_parent_path = optarg;
+				break;
+			case 'l':
+				supplicant_params.ta_load_path = optarg;
 				break;
 			case 't':
 				supplicant_params.ta_dir = optarg;
@@ -846,6 +871,12 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	if (!supplicant_params.ta_dir && !supplicant_params.ta_load_path) {
+		supplicant_params.ta_dir = DEFAULT_TA_DIR;
+	} else if (supplicant_params.ta_dir && supplicant_params.ta_load_path) {
+		fprintf(stderr, "Cannot use --ta-path and --ta-dir at the same time\n");
+		return usage(EXIT_FAILURE);
+	}
 
 	set_ta_path();
 
