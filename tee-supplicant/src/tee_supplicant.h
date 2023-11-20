@@ -41,6 +41,7 @@ struct tee_ioctl_param;
 /* Global tee-supplicant parameters */
 struct tee_supplicant_params {
     const char *ta_dir;
+    const char *ta_load_path;
     const char *plugin_load_path;
     const char *fs_parent_path;
     const char *rpmb_cid;

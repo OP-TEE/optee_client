@@ -51,9 +51,8 @@ struct tee_rpc_cmd {
  * Based on the uuid this function will try to find a TA-binary on the
  * filesystem and return it back to the caller in the parameter ta.
  *
- * @param: prefix       Prefix for TA load path
- * @param: dev_path     Where to load the TA from. The full path to the TA
- *                      binary is @prefix/@dev_path/@destination.ta.
+ * @param: ta_load_path Where to load the TA from. The full path to the TA
+ *                      binary is @ta_load_path/@destination.ta.
  * @param: destination  The uuid of the TA we are searching for.
  * @param: ta           A pointer which this function will allocate and copy
  *                      the TA from the filesystem to the pointer itself. It is
@@ -63,8 +62,7 @@ struct tee_rpc_cmd {
  *
  * @return              0 if TA was found, otherwise -1.
  */
-static int try_load_secure_module(const char* prefix,
-				  const char* dev_path,
+static int try_load_secure_module(const char *ta_load_path,
 				  const TEEC_UUID *destination, void *ta,
 				  size_t *ta_size)
 {
@@ -88,8 +86,8 @@ static int try_load_secure_module(const char* prefix,
 	 */
 again:
 	n = snprintf(fname, PATH_MAX,
-		     "%s/%s/%08x-%04x-%04x-%02x%02x%s%02x%02x%02x%02x%02x%02x.ta",
-		     prefix, dev_path,
+		     "%s/%08x-%04x-%04x-%02x%02x%s%02x%02x%02x%02x%02x%02x.ta",
+		     ta_load_path,
 		     destination->timeLow,
 		     destination->timeMid,
 		     destination->timeHiAndVersion,
@@ -159,16 +157,14 @@ out:
 	return TA_BINARY_FOUND;
 }
 
-int TEECI_LoadSecureModule(const char* dev_path,
-			   const TEEC_UUID *destination, void *ta,
+int TEECI_LoadSecureModule(const TEEC_UUID *destination, void *ta,
 			   size_t *ta_size)
 {
 	int res = TA_BINARY_NOT_FOUND;
 	char **path = NULL;
 
 	for (path = ta_path; *path; path++) {
-		res = try_load_secure_module(*path, dev_path, destination, ta,
-					     ta_size);
+		res = try_load_secure_module(*path, destination, ta, ta_size);
 		if (res == TA_BINARY_FOUND)
 			break;
 	}
