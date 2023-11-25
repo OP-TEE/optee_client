@@ -18,6 +18,24 @@
 #define PKCS11_LIB_DESCRIPTION		"OP-TEE PKCS11 Cryptoki library"
 
 /**
+ * Converts uint32_t value to CK_ULONG with unavailable information support
+ *
+ * On 64 bit systems uint32_t cannot handle CK_ULONG defined
+ * CK_UNAVAILABLE_INFORMATION. Check for this specific situation and return
+ * correct value.
+ *
+ * @ta_value: Value form PKCS#11 TA
+ * @return Valid CK_ULONG value
+ */
+static CK_ULONG maybe_unavail(uint32_t ta_value)
+{
+	if (ta_value == PKCS11_CK_UNAVAILABLE_INFORMATION)
+		return CK_UNAVAILABLE_INFORMATION;
+	else
+		return ta_value;
+}
+
+/**
  * ck_get_info - Get local information for C_GetInfo
  */
 CK_RV ck_get_info(CK_INFO_PTR info)
