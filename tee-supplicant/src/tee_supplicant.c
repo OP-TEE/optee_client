@@ -706,6 +706,7 @@ static void set_ta_path(void)
 	char *new_path = NULL;
 	size_t n = 0;
 	const char *path = supplicant_params.ta_load_path;
+	int path_len = -1;
 
 	if (!path)
 		path = TEEC_LOAD_PATH;
@@ -733,10 +734,17 @@ static void set_ta_path(void)
 		if (!supplicant_params.ta_load_path) {
 			char full_path[PATH_MAX] = { 0 };
 
-			snprintf(full_path, PATH_MAX, "%s/%s", new_path,
-					supplicant_params.ta_dir);
+			path_len = snprintf(full_path, PATH_MAX, "%s/%s", new_path,
+					    supplicant_params.ta_dir);
+			if (path_len < 0 || path_len >= PATH_MAX)
+				goto err_path;
+
 			ta_path[n++] = strdup(full_path);
 		} else {
+			path_len = strnlen(new_path, PATH_MAX);
+			if (path_len == PATH_MAX)
+				goto err_path;
+
 			ta_path[n++] = strdup(new_path);
 		}
 
@@ -748,6 +756,10 @@ static void set_ta_path(void)
 	return;
 err:
 	EMSG("out of memory");
+	exit(EXIT_FAILURE);
+
+err_path:
+	EMSG("Path exceeds maximum path length");
 	exit(EXIT_FAILURE);
 }
 
