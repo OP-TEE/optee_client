@@ -93,7 +93,10 @@ endif()
 ################################################################################
 # Public and private header and library dependencies
 ################################################################################
-target_include_directories(${PROJECT_NAME} PRIVATE src)
+target_include_directories(${PROJECT_NAME}
+	PRIVATE src
+	PRIVATE ../libteec/src
+)
 
 target_link_libraries(${PROJECT_NAME}
 	PRIVATE teec
