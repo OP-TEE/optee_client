@@ -1,0 +1,294 @@
+// SPDX-License-Identifier: Apache-2.0
+//
+// Copyright (C) 2024 The Android Open Source Project
+
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+soong_config_module_type {
+    name: "optee_client_cflags_cc_defaults",
+    module_type: "cc_defaults",
+    config_namespace: "optee_client",
+    bool_variables: [
+        "cfg_debug",
+        "cfg_werror",
+    ],
+    properties: ["cflags"],
+}
+
+optee_client_cflags_cc_defaults {
+    name: "optee_client_cflags_defaults",
+    cflags: [
+        "-c",
+        "-fPIC",
+        "-Wall",
+        "-Wbad-function-cast",
+        "-Wcast-align",
+        "-Werror-implicit-function-declaration",
+        "-Wextra",
+        "-Wfloat-equal",
+        "-Wformat-nonliteral",
+        "-Wformat-security",
+        "-Wformat=2",
+        "-Winit-self",
+        "-Wmissing-declarations",
+        "-Wmissing-format-attribute",
+        "-Wmissing-include-dirs",
+        "-Wmissing-noreturn",
+        "-Wmissing-prototypes",
+        "-Wnested-externs",
+        "-Wpointer-arith",
+        "-Wshadow",
+        "-Wstrict-prototypes",
+        "-Wswitch-default",
+        "-Wwrite-strings",
+    ],
+    soong_config_variables: {
+        cfg_debug: {
+            cflags: [
+                "-DDEBUG",
+                "-O0",
+                "-g",
+            ],
+        },
+        cfg_werror: {
+            cflags: ["-Werror"],
+        },
+    },
+}
+
+soong_config_module_type {
+    name: "optee_client_libteec_cc_defaults",
+    module_type: "cc_defaults",
+    config_namespace: "optee_client",
+    bool_variables: [
+        "cfg_tee_benchmark",
+    ],
+    value_variables: [
+        "cfg_tee_client_log_level",
+        "cfg_tee_client_log_file",
+        "cfg_tee_fs_parent_path",
+    ],
+    properties: [
+        "cflags",
+        "defaults",
+        "srcs",
+    ],
+}
+
+optee_client_libteec_cc_defaults {
+    name: "optee_client_libteec_log_file_defaults",
+    soong_config_variables: {
+        cfg_tee_fs_parent_path: {
+            cflags: ["-DTEEC_LOG_FILE=\"%s/teec.log\""],
+            conditions_default: {
+                cflags: ["-DTEEC_LOG_FILE=\"/data/vendor/tee/teec.log\""],
+            },
+        },
+    },
+}
+
+optee_client_libteec_cc_defaults {
+    name: "optee_client_libteec_defaults",
+    soong_config_variables: {
+        cfg_tee_benchmark: {
+            cflags: ["-DCFG_TEE_BENCHMARK"],
+            srcs: ["teec_benchmark.c"],
+        },
+        cfg_tee_client_log_level: {
+            cflags: ["-DDEBUGLEVEL_%s"],
+            conditions_default: {
+                cflags: ["-DDEBUGLEVEL_2"],
+            },
+        },
+        cfg_tee_client_log_file: {
+            cflags: ["-DTEEC_LOG_FILE=\"%s\""],
+            conditions_default: {
+                defaults: ["optee_client_libteec_log_file_defaults"],
+            },
+        },
+        cfg_tee_fs_parent_path: {
+            cflags: ["-DTEE_FS_PARENT_PATH=\"%s\""],
+            conditions_default: {
+                cflags: ["-DTEE_FS_PARENT_PATH=\"/data/vendor/tee\""],
+            },
+        },
+    },
+}
+
+cc_library_shared {
+    name: "libteec",
+    vendor: true,
+    compile_multilib: "both",
+    defaults: [
+        "optee_client_cflags_defaults",
+        "optee_client_libteec_defaults",
+    ],
+    cflags: [
+        "-DBINARY_PREFIX=\"TEEC\"",
+    ],
+    srcs: [
+        "libteec/src/tee_client_api.c",
+        "libteec/src/teec_trace.c",
+    ],
+    local_include_dirs: [
+        "libteec/include",
+        "libteec/src",
+    ],
+    export_include_dirs: ["libteec/include"],
+}
+
+cc_library_shared {
+    name: "libckteec",
+    vendor: true,
+    compile_multilib: "both",
+    defaults: ["optee_client_cflags_defaults"],
+    srcs: [
+        "libckteec/src/ck_debug.c",
+        "libckteec/src/ck_helpers.c",
+        "libckteec/src/invoke_ta.c",
+        "libckteec/src/pkcs11_api.c",
+        "libckteec/src/pkcs11_processing.c",
+        "libckteec/src/pkcs11_token.c",
+        "libckteec/src/serialize_ck.c",
+        "libckteec/src/serializer.c",
+    ],
+    shared_libs: ["libteec"],
+    local_include_dirs: [
+        "libckteec/include",
+        "libteec/include",
+    ],
+    export_include_dirs: ["libckteec/include"],
+}
+
+soong_config_module_type {
+    name: "optee_client_tee_supplicant_cc_defaults",
+    module_type: "cc_defaults",
+    config_namespace: "optee_client",
+    bool_variables: [
+        "cfg_ftrace_support",
+        "cfg_gp_sockets",
+        "cfg_ta_gprof_support",
+        "cfg_tee_supp_plugins",
+        "rpmb_emu",
+    ],
+    value_variables: [
+        "cfg_tee_client_load_path",
+        "cfg_tee_fs_parent_path",
+        "cfg_tee_plugin_load_path",
+        "cfg_tee_supp_log_level",
+    ],
+    properties: [
+        "cflags",
+        "defaults",
+        "ldflags",
+        "srcs",
+    ],
+}
+
+optee_client_tee_supplicant_cc_defaults {
+    name: "optee_client_tee_supplicant_plugin_load_path_defaults",
+    multilib: {
+        lib32: {
+            cflags: ["-DTEE_PLUGIN_LOAD_PATH=\"/vendor/lib/tee-supplicant/plugins/\""],
+            ldflags: ["-Wl,-rpath=/vendor/lib/tee-supplicant/plugins/"],
+        },
+        lib64: {
+            cflags: ["-DTEE_PLUGIN_LOAD_PATH=\"/vendor/lib64/tee-supplicant/plugins/\""],
+            ldflags: ["-Wl,-rpath=/vendor/lib64/tee-supplicant/plugins/"],
+        },
+    },
+}
+
+optee_client_tee_supplicant_cc_defaults {
+    name: "optee_client_tee_supplicant_plugin_defaults",
+    soong_config_variables: {
+        cfg_tee_plugin_load_path: {
+            cflags: ["-DTEE_PLUGIN_LOAD_PATH=\"%s\""],
+            ldflags: ["-Wl,-rpath=%s"],
+            conditions_default: {
+                defaults: ["optee_client_tee_supplicant_plugin_load_path_defaults"],
+            },
+        },
+    },
+}
+
+optee_client_tee_supplicant_cc_defaults {
+    name: "optee_client_tee_supplicant_prof_defaults",
+    srcs: ["tee-supplicant/src/prof.c"],
+}
+
+optee_client_tee_supplicant_cc_defaults {
+    name: "optee_client_tee_supplicant_defaults",
+    soong_config_variables: {
+        cfg_ftrace_support: {
+            cflags: ["-DCFG_FTRACE_SUPPORT"],
+            defaults: ["optee_client_tee_supplicant_prof_defaults"],
+        },
+        cfg_gp_sockets: {
+            cflags: ["-DCFG_GP_SOCKETS=1"],
+            srcs: ["tee-supplicant/src/tee_socket.c"],
+        },
+        cfg_ta_gprof_support: {
+            cflags: ["-DCFG_TA_GPROF_SUPPORT"],
+            defaults: ["optee_client_tee_supplicant_prof_defaults"],
+        },
+        cfg_tee_client_load_path: {
+            cflags: ["-DTEEC_LOAD_PATH=\"%s\""],
+            conditions_default: {
+                cflags: ["-DTEEC_LOAD_PATH=\"/vendor/lib\""],
+            },
+        },
+        cfg_tee_fs_parent_path: {
+            cflags: ["-DTEE_FS_PARENT_PATH=\"%s\""],
+            conditions_default: {
+                cflags: ["-DTEE_FS_PARENT_PATH=\"/data/vendor/tee\""],
+            },
+        },
+        cfg_tee_supp_log_level: {
+            cflags: ["-DDEBUGLEVEL_%s"],
+            conditions_default: {
+                cflags: ["-DDEBUGLEVEL_2"],
+            },
+        },
+        cfg_tee_supp_plugins: {
+            srcs: ["tee-supplicant/src/plugin.c"],
+            cflags: ["-DTEE_SUPP_PLUGINS"],
+            defaults: ["optee_client_tee_supplicant_plugin_defaults"],
+        },
+        rpmb_emu: {
+            cflags: ["-DRPMB_EMU=1"],
+            srcs: [
+                "tee-supplicant/src/hmac_sha2.c",
+                "tee-supplicant/src/sha2.c",
+            ],
+        },
+    },
+}
+
+cc_binary {
+    name: "tee-supplicant",
+    vendor: true,
+    defaults: [
+        "optee_client_cflags_defaults",
+        "optee_client_tee_supplicant_defaults",
+    ],
+    cflags: [
+        "-DBINARY_PREFIX=\"TEES\"",
+        "-pthread",
+    ],
+    srcs: [
+        "tee-supplicant/src/handle.c",
+        "tee-supplicant/src/rpmb.c",
+        "tee-supplicant/src/tee_supp_fs.c",
+        "tee-supplicant/src/tee_supplicant.c",
+        "tee-supplicant/src/teec_ta_load.c",
+    ],
+    shared_libs: ["libteec"],
+    local_include_dirs: [
+        "libteec/include",
+        "libteec/src",
+        "tee-supplicant/src",
+    ],
+}
