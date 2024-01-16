@@ -82,7 +82,7 @@ static void *teec_paged_aligned_alloc(size_t sz)
 	size_t page_sz = sysconf(_SC_PAGESIZE);
 	size_t aligned_sz = ((sz + page_sz - 1) / page_sz) * page_sz;
 
-	if (!posix_memalign(&p, page_sz, aligned_sz))
+	if (aligned_sz >= sz && !posix_memalign(&p, page_sz, aligned_sz))
 		return p;
 
 	return NULL;
