@@ -13,8 +13,6 @@ endif()
 ################################################################################
 # Configuration flags always included
 ################################################################################
-option(CFG_TEE_BENCHMARK "Build with benchmark support" OFF)
-
 set(CFG_TEE_CLIENT_LOG_LEVEL "1" CACHE STRING "libteec log level")
 set(CFG_TEE_CLIENT_LOG_FILE "/data/tee/teec.log" CACHE STRING "Location of libteec log")
 
@@ -25,10 +23,6 @@ set(SRC
 	src/tee_client_api.c
 	src/teec_trace.c
 )
-
-if(CFG_TEE_BENCHMARK)
-	set(SRC ${SRC} src/teec_benchmark.c)
-endif()
 
 ################################################################################
 # Built library
@@ -52,13 +46,6 @@ target_compile_definitions(teec
 	PRIVATE -DTEEC_LOG_FILE="${CFG_TEE_CLIENT_LOG_FILE}"
 	PRIVATE -DBINARY_PREFIX="LT"
 )
-
-################################################################################
-# Optional flags
-################################################################################
-if(CFG_TEE_BENCHMARK)
-	target_compile_definitions(teec PRIVATE -DCFG_TEE_BENCHMARK)
-endif()
 
 ################################################################################
 # Public and private header and library dependencies
