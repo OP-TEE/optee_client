@@ -46,8 +46,6 @@
 #endif
 #include <linux/tee.h>
 
-#include "teec_benchmark.h"
-
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
 /* How many device sequence numbers will be tried before giving up */
@@ -705,8 +703,6 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t cmd_id,
 		goto out;
 	}
 
-	bm_timestamp();
-
 	buf_data.buf_ptr = (uintptr_t)&buf;
 	buf_data.buf_len = sizeof(buf);
 
@@ -740,8 +736,6 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t cmd_id,
 	res = arg->ret;
 	eorig = arg->ret_origin;
 	teec_post_process_operation(operation, params, shm);
-
-	bm_timestamp();
 
 out_free_temp_refs:
 	teec_free_temp_refs(operation, shm);

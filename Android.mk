@@ -43,10 +43,6 @@ LOCAL_CFLAGS += -DBINARY_PREFIX=\"TEEC\"
 
 LOCAL_SRC_FILES := libteec/src/tee_client_api.c \
                    libteec/src/teec_trace.c
-ifeq ($(CFG_TEE_BENCHMARK),y)
-LOCAL_CFLAGS += -DCFG_TEE_BENCHMARK
-LOCAL_SRC_FILES += teec_benchmark.c
-endif
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/libteec/include
 
