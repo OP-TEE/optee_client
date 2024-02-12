@@ -262,10 +262,12 @@ CK_RV ck_encdecrypt_oneshot(CK_SESSION_HANDLE session,
 	memcpy(ctrl->buffer, &session_handle, sizeof(session_handle));
 
 	/* Shm io1: input data buffer */
-	in_shm = ckteec_register_shm(in, in_len, CKTEEC_SHM_IN);
-	if (!in_shm) {
-		rv = CKR_HOST_MEMORY;
-		goto bail;
+	if (in) {
+		in_shm = ckteec_register_shm(in, in_len, CKTEEC_SHM_IN);
+		if (!in_shm) {
+			rv = CKR_HOST_MEMORY;
+			goto bail;
+		}
 	}
 
 	/* Shm io2: output data buffer */
