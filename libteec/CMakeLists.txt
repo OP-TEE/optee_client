@@ -30,7 +30,7 @@ set(SRC
 add_library(teec ${SRC})
 
 set(libteectgt teec)
-configure_file(libteec.pc.in libteec.pc @ONLY)
+configure_file(teec.pc.in teec.pc @ONLY)
 
 set_target_properties(teec PROPERTIES
 	VERSION ${PROJECT_VERSION}
@@ -71,6 +71,6 @@ install(DIRECTORY include
 	DESTINATION ${CMAKE_INSTALL_PREFIX}
 )
 
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libteec.pc"
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/teec.pc"
 	DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
 )
