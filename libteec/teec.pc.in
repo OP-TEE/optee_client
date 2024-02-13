@@ -11,4 +11,3 @@ Requires: @pc_req_public@
 Requires.private: @pc_req_private@
 Cflags: -I"${includedir}"
 Libs: -L"${libdir}" -l@libteectgt@ 
-Libs.private: -L"${libdir}" -l@libteectgt@ @pc_libs_private@
