@@ -18,6 +18,8 @@ set(SRC
 ################################################################################
 add_library(teeacl ${SRC})
 
+configure_file(teeacl.pc.in teeacl.pc @ONLY)
+
 set_target_properties(teeacl PROPERTIES
 	VERSION ${PROJECT_VERSION}
 	SOVERSION ${PROJECT_VERSION_MAJOR}
@@ -51,3 +53,7 @@ install(TARGETS teeacl
 )
 
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/" DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/teeacl.pc"
+	DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
+)
