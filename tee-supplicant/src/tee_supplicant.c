@@ -722,7 +722,7 @@ static void set_ta_path(void)
 	}
 	n++; /* NULL terminator */
 
-	ta_path = malloc(n * sizeof(char *));
+	ta_path = calloc(n, sizeof(char *));
 	if (!ta_path)
 		goto err;
 
