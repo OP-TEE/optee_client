@@ -160,11 +160,7 @@ static int mmc_rpmb_fd(uint16_t dev_id)
 
 	DMSG("dev_id = %u", dev_id);
 	if (fd < 0) {
-#ifdef __ANDROID__
 		snprintf(path, sizeof(path), "/dev/mmcblk%urpmb", dev_id);
-#else
-		snprintf(path, sizeof(path), "/dev/mmcblk%urpmb", dev_id);
-#endif
 		fd = open(path, O_RDWR);
 		if (fd < 0) {
 			EMSG("Could not open %s (%s)", path, strerror(errno));
