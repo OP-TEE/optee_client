@@ -237,6 +237,15 @@ out:
 	return res;
 }
 
+static bool mmcblk_dev_has_rpmb_partition(uint16_t dev_id)
+{
+	struct stat statbuf = { };
+	char path[32] = { 0 };
+
+	snprintf(path, sizeof(path), "/dev/mmcblk%urpmb", dev_id);
+	return !stat(path, &statbuf) && (statbuf.st_mode & S_IFMT) == S_IFCHR;
+}
+
 static int hexchar2int(char c)
 {
 	if (c >= '0' && c <= '9')
@@ -340,13 +349,16 @@ static bool remap_rpmb_dev_id(uint16_t dev_id, uint16_t *ndev_id)
 	static uint16_t id = 0;
 	char cid[CID_STR_SZ + 1] = { };
 	struct dirent *dent = NULL;
+	uint unique_rpmb_id = 0;
+	uint rpmb_count = 0;
 	DIR *dir = NULL;
 	int num = 0;
 
 	if (err || found)
 		goto out;
 
-	if (!supplicant_params.rpmb_cid) {
+	if (!supplicant_params.rpmb_cid &&
+	    !supplicant_params.find_unique_mmc_rpmb) {
 		id = dev_id;
 		found = true;
 		goto out;
@@ -369,6 +381,15 @@ static bool remap_rpmb_dev_id(uint16_t dev_id, uint16_t *ndev_id)
 			break;
 		}
 		id = (uint16_t)num;
+
+		if (supplicant_params.find_unique_mmc_rpmb) {
+			if (mmcblk_dev_has_rpmb_partition(id)) {
+				unique_rpmb_id = id;
+				rpmb_count++;
+			}
+			continue;
+		}
+
 		res = read_cid_str(id, cid);
 		if (res)
 			continue;
@@ -380,6 +401,12 @@ static bool remap_rpmb_dev_id(uint16_t dev_id, uint16_t *ndev_id)
 	}
 
 	closedir(dir);
+
+	if (supplicant_params.find_unique_mmc_rpmb && rpmb_count == 1) {
+		found = true;
+		id = unique_rpmb_id;
+		IMSG("RPMB device %s is at /dev/mmcblk%urpmb\n", cid, id);
+	}
 
 	if (!found)
 		err = true;

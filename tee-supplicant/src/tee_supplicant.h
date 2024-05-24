@@ -45,6 +45,7 @@ struct tee_supplicant_params {
     const char *plugin_load_path;
     const char *fs_parent_path;
     const char *rpmb_cid;
+    bool find_unique_mmc_rpmb;
 };
 
 extern struct tee_supplicant_params supplicant_params;

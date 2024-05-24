@@ -502,7 +502,9 @@ static int usage(int status)
 	fprintf(stderr, "\t-p, --plugin-path: plugin load path [%s]\n",
 			supplicant_params.plugin_load_path);
 	fprintf(stderr, "\t-r, --rpmb-cid: RPMB device identification register "
-			"(CID) in hexadecimal\n");
+			"(CID) in hexadecimal. Exclusive with --unique-rpmb\n");
+	fprintf(stderr, "\t-u, --unique-rpmb: Find the unique RPMB device. "
+			"Exclusive with --rpmb-cid\n");
 	return status;
 }
 
@@ -840,6 +842,7 @@ int main(int argc, char *argv[])
 		{ "ta-dir",          required_argument, 0, 't' },
 		{ "plugin-path",     required_argument, 0, 'p' },
 		{ "rpmb-cid",        required_argument, 0, 'r' },
+		{ "unique-rpmb",     no_argument,       0, 'u' },
 		{ 0, 0, 0, 0 }
 	};
 
@@ -867,6 +870,9 @@ int main(int argc, char *argv[])
 			case 'r':
 				supplicant_params.rpmb_cid = optarg;
 				break;
+			case 'u':
+				supplicant_params.find_unique_mmc_rpmb = true;
+				break;
 			default:
 				return usage(EXIT_FAILURE);
 		}
@@ -887,6 +893,12 @@ int main(int argc, char *argv[])
 		supplicant_params.ta_dir = DEFAULT_TA_DIR;
 	} else if (supplicant_params.ta_dir && supplicant_params.ta_load_path) {
 		fprintf(stderr, "Cannot use --ta-path and --ta-dir at the same time\n");
+		return usage(EXIT_FAILURE);
+	}
+
+	if (supplicant_params.rpmb_cid &&
+	    supplicant_params.find_unique_mmc_rpmb) {
+		fprintf(stderr, "Cannot use --rpmb-cid and --unique-rpmb at the same time\n");
 		return usage(EXIT_FAILURE);
 	}
 
