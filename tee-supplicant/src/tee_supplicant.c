@@ -53,6 +53,7 @@
 #include <tee_socket.h>
 #include <tee_supp_fs.h>
 #include <tee_supplicant.h>
+#include <sd_notify.h>
 #include <unistd.h>
 
 #include "optee_msg_supplicant.h"
@@ -922,6 +923,11 @@ int main(int argc, char *argv[])
 			exit(EXIT_FAILURE);
 		}
 	}
+
+	/* we are set here notify systemd */
+	e = sd_notify_ready();
+	if(e < 0)
+		fprintf(stderr, "sd_notify_ready() failed: %s\n", strerror(-e));
 
 	if (daemonize) {
 		/* Release parent */

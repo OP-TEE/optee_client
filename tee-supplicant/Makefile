@@ -18,7 +18,8 @@ TEES_SRCS	:= tee_supplicant.c \
 		   teec_ta_load.c \
 		   tee_supp_fs.c \
 		   rpmb.c \
-		   handle.c
+		   handle.c \
+		   sd_notify.c
 
 ifeq ($(CFG_GP_SOCKETS),y)
 TEES_SRCS 	+= tee_socket.c
