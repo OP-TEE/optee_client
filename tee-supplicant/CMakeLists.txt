@@ -28,6 +28,7 @@ set(SRC
 	src/hmac_sha2.c
 	src/rpmb.c
 	src/sha2.c
+	src/sd_notify.c
 	src/tee_supp_fs.c
 	src/tee_supplicant.c
 	src/teec_ta_load.c
