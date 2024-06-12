@@ -1,0 +1,39 @@
+FROM ubuntu:22.04
+
+ENV LANG=C.UTF-8
+
+RUN dpkg --add-architecture armhf
+RUN dpkg --add-architecture arm64
+
+RUN echo 'deb [arch=amd64] http://archive.ubuntu.com/ubuntu/ jammy main restricted universe multiverse' > /etc/apt/sources.list
+RUN echo 'deb [arch=amd64] http://archive.ubuntu.com/ubuntu/ jammy-updates main restricted universe multiverse' >> /etc/apt/sources.list
+RUN echo 'deb [arch=amd64] http://archive.ubuntu.com/ubuntu/ jammy-backports main restricted universe multiverse' >> /etc/apt/sources.list
+RUN echo 'deb [arch=amd64] http://security.ubuntu.com/ubuntu/ jammy-security main restricted universe multiverse' >> /etc/apt/sources.list
+RUN echo 'deb [arch=armhf,arm64] http://ports.ubuntu.com/ubuntu-ports/ jammy main restricted universe multiverse' >> /etc/apt/sources.list
+RUN echo 'deb [arch=armhf,arm64] http://ports.ubuntu.com/ubuntu-ports/ jammy-updates main restricted universe multiverse' >> /etc/apt/sources.list
+RUN echo 'deb [arch=armhf,arm64] http://ports.ubuntu.com/ubuntu-ports/ jammy-backports main restricted universe multiverse' >> /etc/apt/sources.list
+RUN echo 'deb [arch=armhf,arm64] http://ports.ubuntu.com/ubuntu-ports/ jammy-security main restricted universe multiverse' >> /etc/apt/sources.list
+
+RUN apt update && apt upgrade -y && \
+    apt install -y \
+    build-essential \
+    automake \
+    cmake \
+    gcc-aarch64-linux-gnu \
+    gcc-arm-linux-gnueabihf \
+    gdb-multiarch \
+    curl \
+    dpkg-dev \
+    pkg-config \
+    uuid-dev:armhf \
+    uuid-dev:arm64
+
+# Additional development tools
+RUN apt-get install -y \
+    git-core git-man git-email \
+    sudo nano vim openssh-client bash-completion
+
+# Add non root user
+RUN useradd -ms /bin/bash optee
+RUN echo "optee ALL=(ALL) NOPASSWD: ALL" | tee -a /etc/sudoers
+USER optee
