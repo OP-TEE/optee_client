@@ -770,6 +770,7 @@ CK_RV serialize_ck_mecha_params(struct serializer *obj,
 	case CKM_ECDSA_SHA512:
 	case CKM_RSA_PKCS_KEY_PAIR_GEN:
 	case CKM_RSA_PKCS:
+	case CKM_RSA_X_509:
 	case CKM_MD5_RSA_PKCS:
 	case CKM_SHA1_RSA_PKCS:
 	case CKM_SHA224_RSA_PKCS:
