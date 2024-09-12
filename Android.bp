@@ -281,6 +281,7 @@ cc_binary {
     srcs: [
         "tee-supplicant/src/handle.c",
         "tee-supplicant/src/rpmb.c",
+        "tee-supplicant/src/sd_notify.c",
         "tee-supplicant/src/tee_supp_fs.c",
         "tee-supplicant/src/tee_supplicant.c",
         "tee-supplicant/src/teec_ta_load.c",
