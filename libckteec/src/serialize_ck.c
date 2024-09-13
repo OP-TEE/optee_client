@@ -95,17 +95,19 @@ static CK_RV serialize_indirect_attribute(struct serializer *obj,
 	 */
 	rv = serialize_32b(obj, attribute->type);
 	if (rv)
-		return rv;
+		goto out;
 
 	rv = serialize_32b(obj, obj2.size);
 	if (rv)
-		return rv;
+		goto out;
 
 	rv = serialize_buffer(obj, obj2.buffer, obj2.size);
 	if (rv)
-		return rv;
+		goto out;
 
 	obj->item_count++;
+out:
+	release_serial_object(&obj2);
 
 	return rv;
 }
