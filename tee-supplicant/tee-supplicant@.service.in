@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: BSD-2-Clause
+[Unit]
+Description=TEE Supplicant on %i
+DefaultDependencies=no
+After=dev-%i.device
+Wants=dev-%i.device
+Conflicts=shutdown.target
+Before=tpm2.target sysinit.target shutdown.target
+
+[Service]
+Type=notify
+User=@CFG_TEE_SUPPL_USER@
+Group=@CFG_TEE_SUPPL_GROUP@
+EnvironmentFile=-@CMAKE_INSTALL_SYSCONFDIR@/default/tee-supplicant
+ExecStart=@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_SBINDIR@/tee-supplicant $OPTARGS
+# Workaround for fTPM TA: stop kernel module before tee-supplicant
+ExecStop=-/bin/sh -c "/sbin/modprobe -v -r tpm_ftpm_tee ; /bin/kill $MAINPID"

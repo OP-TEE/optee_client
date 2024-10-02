@@ -23,7 +23,7 @@ CFG_TEE_SUPP_LOG_LEVEL?=1
 #   This folder can be created with the required permission in an init
 #   script during boot, else it will be created by the tee-supplicant on
 #   first REE FS access.
-CFG_TEE_FS_PARENT_PATH ?= /data/tee
+CFG_TEE_FS_PARENT_PATH ?= /var/lib/tee
 
 # CFG_TEE_CLIENT_LOG_FILE
 #   The location of the client log file when logging to file is enabled.
