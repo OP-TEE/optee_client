@@ -14,7 +14,7 @@ endif()
 # Configuration flags always included
 ################################################################################
 set(CFG_TEE_CLIENT_LOG_LEVEL "1" CACHE STRING "libteec log level")
-set(CFG_TEE_CLIENT_LOG_FILE "/data/tee/teec.log" CACHE STRING "Location of libteec log")
+set(CFG_TEE_CLIENT_LOG_FILE "${CMAKE_INSTALL_LOCALSTATEDIR}/lib/tee/teec.log" CACHE STRING "Location of libteec log")
 
 ################################################################################
 # Source files
