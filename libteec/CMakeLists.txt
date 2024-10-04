@@ -62,8 +62,6 @@ target_link_libraries(teec
 ################################################################################
 # Install targets
 ################################################################################
-# FIXME: This should in someway harmonize with CFG_TEE_CLIENT_LOAD_PATH
-# FIXME: Should we change this to /usr/local/lib?
 install(TARGETS teec LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
                       ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 
