@@ -674,6 +674,23 @@ static CK_RV serialize_mecha_eddsa(struct serializer *obj,
 {
 	CK_RV rv = CKR_GENERAL_ERROR;
 	CK_EDDSA_PARAMS *params = mecha->pParameter;
+	CK_ULONG params_len = mecha->ulParameterLen;
+	/*
+	 * When no parameter is provided, the expected operation is
+	 * no-prehash and no-context.
+	 */
+	CK_EDDSA_PARAMS default_params = {
+		.phFlag = 0,
+		.ulContextDataLen = 0,
+	};
+
+	if (params_len == 0) {
+		params = &default_params;
+		params_len = sizeof(*params);
+	}
+
+	if (params_len != sizeof(*params))
+		return CKR_ARGUMENTS_BAD;
 
 	rv = serialize_32b(obj, obj->type);
 	if (rv)
