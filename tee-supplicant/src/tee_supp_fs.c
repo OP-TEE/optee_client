@@ -54,8 +54,6 @@
 /* Path to all secure storage files. */
 static char tee_fs_root[PATH_MAX];
 
-#define TEE_FS_FILENAME_MAX_LENGTH 150
-
 static pthread_mutex_t dir_handle_db_mutex = PTHREAD_MUTEX_INITIALIZER;
 static struct handle_db dir_handle_db =
 		HANDLE_DB_INITIALIZER_WITH_MUTEX(&dir_handle_db_mutex);
