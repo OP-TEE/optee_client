@@ -840,7 +840,7 @@ static uint32_t rpmb_data_req(int fd, struct rpmb_data_frame *req_frm,
 		/* Send result request frame */
 		cmd = &mcmd->cmds[1];
 		set_mmc_io_cmd(cmd, req_nfrm, MMC_WRITE_MULTIPLE_BLOCK, 1);
-		memset(rsp_frm, 0, 1);
+		memset(rsp_frm, 0, sizeof(*rsp_frm));
 		rsp_frm->msg_type = htons(RPMB_MSG_TYPE_REQ_RESULT_READ);
 		mmc_ioc_cmd_set_data((*cmd), (uintptr_t)rsp_frm);
 
