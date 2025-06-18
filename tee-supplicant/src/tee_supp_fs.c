@@ -52,8 +52,7 @@
 #endif
 
 /* Path to all secure storage files. */
-static char tee_fs_root[PATH_MAX];
-int tee_fs_fd;
+static int tee_fs_fd = -1;
 
 static pthread_mutex_t dir_handle_db_mutex = PTHREAD_MUTEX_INITIALIZER;
 static struct handle_db dir_handle_db =
@@ -137,18 +136,12 @@ static int mkpath(const char *path, mode_t mode)
 
 static int tee_supp_fs_init(void)
 {
-	size_t n = 0;
 	mode_t mode = 0700;
 
-	n = snprintf(tee_fs_root, sizeof(tee_fs_root), "%s/", supplicant_params.fs_parent_path);
-
-	if (n >= sizeof(tee_fs_root))
+	if (mkpath(supplicant_params.fs_parent_path, mode) != 0)
 		return -1;
 
-	if (mkpath(tee_fs_root, mode) != 0)
-		return -1;
-
-	tee_fs_fd = open(tee_fs_root, O_RDONLY);
+	tee_fs_fd = open(supplicant_params.fs_parent_path, O_RDONLY);
 	if (tee_fs_fd < 0)
 		return -1;
 
@@ -418,7 +411,7 @@ static TEEC_Result ree_fs_new_truncate(size_t num_params,
 static TEEC_Result ree_fs_new_remove(size_t num_params,
 				     struct tee_ioctl_param *params)
 {
-	char abs_filename[PATH_MAX] = { 0 };
+	char rel_filename[PATH_MAX] = { 0 };
 	char *fname = NULL;
 	char *d = NULL;
 
@@ -433,22 +426,22 @@ static TEEC_Result ree_fs_new_remove(size_t num_params,
 	if (!fname)
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	if (!tee_fs_get_relative_filename(fname, abs_filename,
-					  sizeof(abs_filename)))
+	if (!tee_fs_get_relative_filename(fname, rel_filename,
+					  sizeof(rel_filename)))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	if (unlink(abs_filename))
+	if (unlinkat(tee_fs_fd, rel_filename, 0))
 		return errno_to_teec(errno);
 
 	/* If a file is removed, maybe the directory can be removed to? */
-	d = dirname(abs_filename);
-	if (!rmdir(d)) {
+	d = dirname(rel_filename);
+	if (!unlinkat(tee_fs_fd, d, AT_REMOVEDIR)) {
 		/*
 		 * If the directory was removed, maybe the parent directory
 		 * can be removed too?
 		 */
 		d = dirname(d);
-		rmdir(d);
+		unlinkat(tee_fs_fd, d, AT_REMOVEDIR);
 	}
 
 	return TEEC_SUCCESS;
@@ -643,11 +636,11 @@ TEEC_Result tee_supp_fs_process(size_t num_params,
 	if (!num_params || !tee_supp_param_is_value(params))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	if (!tee_fs_root[0]) {
+	if (tee_fs_fd == -1) {
 		if (tee_supp_fs_init() != 0) {
 			EMSG("error tee_supp_fs_init: failed to create %s/",
-				tee_fs_root);
-			memset(tee_fs_root, 0, sizeof(tee_fs_root));
+				supplicant_params.fs_parent_path);
+			tee_fs_fd = -1;
 			return TEEC_ERROR_STORAGE_NOT_AVAILABLE;
 		}
 	}
