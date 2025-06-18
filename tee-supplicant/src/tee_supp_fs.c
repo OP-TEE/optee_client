@@ -53,6 +53,7 @@
 
 /* Path to all secure storage files. */
 static char tee_fs_root[PATH_MAX];
+int tee_fs_fd;
 
 static pthread_mutex_t dir_handle_db_mutex = PTHREAD_MUTEX_INITIALIZER;
 static struct handle_db dir_handle_db =
@@ -87,15 +88,26 @@ static size_t tee_fs_get_absolute_filename(char *file, char *out,
 	return (size_t)s;
 }
 
+static size_t tee_fs_get_relative_filename(char *file, char *out,
+					   size_t out_size)
+{
+	int s = 0;
+
+	if (!file || !out || (out_size <= strlen(file) + 3))
+		return 0;
+
+	s = snprintf(out, out_size, "./%s", file);
+	if (s < 0 || (size_t)s >= out_size)
+		return 0;
+
+	/* Safe to cast since we have checked that sizes are OK */
+	return (size_t)s;
+}
+
 static void fs_fsync(void)
 {
-	int fd = 0;
-
-	fd = open(tee_fs_root, O_RDONLY | O_DIRECTORY);
-	if (fd > 0) {
-		fsync(fd);
-		close(fd);
-	}
+	if (tee_fs_fd > 0)
+		fsync(tee_fs_fd);
 }
 
 static int do_mkdir(const char *path, mode_t mode)
@@ -152,7 +164,22 @@ static int tee_supp_fs_init(void)
 	if (mkpath(tee_fs_root, mode) != 0)
 		return -1;
 
+	tee_fs_fd = open(tee_fs_root, O_RDONLY);
+	if (tee_fs_fd < 0)
+		return -1;
+
 	return 0;
+}
+
+static int openat_wrapper(const char *fname, int flags)
+{
+	int fd = 0;
+
+	while (true) {
+		fd = openat(tee_fs_fd, fname, flags | O_SYNC, 0600);
+		if (fd >= 0 || errno != EINTR)
+			return fd;
+	}
 }
 
 static int open_wrapper(const char *fname, int flags)
@@ -169,7 +196,7 @@ static int open_wrapper(const char *fname, int flags)
 static TEEC_Result ree_fs_new_open(size_t num_params,
 				   struct tee_ioctl_param *params)
 {
-	char abs_filename[PATH_MAX] = { 0 };
+	char rel_filename[PATH_MAX] = { 0 };
 	char *fname = NULL;
 	int fd = 0;
 
@@ -186,17 +213,17 @@ static TEEC_Result ree_fs_new_open(size_t num_params,
 	if (!fname)
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	if (!tee_fs_get_absolute_filename(fname, abs_filename,
-					  sizeof(abs_filename)))
+	if (!tee_fs_get_relative_filename(fname, rel_filename,
+					  sizeof(rel_filename)))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	fd = open_wrapper(abs_filename, O_RDWR);
+	fd = openat_wrapper(rel_filename, O_RDWR);
 	if (fd < 0) {
 		/*
 		 * In case the problem is the filesystem is RO, retry with the
 		 * open flags restricted to RO.
 		 */
-		fd = open_wrapper(abs_filename, O_RDONLY);
+		fd = openat_wrapper(rel_filename, O_RDONLY);
 		if (fd < 0)
 			return TEEC_ERROR_ITEM_NOT_FOUND;
 	}
