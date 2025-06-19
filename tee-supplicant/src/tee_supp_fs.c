@@ -265,8 +265,6 @@ static TEEC_Result ree_fs_new_create(size_t num_params,
 		return errno_to_teec(errno);
 
 	/* Try to make directory for file again */
-	strncpy(abs_dir, abs_filename, sizeof(abs_dir));
-	abs_dir[sizeof(abs_dir) - 1] = '\0';
 	d = dirname(rel_dir);
 	if (mkdirat(tee_fs_fd, d, 0700)) {
 		int err = errno;
