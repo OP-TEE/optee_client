@@ -486,8 +486,8 @@ static TEEC_Result ree_fs_new_remove(size_t num_params,
 static TEEC_Result ree_fs_new_rename(size_t num_params,
 				     struct tee_ioctl_param *params)
 {
-	char old_abs_filename[PATH_MAX] = { 0 };
-	char new_abs_filename[PATH_MAX] = { 0 };
+	char old_rel_filename[PATH_MAX] = { 0 };
+	char new_rel_filename[PATH_MAX] = { 0 };
 	char *old_fname = NULL;
 	char *new_fname = NULL;
 	bool overwrite = false;
@@ -511,21 +511,21 @@ static TEEC_Result ree_fs_new_rename(size_t num_params,
 	if (!new_fname)
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	if (!tee_fs_get_absolute_filename(old_fname, old_abs_filename,
-					  sizeof(old_abs_filename)))
+	if (!tee_fs_get_relative_filename(old_fname, old_rel_filename,
+					  sizeof(old_rel_filename)))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	if (!tee_fs_get_absolute_filename(new_fname, new_abs_filename,
-					  sizeof(new_abs_filename)))
+	if (!tee_fs_get_relative_filename(new_fname, new_rel_filename,
+					  sizeof(new_rel_filename)))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
 	if (!overwrite) {
 		struct stat st;
 
-		if (!stat(new_abs_filename, &st))
+		if (!fstatat(tee_fs_fd, new_rel_filename, &st, 0))
 			return TEEC_ERROR_ACCESS_CONFLICT;
 	}
-	if (rename(old_abs_filename, new_abs_filename)) {
+	if (renameat(tee_fs_fd, old_rel_filename, tee_fs_fd, new_rel_filename)) {
 		if (errno == ENOENT)
 			return TEEC_ERROR_ITEM_NOT_FOUND;
 	}
