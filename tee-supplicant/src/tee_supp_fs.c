@@ -24,6 +24,9 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+
+#define _GNU_SOURCE
+
 #include <assert.h>
 #include <dirent.h>
 #include <errno.h>
@@ -52,7 +55,7 @@
 #endif
 
 /* Path to all secure storage files. */
-static char tee_fs_root[PATH_MAX];
+static int tee_fs_fd = -1;
 
 static pthread_mutex_t dir_handle_db_mutex = PTHREAD_MUTEX_INITIALIZER;
 static struct handle_db dir_handle_db =
@@ -71,15 +74,15 @@ static TEEC_Result errno_to_teec(int err)
 	return TEEC_ERROR_GENERIC;
 }
 
-static size_t tee_fs_get_absolute_filename(char *file, char *out,
+static size_t tee_fs_get_relative_filename(char *file, char *out,
 					   size_t out_size)
 {
 	int s = 0;
 
-	if (!file || !out || (out_size <= strlen(tee_fs_root) + 1))
+	if (!file || !out || (out_size <= strlen(file) + 3))
 		return 0;
 
-	s = snprintf(out, out_size, "%s%s", tee_fs_root, file);
+	s = snprintf(out, out_size, "./%s", file);
 	if (s < 0 || (size_t)s >= out_size)
 		return 0;
 
@@ -89,13 +92,8 @@ static size_t tee_fs_get_absolute_filename(char *file, char *out,
 
 static void fs_fsync(void)
 {
-	int fd = 0;
-
-	fd = open(tee_fs_root, O_RDONLY | O_DIRECTORY);
-	if (fd > 0) {
-		fsync(fd);
-		close(fd);
-	}
+	if (tee_fs_fd > 0)
+		fsync(tee_fs_fd);
 }
 
 static int do_mkdir(const char *path, mode_t mode)
@@ -110,7 +108,6 @@ static int do_mkdir(const char *path, mode_t mode)
 	if (stat(path, &st) != 0 && !S_ISDIR(st.st_mode))
 		return -1;
 
-	fs_fsync();
 	return 0;
 }
 
@@ -141,26 +138,25 @@ static int mkpath(const char *path, mode_t mode)
 
 static int tee_supp_fs_init(void)
 {
-	size_t n = 0;
 	mode_t mode = 0700;
 
-	n = snprintf(tee_fs_root, sizeof(tee_fs_root), "%s/", supplicant_params.fs_parent_path);
-
-	if (n >= sizeof(tee_fs_root))
+	if (mkpath(supplicant_params.fs_parent_path, mode) != 0)
 		return -1;
 
-	if (mkpath(tee_fs_root, mode) != 0)
+	tee_fs_fd = open(supplicant_params.fs_parent_path, O_RDONLY);
+	if (tee_fs_fd < 0)
 		return -1;
+	fs_fsync();
 
 	return 0;
 }
 
-static int open_wrapper(const char *fname, int flags)
+static int openat_wrapper(const char *fname, int flags)
 {
 	int fd = 0;
 
 	while (true) {
-		fd = open(fname, flags | O_SYNC, 0600);
+		fd = openat(tee_fs_fd, fname, flags | O_SYNC, 0600);
 		if (fd >= 0 || errno != EINTR)
 			return fd;
 	}
@@ -169,7 +165,7 @@ static int open_wrapper(const char *fname, int flags)
 static TEEC_Result ree_fs_new_open(size_t num_params,
 				   struct tee_ioctl_param *params)
 {
-	char abs_filename[PATH_MAX] = { 0 };
+	char rel_filename[PATH_MAX] = { 0 };
 	char *fname = NULL;
 	int fd = 0;
 
@@ -186,17 +182,17 @@ static TEEC_Result ree_fs_new_open(size_t num_params,
 	if (!fname)
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	if (!tee_fs_get_absolute_filename(fname, abs_filename,
-					  sizeof(abs_filename)))
+	if (!tee_fs_get_relative_filename(fname, rel_filename,
+					  sizeof(rel_filename)))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	fd = open_wrapper(abs_filename, O_RDWR);
+	fd = openat_wrapper(rel_filename, O_RDWR);
 	if (fd < 0) {
 		/*
 		 * In case the problem is the filesystem is RO, retry with the
 		 * open flags restricted to RO.
 		 */
-		fd = open_wrapper(abs_filename, O_RDONLY);
+		fd = openat_wrapper(rel_filename, O_RDONLY);
 		if (fd < 0)
 			return TEEC_ERROR_ITEM_NOT_FOUND;
 	}
@@ -208,8 +204,8 @@ static TEEC_Result ree_fs_new_open(size_t num_params,
 static TEEC_Result ree_fs_new_create(size_t num_params,
 				     struct tee_ioctl_param *params)
 {
-	char abs_filename[PATH_MAX] = { 0 };
-	char abs_dir[PATH_MAX] = { 0 };
+	char rel_filename[PATH_MAX] = { 0 };
+	char rel_dir[PATH_MAX] = { 0 };
 	char *fname = NULL;
 	char *d = NULL;
 	int fd = 0;
@@ -228,24 +224,24 @@ static TEEC_Result ree_fs_new_create(size_t num_params,
 	if (!fname)
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	if (!tee_fs_get_absolute_filename(fname, abs_filename,
-					  sizeof(abs_filename)))
+	if (!tee_fs_get_relative_filename(fname, rel_filename,
+					  sizeof(rel_filename)))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	fd = open_wrapper(abs_filename, flags);
+	fd = openat_wrapper(rel_filename, flags);
 	if (fd >= 0)
 		goto out;
 	if (errno != ENOENT)
 		return errno_to_teec(errno);
 
-	/* Directory for file missing, try make to it */
-	strncpy(abs_dir, abs_filename, sizeof(abs_dir));
-	abs_dir[sizeof(abs_dir) - 1] = '\0';
-	d = dirname(abs_dir);
-	if (!mkdir(d, 0700)) {
+	/* Directory for file missing, try to make it */
+	strncpy(rel_dir, rel_filename, sizeof(rel_dir));
+	rel_dir[sizeof(rel_dir) - 1] = '\0';
+	d = dirname(rel_dir);
+	if (!mkdirat(tee_fs_fd, d, 0700)) {
 		int err = 0;
 
-		fd = open_wrapper(abs_filename, flags);
+		fd = openat_wrapper(rel_filename, flags);
 		if (fd >= 0)
 			goto out;
 		/*
@@ -253,7 +249,7 @@ static TEEC_Result ree_fs_new_create(size_t num_params,
 		 * created.
 		 */
 		err = errno;
-		rmdir(d);
+		unlinkat(tee_fs_fd, d, AT_REMOVEDIR);
 		return errno_to_teec(err);
 	}
 	if (errno != ENOENT)
@@ -261,28 +257,26 @@ static TEEC_Result ree_fs_new_create(size_t num_params,
 
 	/* Parent directory for file missing, try to make it */
 	d = dirname(d);
-	if (mkdir(d, 0700))
+	if (mkdirat(tee_fs_fd, d, 0700))
 		return errno_to_teec(errno);
 
 	/* Try to make directory for file again */
-	strncpy(abs_dir, abs_filename, sizeof(abs_dir));
-	abs_dir[sizeof(abs_dir) - 1] = '\0';
-	d = dirname(abs_dir);
-	if (mkdir(d, 0700)) {
+	d = dirname(rel_dir);
+	if (mkdirat(tee_fs_fd, d, 0700)) {
 		int err = errno;
 
 		d = dirname(d);
-		rmdir(d);
+		unlinkat(tee_fs_fd, d, AT_REMOVEDIR);
 		return errno_to_teec(err);
 	}
 
-	fd = open_wrapper(abs_filename, flags);
+	fd = openat_wrapper(rel_filename, flags);
 	if (fd < 0) {
 		int err = errno;
 
-		rmdir(d);
+		unlinkat(tee_fs_fd, d, AT_REMOVEDIR);
 		d = dirname(d);
-		rmdir(d);
+		unlinkat(tee_fs_fd, d, AT_REMOVEDIR);
 		return errno_to_teec(err);
 	}
 
@@ -420,7 +414,7 @@ static TEEC_Result ree_fs_new_truncate(size_t num_params,
 static TEEC_Result ree_fs_new_remove(size_t num_params,
 				     struct tee_ioctl_param *params)
 {
-	char abs_filename[PATH_MAX] = { 0 };
+	char rel_filename[PATH_MAX] = { 0 };
 	char *fname = NULL;
 	char *d = NULL;
 
@@ -435,22 +429,22 @@ static TEEC_Result ree_fs_new_remove(size_t num_params,
 	if (!fname)
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	if (!tee_fs_get_absolute_filename(fname, abs_filename,
-					  sizeof(abs_filename)))
+	if (!tee_fs_get_relative_filename(fname, rel_filename,
+					  sizeof(rel_filename)))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	if (unlink(abs_filename))
+	if (unlinkat(tee_fs_fd, rel_filename, 0))
 		return errno_to_teec(errno);
 
 	/* If a file is removed, maybe the directory can be removed to? */
-	d = dirname(abs_filename);
-	if (!rmdir(d)) {
+	d = dirname(rel_filename);
+	if (!unlinkat(tee_fs_fd, d, AT_REMOVEDIR)) {
 		/*
 		 * If the directory was removed, maybe the parent directory
 		 * can be removed too?
 		 */
 		d = dirname(d);
-		rmdir(d);
+		unlinkat(tee_fs_fd, d, AT_REMOVEDIR);
 	}
 
 	return TEEC_SUCCESS;
@@ -459,11 +453,12 @@ static TEEC_Result ree_fs_new_remove(size_t num_params,
 static TEEC_Result ree_fs_new_rename(size_t num_params,
 				     struct tee_ioctl_param *params)
 {
-	char old_abs_filename[PATH_MAX] = { 0 };
-	char new_abs_filename[PATH_MAX] = { 0 };
+	char old_rel_filename[PATH_MAX] = { 0 };
+	char new_rel_filename[PATH_MAX] = { 0 };
 	char *old_fname = NULL;
 	char *new_fname = NULL;
 	bool overwrite = false;
+	int flags = 0;
 
 	if (num_params != 3 ||
 	    (params[0].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
@@ -484,21 +479,20 @@ static TEEC_Result ree_fs_new_rename(size_t num_params,
 	if (!new_fname)
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	if (!tee_fs_get_absolute_filename(old_fname, old_abs_filename,
-					  sizeof(old_abs_filename)))
+	if (!tee_fs_get_relative_filename(old_fname, old_rel_filename,
+					  sizeof(old_rel_filename)))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	if (!tee_fs_get_absolute_filename(new_fname, new_abs_filename,
-					  sizeof(new_abs_filename)))
+	if (!tee_fs_get_relative_filename(new_fname, new_rel_filename,
+					  sizeof(new_rel_filename)))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	if (!overwrite) {
-		struct stat st;
+	if (!overwrite)
+		flags = RENAME_NOREPLACE;
 
-		if (!stat(new_abs_filename, &st))
+	if (renameat2(tee_fs_fd, old_rel_filename, tee_fs_fd, new_rel_filename, flags)) {
+		if (errno == EEXIST)
 			return TEEC_ERROR_ACCESS_CONFLICT;
-	}
-	if (rename(old_abs_filename, new_abs_filename)) {
 		if (errno == ENOENT)
 			return TEEC_ERROR_ITEM_NOT_FOUND;
 	}
@@ -510,8 +504,9 @@ static TEEC_Result ree_fs_new_rename(size_t num_params,
 static TEEC_Result ree_fs_new_opendir(size_t num_params,
 				      struct tee_ioctl_param *params)
 {
-	char abs_filename[PATH_MAX] = { 0 };
+	char rel_filename[PATH_MAX] = { 0 };
 	char *fname = NULL;
+	int dir_fd = -1;
 	DIR *dir = NULL;
 	int handle = 0;
 	struct dirent *dent = NULL;
@@ -530,11 +525,14 @@ static TEEC_Result ree_fs_new_opendir(size_t num_params,
 	if (!fname)
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	if (!tee_fs_get_absolute_filename(fname, abs_filename,
-					  sizeof(abs_filename)))
+	if (!tee_fs_get_relative_filename(fname, rel_filename,
+					  sizeof(rel_filename)))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	dir = opendir(abs_filename);
+	dir_fd = openat_wrapper(rel_filename, O_DIRECTORY);
+	if (dir_fd < 0)
+		return TEEC_ERROR_ITEM_NOT_FOUND;
+	dir = fdopendir(dir_fd);
 	if (!dir)
 		return TEEC_ERROR_ITEM_NOT_FOUND;
 
@@ -641,11 +639,11 @@ TEEC_Result tee_supp_fs_process(size_t num_params,
 	if (!num_params || !tee_supp_param_is_value(params))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	if (!tee_fs_root[0]) {
+	if (tee_fs_fd == -1) {
 		if (tee_supp_fs_init() != 0) {
 			EMSG("error tee_supp_fs_init: failed to create %s/",
-				tee_fs_root);
-			memset(tee_fs_root, 0, sizeof(tee_fs_root));
+				supplicant_params.fs_parent_path);
+			tee_fs_fd = -1;
 			return TEEC_ERROR_STORAGE_NOT_AVAILABLE;
 		}
 	}
