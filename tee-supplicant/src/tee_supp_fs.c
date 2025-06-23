@@ -105,7 +105,6 @@ static int do_mkdir(const char *path, mode_t mode)
 	if (stat(path, &st) != 0 && !S_ISDIR(st.st_mode))
 		return -1;
 
-	fs_fsync();
 	return 0;
 }
 
@@ -144,6 +143,7 @@ static int tee_supp_fs_init(void)
 	tee_fs_fd = open(supplicant_params.fs_parent_path, O_RDONLY);
 	if (tee_fs_fd < 0)
 		return -1;
+	fs_fsync();
 
 	return 0;
 }
