@@ -72,22 +72,6 @@ static TEEC_Result errno_to_teec(int err)
 	return TEEC_ERROR_GENERIC;
 }
 
-static size_t tee_fs_get_absolute_filename(char *file, char *out,
-					   size_t out_size)
-{
-	int s = 0;
-
-	if (!file || !out || (out_size <= strlen(tee_fs_root) + 1))
-		return 0;
-
-	s = snprintf(out, out_size, "%s%s", tee_fs_root, file);
-	if (s < 0 || (size_t)s >= out_size)
-		return 0;
-
-	/* Safe to cast since we have checked that sizes are OK */
-	return (size_t)s;
-}
-
 static size_t tee_fs_get_relative_filename(char *file, char *out,
 					   size_t out_size)
 {
@@ -182,17 +166,6 @@ static int openat_wrapper(const char *fname, int flags)
 	}
 }
 
-static int open_wrapper(const char *fname, int flags)
-{
-	int fd = 0;
-
-	while (true) {
-		fd = open(fname, flags | O_SYNC, 0600);
-		if (fd >= 0 || errno != EINTR)
-			return fd;
-	}
-}
-
 static TEEC_Result ree_fs_new_open(size_t num_params,
 				   struct tee_ioctl_param *params)
 {
@@ -235,8 +208,8 @@ static TEEC_Result ree_fs_new_open(size_t num_params,
 static TEEC_Result ree_fs_new_create(size_t num_params,
 				     struct tee_ioctl_param *params)
 {
-	char abs_filename[PATH_MAX] = { 0 };
-	char abs_dir[PATH_MAX] = { 0 };
+	char rel_filename[PATH_MAX] = { 0 };
+	char rel_dir[PATH_MAX] = { 0 };
 	char *fname = NULL;
 	char *d = NULL;
 	int fd = 0;
@@ -255,24 +228,24 @@ static TEEC_Result ree_fs_new_create(size_t num_params,
 	if (!fname)
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	if (!tee_fs_get_absolute_filename(fname, abs_filename,
-					  sizeof(abs_filename)))
+	if (!tee_fs_get_relative_filename(fname, rel_filename,
+					  sizeof(rel_filename)))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	fd = open_wrapper(abs_filename, flags);
+	fd = openat_wrapper(rel_filename, flags);
 	if (fd >= 0)
 		goto out;
 	if (errno != ENOENT)
 		return errno_to_teec(errno);
 
-	/* Directory for file missing, try make to it */
-	strncpy(abs_dir, abs_filename, sizeof(abs_dir));
-	abs_dir[sizeof(abs_dir) - 1] = '\0';
-	d = dirname(abs_dir);
-	if (!mkdir(d, 0700)) {
+	/* Directory for file missing, try to make it */
+	strncpy(rel_dir, rel_filename, sizeof(rel_dir));
+	rel_dir[sizeof(rel_dir) - 1] = '\0';
+	d = dirname(rel_dir);
+	if (!mkdirat(tee_fs_fd, d, 0700)) {
 		int err = 0;
 
-		fd = open_wrapper(abs_filename, flags);
+		fd = openat_wrapper(rel_filename, flags);
 		if (fd >= 0)
 			goto out;
 		/*
@@ -280,7 +253,7 @@ static TEEC_Result ree_fs_new_create(size_t num_params,
 		 * created.
 		 */
 		err = errno;
-		rmdir(d);
+		unlinkat(tee_fs_fd, d, AT_REMOVEDIR);
 		return errno_to_teec(err);
 	}
 	if (errno != ENOENT)
@@ -288,28 +261,28 @@ static TEEC_Result ree_fs_new_create(size_t num_params,
 
 	/* Parent directory for file missing, try to make it */
 	d = dirname(d);
-	if (mkdir(d, 0700))
+	if (mkdirat(tee_fs_fd, d, 0700))
 		return errno_to_teec(errno);
 
 	/* Try to make directory for file again */
 	strncpy(abs_dir, abs_filename, sizeof(abs_dir));
 	abs_dir[sizeof(abs_dir) - 1] = '\0';
-	d = dirname(abs_dir);
-	if (mkdir(d, 0700)) {
+	d = dirname(rel_dir);
+	if (mkdirat(tee_fs_fd, d, 0700)) {
 		int err = errno;
 
 		d = dirname(d);
-		rmdir(d);
+		unlinkat(tee_fs_fd, d, AT_REMOVEDIR);
 		return errno_to_teec(err);
 	}
 
-	fd = open_wrapper(abs_filename, flags);
+	fd = openat_wrapper(rel_filename, flags);
 	if (fd < 0) {
 		int err = errno;
 
-		rmdir(d);
+		unlinkat(tee_fs_fd, d, AT_REMOVEDIR);
 		d = dirname(d);
-		rmdir(d);
+		unlinkat(tee_fs_fd, d, AT_REMOVEDIR);
 		return errno_to_teec(err);
 	}
 
@@ -462,7 +435,7 @@ static TEEC_Result ree_fs_new_remove(size_t num_params,
 	if (!fname)
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	if (!tee_fs_get_absolute_filename(fname, abs_filename,
+	if (!tee_fs_get_relative_filename(fname, abs_filename,
 					  sizeof(abs_filename)))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
@@ -537,8 +510,9 @@ static TEEC_Result ree_fs_new_rename(size_t num_params,
 static TEEC_Result ree_fs_new_opendir(size_t num_params,
 				      struct tee_ioctl_param *params)
 {
-	char abs_filename[PATH_MAX] = { 0 };
+	char rel_filename[PATH_MAX] = { 0 };
 	char *fname = NULL;
+	int dir_fd = -1;
 	DIR *dir = NULL;
 	int handle = 0;
 	struct dirent *dent = NULL;
@@ -557,11 +531,14 @@ static TEEC_Result ree_fs_new_opendir(size_t num_params,
 	if (!fname)
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	if (!tee_fs_get_absolute_filename(fname, abs_filename,
-					  sizeof(abs_filename)))
+	if (!tee_fs_get_relative_filename(fname, rel_filename,
+					  sizeof(rel_filename)))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	dir = opendir(abs_filename);
+	dir_fd = openat_wrapper(rel_filename, O_DIRECTORY);
+	if (dir_fd < 0)
+		return TEEC_ERROR_ITEM_NOT_FOUND;
+	dir = fdopendir(dir_fd);
 	if (!dir)
 		return TEEC_ERROR_ITEM_NOT_FOUND;
 
