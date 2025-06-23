@@ -24,6 +24,9 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+
+#define _GNU_SOURCE
+
 #include <assert.h>
 #include <dirent.h>
 #include <errno.h>
@@ -455,6 +458,7 @@ static TEEC_Result ree_fs_new_rename(size_t num_params,
 	char *old_fname = NULL;
 	char *new_fname = NULL;
 	bool overwrite = false;
+	int flags = 0;
 
 	if (num_params != 3 ||
 	    (params[0].attr & TEE_IOCTL_PARAM_ATTR_TYPE_MASK) !=
@@ -483,13 +487,12 @@ static TEEC_Result ree_fs_new_rename(size_t num_params,
 					  sizeof(new_rel_filename)))
 		return TEEC_ERROR_BAD_PARAMETERS;
 
-	if (!overwrite) {
-		struct stat st;
+	if (!overwrite)
+		flags = RENAME_NOREPLACE;
 
-		if (!fstatat(tee_fs_fd, new_rel_filename, &st, 0))
+	if (renameat2(tee_fs_fd, old_rel_filename, tee_fs_fd, new_rel_filename, flags)) {
+		if (errno == EEXIST)
 			return TEEC_ERROR_ACCESS_CONFLICT;
-	}
-	if (renameat(tee_fs_fd, old_rel_filename, tee_fs_fd, new_rel_filename)) {
 		if (errno == ENOENT)
 			return TEEC_ERROR_ITEM_NOT_FOUND;
 	}
