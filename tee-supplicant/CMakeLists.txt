@@ -7,6 +7,9 @@ option(RPMB_EMU "Enable tee-supplicant to emulate RPMB" ON)
 option(CFG_TA_GPROF_SUPPORT "Enable tee-supplicant support for TAs instrumented with gprof" ON)
 option(CFG_FTRACE_SUPPORT "Enable tee-supplicant support for TAs instrumented with ftrace" ON)
 option(CFG_TEE_SUPP_PLUGINS "Enable tee-supplicant plugin support" ON)
+option(CFG_ENABLE_SYSTEMD "Enable systemd service unit file generation." ON)
+option(CFG_ENABLE_UDEV "Enable udev rules file generation." ON)
+option(CFG_USE_PKGCONFIG "Use pkg-config for discovering install target directory for systemd and udev files." OFF)
 
 set(CFG_TEE_SUPP_LOG_LEVEL "1" CACHE STRING "tee-supplicant log level")
 # FIXME: Question is, is this really needed? Should just use defaults from # GNUInstallDirs?
@@ -117,8 +120,36 @@ endif()
 ################################################################################
 # Install targets
 ################################################################################
+# Discover target install location of the systemd and udev files using pkg-config
+if (CFG_USE_PKGCONFIG)
+	# Note: pkg-config should return setting valid for the target platform and not the host.
+	include(FindPkgConfig)
+	if (PKG_CONFIG_FOUND)
+		pkg_search_module(SYSTEMD systemd)
+		if (SYSTEMD_FOUND AND CFG_ENABLE_SYSTEMD)
+			pkg_get_variable(UNIT_DIR systemd systemd_system_unit_dir)
+			set(SYSTEMD_UNIT_DIR "${UNIT_DIR}" CACHE PATH "Location of systemd unit files.")
+			unset(UNIT_DIR)
+		endif()
+		pkg_search_module(UDEV udev)
+		if (UDEV_FOUND)
+			pkg_get_variable(UDEV_DIR udev udev_dir)
+			set(UDEV_UDEV_DIR "${UDEV_DIR}" CACHE PATH "Location of udev files.")
+			unset(UDEV_DIR)
+		endif()
+	endif()
+endif()
+
+# Some sane defaults if discovering through pkgconfig fails or is disabled.
+set(SYSTEMD_UNIT_DIR "${CMAKE_INSTALL_LIBDIR}/systemd/system" CACHE PATH "Location of systemd unit files.")
+set(UDEV_UDEV_DIR "${CMAKE_INSTALL_SYSCONFDIR}/udev/rules.d" CACHE PATH "Location of udev files.")
+
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_SBINDIR})
-configure_file(tee-supplicant@.service.in tee-supplicant@.service @ONLY)
-install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/tee-supplicant@.service DESTINATION ${CMAKE_INSTALL_LIBDIR}/systemd/system)
-configure_file(optee-udev.rules.in optee-udev.rules @ONLY)
-install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/optee-udev.rules DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/udev/rules.d)
+if (CFG_ENABLE_SYSTEMD)
+	configure_file(tee-supplicant@.service.in tee-supplicant@.service @ONLY)
+	install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/tee-supplicant@.service DESTINATION ${SYSTEMD_UNIT_DIR})
+endif()
+if (CFG_ENABLE_UDEV)
+	configure_file(optee-udev.rules.in optee-udev.rules @ONLY)
+	install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/optee-udev.rules DESTINATION ${UDEV_UDEV_DIR})
+endif()
