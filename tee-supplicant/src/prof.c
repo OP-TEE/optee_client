@@ -25,9 +25,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <assert.h>
 #include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -46,10 +48,11 @@ TEEC_Result prof_process(size_t num_params, struct tee_ioctl_param *params,
 {
 	char vers[5] = "";
 	char path[255] = { 0 };
+	const char ftrace_magic[] = { 'F', 'T', 'R', 'A', 'C', 'E', 0x00, 0x01 };
 	size_t bufsize = 0;
 	TEEC_UUID *u = NULL;
 	int fd = -1;
-	void *buf = NULL;
+	uint8_t *buf = NULL;
 	int flags = 0;
 	int id = 0;
 	int st = 0;
@@ -87,6 +90,17 @@ TEEC_Result prof_process(size_t num_params, struct tee_ioctl_param *params,
 		/* id == 0 means create file */
 		flags |= O_CREAT | O_EXCL;
 		id = 1;
+	} else if (strcmp(prefix, "ftrace-") == 0) {
+		/* id > 0 means append to file, need to strip the ftrace header */
+		uint8_t *m = memmem(buf, bufsize, ftrace_magic, sizeof(ftrace_magic));
+
+		if (m) {
+			size_t offset = (m + sizeof(ftrace_magic)) - buf;
+
+			assert(offset <= bufsize);
+			buf += offset;
+			bufsize -= offset;
+		}
 	}
 
 	for (;;) {
