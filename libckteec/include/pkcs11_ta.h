@@ -1139,6 +1139,8 @@ enum pkcs11_attr_id {
 	PKCS11_CKA_ALLOWED_MECHANISMS		= 0x40000600,
 	/* Vendor extension: reserved for undefined ID (~0U) */
 	PKCS11_CKA_UNDEFINED_ID			= PKCS11_UNDEFINED_ID,
+	/* Vendor Defined Indestructible Attribute */
+	PKCS11_CKA_OPTEE_INDESTRUCTIBLE               = 0x80000001,
 };
 
 /*
