@@ -5,3 +5,6 @@ KERNEL=="tee[0-9]*", MODE="0660", OWNER="root", GROUP="@CFG_TEE_GROUP@", TAG+="s
 # tee-supplicant.service with the device name as parameter
 KERNEL=="teepriv[0-9]*", MODE="0660", OWNER="root", GROUP="@CFG_TEEPRIV_GROUP@", \
     TAG+="systemd", ENV{SYSTEMD_WANTS}+="tee-supplicant@%k.service"
+
+ACTION=="add", SUBSYSTEM=="mmc_rpmb", KERNEL=="mmcblk[0-9]rpmb", \
+    GROUP="@CFG_TEEPRIV_GROUP@"
