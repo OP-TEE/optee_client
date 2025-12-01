@@ -18,6 +18,7 @@ set(CFG_TEE_FS_PARENT_PATH "${CMAKE_INSTALL_LOCALSTATEDIR}/lib/tee" CACHE STRING
 # FIXME: Why do we have if defined(CFG_GP_SOCKETS) && CFG_GP_SOCKETS == 1 in the c-file?
 set(CFG_GP_SOCKETS "1" CACHE STRING "Enable GlobalPlatform Socket API support")
 set(CFG_TEE_PLUGIN_LOAD_PATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME}/plugins/" CACHE STRING "tee-supplicant's plugins path")
+set(CFG_UDEV_RULESPREFIX "60-" CACHE STRING "Priority prefix for udev rule")
 
 set(CFG_TEE_GROUP "tee" CACHE STRING "Group which has access to /dev/tee* devices")
 set(CFG_TEEPRIV_GROUP "teepriv" CACHE STRING "Group which has access to /dev/teepriv* devices")
@@ -150,6 +151,6 @@ if (CFG_ENABLE_SYSTEMD)
 	install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/tee-supplicant@.service DESTINATION ${SYSTEMD_UNIT_DIR})
 endif()
 if (CFG_ENABLE_UDEV)
-	configure_file(optee-udev.rules.in optee-udev.rules @ONLY)
-	install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/optee-udev.rules DESTINATION ${UDEV_UDEV_DIR})
+	configure_file(optee-udev.rules.in ${CFG_UDEV_RULESPREFIX}optee-udev.rules @ONLY)
+	install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/${CFG_UDEV_RULESPREFIX}optee-udev.rules DESTINATION ${UDEV_UDEV_DIR})
 endif()
