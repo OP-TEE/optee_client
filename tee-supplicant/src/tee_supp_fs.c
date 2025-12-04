@@ -105,7 +105,7 @@ static int do_mkdir(const char *path, mode_t mode)
 	if (mkdir(path, mode) != 0 && errno != EEXIST)
 		return -1;
 
-	if (stat(path, &st) != 0 && !S_ISDIR(st.st_mode))
+	if (stat(path, &st) != 0 || !S_ISDIR(st.st_mode))
 		return -1;
 
 	return 0;
