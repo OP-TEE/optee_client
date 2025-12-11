@@ -6,6 +6,7 @@ set(CMAKE_TOOLCHAIN_FILE CMakeToolchain.txt)
 
 option(CFG_WERROR "Build with -Werror" TRUE)
 option(WITH_TEEACL "Build libteeacl" TRUE)
+option(WITH_ASTEEC "Build libasteec" TRUE)
 
 include(GNUInstallDirs)
 
@@ -47,3 +48,6 @@ if(WITH_TEEACL)
     add_subdirectory(libteeacl)
 endif(WITH_TEEACL)
 add_subdirectory(libseteec)
+if(WITH_ASTEEC)
+    add_subdirectory(libasteec)
+endif(WITH_ASTEEC)
