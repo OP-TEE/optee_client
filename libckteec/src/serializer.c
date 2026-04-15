@@ -5,6 +5,7 @@
 
 #include <pkcs11_ta.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -44,8 +45,20 @@ void release_serial_object(struct serializer *obj)
  */
 static CK_RV serialize(char **bstart, size_t *blen, void *data, size_t len)
 {
-	size_t nlen = *blen + len;
-	char *buf = realloc(*bstart, nlen);
+	size_t nlen = 0;
+	char *buf = NULL;
+
+	if (len && !data)
+		return CKR_ARGUMENTS_BAD;
+
+	if (!len)
+		return CKR_OK;
+
+	if (len > SIZE_MAX - *blen)
+		return CKR_DEVICE_MEMORY;
+
+	nlen = *blen + len;
+	buf = realloc(*bstart, nlen);
 
 	if (!buf)
 		return CKR_HOST_MEMORY;
