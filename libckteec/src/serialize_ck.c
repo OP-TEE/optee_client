@@ -393,6 +393,9 @@ static CK_RV serialize_mecha_aes_ctr(struct serializer *obj,
 	CK_RV rv = CKR_GENERAL_ERROR;
 	uint32_t size = 0;
 
+	if (!param)
+		return CKR_MECHANISM_PARAM_INVALID;
+
 	rv = serialize_32b(obj, obj->type);
 	if (rv)
 		return rv;
@@ -419,6 +422,9 @@ static CK_RV serialize_mecha_aes_gcm(struct serializer *obj,
 	CK_GCM_PARAMS_PTR param = mecha->pParameter;
 	CK_RV rv = CKR_GENERAL_ERROR;
 	CK_ULONG aad_len = 0;
+
+	if (!param)
+		return CKR_MECHANISM_PARAM_INVALID;
 
 	/* AAD is not manadatory */
 	if (param->pAAD)
@@ -461,6 +467,9 @@ static CK_RV serialize_mecha_aes_iv(struct serializer *obj,
 	uint32_t iv_size = mecha->ulParameterLen;
 	CK_RV rv = CKR_GENERAL_ERROR;
 
+	if (iv_size && !mecha->pParameter)
+		return CKR_MECHANISM_PARAM_INVALID;
+
 	rv = serialize_32b(obj, obj->type);
 	if (rv)
 		return rv;
@@ -478,6 +487,9 @@ static CK_RV serialize_mecha_key_deriv_str(struct serializer *obj,
 	CK_KEY_DERIVATION_STRING_DATA_PTR param = mecha->pParameter;
 	CK_RV rv = CKR_GENERAL_ERROR;
 	uint32_t size = 0;
+
+	if (!param)
+		return CKR_MECHANISM_PARAM_INVALID;
 
 	rv = serialize_32b(obj, obj->type);
 	if (rv)
@@ -500,8 +512,13 @@ static CK_RV serialize_mecha_ecdh1_derive_param(struct serializer *obj,
 {
 	CK_ECDH1_DERIVE_PARAMS *params = mecha->pParameter;
 	CK_RV rv = CKR_GENERAL_ERROR;
-	size_t params_size = 3 * sizeof(uint32_t) + params->ulSharedDataLen +
-			     params->ulPublicDataLen;
+	size_t params_size = 0;
+
+	if (!params)
+		return CKR_MECHANISM_PARAM_INVALID;
+
+	params_size = 3 * sizeof(uint32_t) + params->ulSharedDataLen +
+		      params->ulPublicDataLen;
 
 	rv = serialize_32b(obj, obj->type);
 	if (rv)
@@ -539,6 +556,9 @@ static CK_RV serialize_mecha_aes_cbc_encrypt_data(struct serializer *obj,
 	CK_RV rv = CKR_GENERAL_ERROR;
 	uint32_t size = 0;
 
+	if (!param)
+		return CKR_MECHANISM_PARAM_INVALID;
+
 	rv = serialize_32b(obj, obj->type);
 	if (rv)
 		return rv;
@@ -565,6 +585,9 @@ static CK_RV serialize_mecha_rsa_pss_param(struct serializer *obj,
 	CK_RSA_PKCS_PSS_PARAMS *params = mecha->pParameter;
 	CK_RV rv = CKR_GENERAL_ERROR;
 	uint32_t params_size = 3 * sizeof(uint32_t);
+
+	if (!params)
+		return CKR_MECHANISM_PARAM_INVALID;
 
 	if (mecha->ulParameterLen != sizeof(*params))
 		return CKR_ARGUMENTS_BAD;
@@ -593,10 +616,15 @@ static CK_RV serialize_mecha_rsa_oaep_param(struct serializer *obj,
 {
 	CK_RSA_PKCS_OAEP_PARAMS *params = mecha->pParameter;
 	CK_RV rv = CKR_GENERAL_ERROR;
-	size_t params_size = 4 * sizeof(uint32_t) + params->ulSourceDataLen;
+	size_t params_size = 0;
+
+	if (!params)
+		return CKR_MECHANISM_PARAM_INVALID;
 
 	if (mecha->ulParameterLen != sizeof(*params))
 		return CKR_ARGUMENTS_BAD;
+
+	params_size = 4 * sizeof(uint32_t) + params->ulSourceDataLen;
 
 	rv = serialize_32b(obj, obj->type);
 	if (rv)
@@ -630,12 +658,18 @@ static CK_RV serialize_mecha_rsa_aes_key_wrap(struct serializer *obj,
 					      CK_MECHANISM_PTR mecha)
 {
 	CK_RSA_AES_KEY_WRAP_PARAMS *params = mecha->pParameter;
-	CK_RSA_PKCS_OAEP_PARAMS *aes_params = params->pOAEPParams;
+	CK_RSA_PKCS_OAEP_PARAMS *aes_params = NULL;
 	CK_RV rv = CKR_GENERAL_ERROR;
-	size_t params_size = 5 * sizeof(uint32_t) + aes_params->ulSourceDataLen;
+	size_t params_size = 0;
+
+	if (!params || !params->pOAEPParams)
+		return CKR_MECHANISM_PARAM_INVALID;
 
 	if (mecha->ulParameterLen != sizeof(*params))
 		return CKR_ARGUMENTS_BAD;
+
+	aes_params = params->pOAEPParams;
+	params_size = 5 * sizeof(uint32_t) + aes_params->ulSourceDataLen;
 
 	rv = serialize_32b(obj, obj->type);
 	if (rv)
@@ -689,6 +723,9 @@ static CK_RV serialize_mecha_eddsa(struct serializer *obj,
 		params_len = sizeof(*params);
 	}
 
+	if (!params)
+		return CKR_MECHANISM_PARAM_INVALID;
+
 	if (params_len != sizeof(*params))
 		return CKR_ARGUMENTS_BAD;
 
@@ -716,6 +753,9 @@ static CK_RV serialize_mecha_mac_general_param(struct serializer *obj,
 {
 	CK_RV rv = CKR_GENERAL_ERROR;
 	CK_ULONG ck_data = 0;
+
+	if (!mecha->pParameter)
+		return CKR_MECHANISM_PARAM_INVALID;
 
 	if (mecha->ulParameterLen != sizeof(ck_data))
 		return CKR_ARGUMENTS_BAD;
