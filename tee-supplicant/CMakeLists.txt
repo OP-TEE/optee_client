@@ -143,7 +143,16 @@ endif()
 
 # Some sane defaults if discovering through pkgconfig fails or is disabled.
 set(SYSTEMD_UNIT_DIR "${CMAKE_INSTALL_LIBDIR}/systemd/system" CACHE PATH "Location of systemd unit files.")
-set(UDEV_UDEV_DIR "${CMAKE_INSTALL_SYSCONFDIR}/udev/rules.d" CACHE PATH "Location of udev files.")
+
+if (POLICY CMP0192)
+	cmake_policy(GET CMP0192 _cmp0192)
+endif()
+
+if (_cmp0192 STREQUAL "NEW")
+	set(UDEV_UDEV_DIR "${CMAKE_INSTALL_SYSCONFDIR}/udev/rules.d" CACHE PATH "Location of udev files.")
+else()
+	set(UDEV_UDEV_DIR "${CMAKE_INSTALL_FULL_SYSCONFDIR}/udev/rules.d" CACHE PATH "Location of udev files.")
+endif()
 
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_SBINDIR})
 if (CFG_ENABLE_SYSTEMD)
