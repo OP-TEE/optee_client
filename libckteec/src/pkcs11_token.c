@@ -6,7 +6,6 @@
 #include <ck_debug.h>
 #include <pkcs11.h>
 #include <pkcs11_ta.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -100,11 +99,9 @@ CK_RV ck_slot_get_list(CK_BBOOL present,
 	 */
 	if (slots)
 		client_count = *count;
-	
-	if (client_count > SIZE_MAX / sizeof(*slot_ids))
-		return CKR_HOST_MEMORY;
 
-	size = client_count * sizeof(*slot_ids);
+	if (MUL_OVERFLOW(client_count, sizeof(*slot_ids), &size))
+		return CKR_ARGUMENTS_BAD;
 
 	shm = ckteec_alloc_shm(size, CKTEEC_SHM_OUT);
 	if (!shm)
@@ -311,12 +308,8 @@ CK_RV ck_token_mechanism_ids(CK_SLOT_ID slot,
 	 * As per spec, if @mechanism is NULL, "The contents of *pulCount on
 	 * entry to C_GetMechanismList has no meaning in this case (...)"
 	 */
-	if (mechanisms) {
-		if (*count > SIZE_MAX / sizeof(*mecha_ids))
-			return CKR_HOST_MEMORY;
-
-		out_size = *count * sizeof(*mecha_ids);
-	}
+	if (mechanisms && MUL_OVERFLOW(*count, sizeof(*mecha_ids), &out_size))
+		return CKR_ARGUMENTS_BAD;
 
 	ctrl = ckteec_alloc_shm(sizeof(slot_id), CKTEEC_SHM_INOUT);
 	if (!ctrl) {
@@ -601,7 +594,9 @@ CK_RV ck_init_token(CK_SLOT_ID slot, CK_UTF8CHAR_PTR pin,
 
 	/* Shm io0: (in/out) ctrl = [slot-id][pin_len][label][pin] / [status] */
 	ctrl_size = sizeof(slot_id) + sizeof(pkcs11_pin_len) +
-		    32 * sizeof(uint8_t) + pkcs11_pin_len;
+		    32 * sizeof(uint8_t);
+	if (ADD_OVERFLOW(ctrl_size, pkcs11_pin_len, &ctrl_size))
+		return CKR_ARGUMENTS_BAD;
 
 	ctrl = ckteec_alloc_shm(ctrl_size, CKTEEC_SHM_INOUT);
 	if (!ctrl)
@@ -644,8 +639,9 @@ CK_RV ck_init_pin(CK_SESSION_HANDLE session,
 		return CKR_ARGUMENTS_BAD;
 
 	/* Shm io0: (in/out) ctrl = [session][pin_len][pin] / [status] */
-	ctrl_size = sizeof(pkcs11_session) + sizeof(pkcs11_pin_len) +
-		    pkcs11_pin_len;
+	ctrl_size = sizeof(pkcs11_session) + sizeof(pkcs11_pin_len);
+	if (ADD_OVERFLOW(ctrl_size, pkcs11_pin_len, &ctrl_size))
+		return CKR_ARGUMENTS_BAD;
 
 	ctrl = ckteec_alloc_shm(ctrl_size, CKTEEC_SHM_INOUT);
 	if (!ctrl)
@@ -692,7 +688,10 @@ CK_RV ck_set_pin(CK_SESSION_HANDLE session,
 	 * (out) [status]
 	 */
 	ctrl_size = sizeof(pkcs11_session) + sizeof(pkcs11_old_len) +
-		    sizeof(pkcs11_new_len) + pkcs11_old_len + pkcs11_new_len;
+		    sizeof(pkcs11_new_len);
+	if (ADD_OVERFLOW(ctrl_size, pkcs11_old_len, &ctrl_size) ||
+	    ADD_OVERFLOW(ctrl_size, pkcs11_new_len, &ctrl_size))
+		return CKR_ARGUMENTS_BAD;
 
 	ctrl = ckteec_alloc_shm(ctrl_size, CKTEEC_SHM_INOUT);
 	if (!ctrl)
@@ -741,7 +740,9 @@ CK_RV ck_login(CK_SESSION_HANDLE session, CK_USER_TYPE user_type,
 
 	/* Shm io0: (i/o) ctrl = [session][user][pin length][pin] / [status] */
 	ctrl_size = sizeof(pkcs11_session) + sizeof(pkcs11_user) +
-		    sizeof(pkcs11_pin_len) + pkcs11_pin_len;
+		    sizeof(pkcs11_pin_len);
+	if (ADD_OVERFLOW(ctrl_size, pkcs11_pin_len, &ctrl_size))
+		return CKR_ARGUMENTS_BAD;
 
 	ctrl = ckteec_alloc_shm(ctrl_size, CKTEEC_SHM_INOUT);
 	if (!ctrl)
