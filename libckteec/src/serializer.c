@@ -54,12 +54,10 @@ static CK_RV serialize(char **bstart, size_t *blen, void *data, size_t len)
 	if (!len)
 		return CKR_OK;
 
-	if (len > SIZE_MAX - *blen)
+	if (ADD_OVERFLOW(*blen, len, &nlen))
 		return CKR_DEVICE_MEMORY;
 
-	nlen = *blen + len;
 	buf = realloc(*bstart, nlen);
-
 	if (!buf)
 		return CKR_HOST_MEMORY;
 

@@ -422,6 +422,7 @@ static CK_RV serialize_mecha_aes_gcm(struct serializer *obj,
 	CK_GCM_PARAMS_PTR param = mecha->pParameter;
 	CK_RV rv = CKR_GENERAL_ERROR;
 	CK_ULONG aad_len = 0;
+	uint32_t data32 = 0;
 
 	if (!param)
 		return CKR_MECHANISM_PARAM_INVALID;
@@ -437,8 +438,12 @@ static CK_RV serialize_mecha_aes_gcm(struct serializer *obj,
 	if (rv)
 		return rv;
 
-	rv = serialize_32b(obj, 3 * sizeof(uint32_t) +
-				param->ulIvLen + aad_len);
+	data32 = 3 * sizeof(uint32_t);
+	if (ADD_OVERFLOW(data32, param->ulIvLen, &data32) ||
+	    ADD_OVERFLOW(data32, aad_len, &data32))
+		return CKR_ARGUMENTS_BAD;
+
+	rv = serialize_32b(obj, data32);
 	if (rv)
 		return rv;
 
@@ -517,8 +522,10 @@ static CK_RV serialize_mecha_ecdh1_derive_param(struct serializer *obj,
 	if (!params)
 		return CKR_MECHANISM_PARAM_INVALID;
 
-	params_size = 3 * sizeof(uint32_t) + params->ulSharedDataLen +
-		      params->ulPublicDataLen;
+	params_size = 3 * sizeof(uint32_t);
+	if (ADD_OVERFLOW(params_size, params->ulSharedDataLen, &params_size) ||
+	    ADD_OVERFLOW(params_size, params->ulPublicDataLen, &params_size))
+		return CKR_ARGUMENTS_BAD;
 
 	rv = serialize_32b(obj, obj->type);
 	if (rv)
@@ -559,14 +566,14 @@ static CK_RV serialize_mecha_aes_cbc_encrypt_data(struct serializer *obj,
 	if (!param)
 		return CKR_MECHANISM_PARAM_INVALID;
 
-	if (param->length > UINT32_MAX - sizeof(param->iv) - sizeof(uint32_t))
-		return CKR_MECHANISM_PARAM_INVALID;
+	if (ADD_OVERFLOW(sizeof(param->iv) + sizeof(uint32_t),
+			 param->length, &size))
+		return CKR_ARGUMENTS_BAD;
 
 	rv = serialize_32b(obj, obj->type);
 	if (rv)
 		return rv;
 
-	size = sizeof(param->iv) + sizeof(uint32_t) + param->length;
 	rv = serialize_32b(obj, size);
 	if (rv)
 		return rv;
@@ -624,10 +631,12 @@ static CK_RV serialize_mecha_rsa_oaep_param(struct serializer *obj,
 	if (!params)
 		return CKR_MECHANISM_PARAM_INVALID;
 
-	if (mecha->ulParameterLen != sizeof(*params))
+	params_size = 4 * sizeof(uint32_t);
+	if (ADD_OVERFLOW(params_size, params->ulSourceDataLen, &params_size))
 		return CKR_ARGUMENTS_BAD;
 
-	params_size = 4 * sizeof(uint32_t) + params->ulSourceDataLen;
+	if (mecha->ulParameterLen != sizeof(*params))
+		return CKR_ARGUMENTS_BAD;
 
 	rv = serialize_32b(obj, obj->type);
 	if (rv)
@@ -668,11 +677,14 @@ static CK_RV serialize_mecha_rsa_aes_key_wrap(struct serializer *obj,
 	if (!params || !params->pOAEPParams)
 		return CKR_MECHANISM_PARAM_INVALID;
 
-	if (mecha->ulParameterLen != sizeof(*params))
+	aes_params = params->pOAEPParams;
+
+	if (ADD_OVERFLOW(5 * sizeof(uint32_t), aes_params->ulSourceDataLen,
+			 &params_size))
 		return CKR_ARGUMENTS_BAD;
 
-	aes_params = params->pOAEPParams;
-	params_size = 5 * sizeof(uint32_t) + aes_params->ulSourceDataLen;
+	if (mecha->ulParameterLen != sizeof(*params))
+		return CKR_ARGUMENTS_BAD;
 
 	rv = serialize_32b(obj, obj->type);
 	if (rv)
@@ -720,6 +732,7 @@ static CK_RV serialize_mecha_eddsa(struct serializer *obj,
 		.phFlag = 0,
 		.ulContextDataLen = 0,
 	};
+	uint32_t data32 = 0;
 
 	if (params_len == 0) {
 		params = &default_params;
@@ -732,11 +745,15 @@ static CK_RV serialize_mecha_eddsa(struct serializer *obj,
 	if (params_len != sizeof(*params))
 		return CKR_ARGUMENTS_BAD;
 
+	if (ADD_OVERFLOW(2 * sizeof(uint32_t), params->ulContextDataLen,
+			 &data32))
+		return CKR_ARGUMENTS_BAD;
+
 	rv = serialize_32b(obj, obj->type);
 	if (rv)
 		return rv;
 
-	rv = serialize_32b(obj, 2 * sizeof(uint32_t) + params->ulContextDataLen);
+	rv = serialize_32b(obj, data32);
 	if (rv)
 		return rv;
 
