@@ -12,6 +12,7 @@
 
 #include "pkcs11_processing.h"
 #include "invoke_ta.h"
+#include "local_utils.h"
 #include "serializer.h"
 #include "serialize_ck.h"
 
@@ -36,7 +37,11 @@ CK_RV ck_create_object(CK_SESSION_HANDLE session, CK_ATTRIBUTE_PTR attribs,
 		goto out;
 
 	/* Shm io0: (i/o) [session-handle][serialized-attributes] / [status] */
-	ctrl_size = sizeof(session_handle) + obj.size;
+	if (ADD_OVERFLOW(sizeof(session_handle), obj.size, &ctrl_size)) {
+		rv = CKR_ARGUMENTS_BAD;
+		goto out;
+	}
+
 	ctrl = ckteec_alloc_shm(ctrl_size, CKTEEC_SHM_INOUT);
 	if (!ctrl) {
 		rv = CKR_HOST_MEMORY;
@@ -132,7 +137,11 @@ CK_RV ck_encdecrypt_init(CK_SESSION_HANDLE session,
 	 * (in) [session-handle][key-handle][serialized-mechanism-blob]
 	 * (out) [status]
 	 */
-	ctrl_size = sizeof(session_handle) + sizeof(key_handle) + obj.size;
+	ctrl_size = sizeof(session_handle) + sizeof(key_handle);
+	if (ADD_OVERFLOW(ctrl_size, obj.size, &ctrl_size)) {
+		rv = CKR_ARGUMENTS_BAD;
+		goto bail;
+	}
 
 	ctrl = ckteec_alloc_shm(ctrl_size, CKTEEC_SHM_INOUT);
 	if (!ctrl) {
@@ -388,7 +397,11 @@ CK_RV ck_digest_init(CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism)
 	 * (in) [session-handle][serialized-mechanism-blob]
 	 * (out) [status]
 	 */
-	ctrl_size = sizeof(session_handle) + obj.size;
+	if (ADD_OVERFLOW(sizeof(session_handle), obj.size, &ctrl_size)) {
+		rv = CKR_ARGUMENTS_BAD;
+		goto bail;
+	}
+
 	ctrl = ckteec_alloc_shm(ctrl_size, CKTEEC_SHM_INOUT);
 	if (!ctrl) {
 		rv = CKR_HOST_MEMORY;
@@ -656,7 +669,12 @@ CK_RV ck_signverify_init(CK_SESSION_HANDLE session,
 	 * (in) [session-handle][key-handle][serialized-mechanism-blob]
 	 * (out) [status]
 	 */
-	ctrl_size = sizeof(session_handle) + sizeof(key_handle) + obj.size;
+	ctrl_size = sizeof(session_handle) + sizeof(key_handle);
+	if (ADD_OVERFLOW(ctrl_size, obj.size, &ctrl_size)) {
+		rv = CKR_ARGUMENTS_BAD;
+		goto bail;
+	}
+
 	ctrl = ckteec_alloc_shm(ctrl_size, CKTEEC_SHM_INOUT);
 	if (!ctrl) {
 		rv = CKR_HOST_MEMORY;
@@ -902,7 +920,11 @@ CK_RV ck_generate_key(CK_SESSION_HANDLE session,
 	 * (in) [session-handle][serialized-mecha][serialized-attributes]
 	 * (out) [status]
 	 */
-	ctrl_size = sizeof(session_handle) + smecha.size + sattr.size;
+	if (ADD_OVERFLOW(sizeof(session_handle), smecha.size, &ctrl_size) ||
+	    ADD_OVERFLOW(ctrl_size, sattr.size, &ctrl_size)) {
+		rv = CKR_ARGUMENTS_BAD;
+		goto bail;
+	}
 
 	ctrl = ckteec_alloc_shm(ctrl_size, CKTEEC_SHM_INOUT);
 	if (!ctrl) {
@@ -970,7 +992,11 @@ CK_RV ck_find_objects_init(CK_SESSION_HANDLE session,
 	 * (in) [session-handle][headed-serialized-attributes]
 	 * (out) [status]
 	 */
-	ctrl_size = sizeof(session_handle) + obj.size;
+	if (ADD_OVERFLOW(sizeof(session_handle), obj.size, &ctrl_size)) {
+		rv = CKR_ARGUMENTS_BAD;
+		goto bail;
+	}
+
 	ctrl = ckteec_alloc_shm(ctrl_size, CKTEEC_SHM_INOUT);
 	if (!ctrl) {
 		rv = CKR_HOST_MEMORY;
@@ -1004,12 +1030,15 @@ CK_RV ck_find_objects(CK_SESSION_HANDLE session,
 	TEEC_SharedMemory *out_shm = NULL;
 	uint32_t session_handle = session;
 	uint32_t *handles = NULL;
-	size_t handles_size = max_count * sizeof(uint32_t);
+	size_t handles_size = 0;
 	CK_ULONG n = 0;
 	CK_ULONG last = 0;
 	size_t out_size = 0;
 
 	if (!count || (max_count && !obj))
+		return CKR_ARGUMENTS_BAD;
+
+	if (MUL_OVERFLOW(max_count, sizeof(uint32_t), &handles_size))
 		return CKR_ARGUMENTS_BAD;
 
 	/* Shm io0: (in/out) ctrl = [session-handle] / [status] */
@@ -1154,7 +1183,11 @@ CK_RV ck_get_attribute_value(CK_SESSION_HANDLE session,
 		goto bail;
 
 	/* Shm io0: (in/out) [session][obj-handle][attributes] / [status] */
-	ctrl_size = sizeof(session_handle) + sizeof(obj_handle) + sattr.size;
+	ctrl_size = sizeof(session_handle) + sizeof(obj_handle);
+	if (ADD_OVERFLOW(ctrl_size, sattr.size, &ctrl_size)) {
+		rv = CKR_ARGUMENTS_BAD;
+		goto bail;
+	}
 
 	ctrl = ckteec_alloc_shm(ctrl_size, CKTEEC_SHM_INOUT);
 	if (!ctrl) {
@@ -1219,7 +1252,11 @@ CK_RV ck_set_attribute_value(CK_SESSION_HANDLE session,
 		goto bail;
 
 	/* Shm io0: (in/out) [session][obj-handle][attributes] / [status] */
-	ctrl_size = sizeof(session_handle) + sizeof(obj_handle) + sattr.size;
+	ctrl_size = sizeof(session_handle) + sizeof(obj_handle);
+	if (ADD_OVERFLOW(ctrl_size, sattr.size, &ctrl_size)) {
+		rv = CKR_ARGUMENTS_BAD;
+		goto bail;
+	}
 
 	ctrl = ckteec_alloc_shm(ctrl_size, CKTEEC_SHM_INOUT);
 	if (!ctrl) {
@@ -1271,7 +1308,11 @@ CK_RV ck_copy_object(CK_SESSION_HANDLE session,
 		goto bail;
 
 	/* Shm io0: (in/out) [session][obj-handle][attributes] / [status] */
-	ctrl_size = sizeof(session_handle) + sizeof(obj_handle) + sattr.size;
+	ctrl_size = sizeof(session_handle) + sizeof(obj_handle);
+	if (ADD_OVERFLOW(ctrl_size, sattr.size, &ctrl_size)) {
+		rv = CKR_ARGUMENTS_BAD;
+		goto bail;
+	}
 
 	ctrl = ckteec_alloc_shm(ctrl_size, CKTEEC_SHM_INOUT);
 	if (!ctrl) {
@@ -1350,8 +1391,12 @@ CK_RV ck_derive_key(CK_SESSION_HANDLE session,
 	 * (in) [session-handle][obj-handle][serialized-mecha][serialized-attributes]
 	 * (out) [status]
 	 */
-	ctrl_size = sizeof(session_handle) + sizeof(obj_handle) + smecha.size +
-		    sattr.size;
+	ctrl_size = sizeof(session_handle) + sizeof(obj_handle);
+	if (ADD_OVERFLOW(ctrl_size, smecha.size, &ctrl_size) ||
+	    ADD_OVERFLOW(ctrl_size, sattr.size, &ctrl_size)) {
+		rv = CKR_ARGUMENTS_BAD;
+		goto bail;
+	}
 
 	ctrl = ckteec_alloc_shm(ctrl_size, CKTEEC_SHM_INOUT);
 	if (!ctrl) {
@@ -1474,8 +1519,12 @@ CK_RV ck_generate_key_pair(CK_SESSION_HANDLE session,
 	 *      [serialized-priv_attribs]
 	 * (out) [status]
 	 */
-	ctrl_size = sizeof(session_handle) + smecha.size + pub_sattr.size +
-		    priv_sattr.size;
+	if (ADD_OVERFLOW(sizeof(session_handle), smecha.size, &ctrl_size) ||
+	    ADD_OVERFLOW(ctrl_size, pub_sattr.size, &ctrl_size) ||
+	    ADD_OVERFLOW(ctrl_size, priv_sattr.size, &ctrl_size)) {
+		rv = CKR_ARGUMENTS_BAD;
+		goto bail;
+	}
 
 	ctrl = ckteec_alloc_shm(ctrl_size, CKTEEC_SHM_INOUT);
 	if (!ctrl) {
@@ -1557,7 +1606,11 @@ CK_RV ck_wrap_key(CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism,
 	 * (out) [status]
 	 */
 	ctrl_size = sizeof(session_handle) + sizeof(wrp_key_handle) +
-		    sizeof(key_handle) + smecha.size;
+		    sizeof(key_handle);
+	if (ADD_OVERFLOW(ctrl_size, smecha.size, &ctrl_size)) {
+		rv = CKR_ARGUMENTS_BAD;
+		goto bail;
+	}
 
 	ctrl = ckteec_alloc_shm(ctrl_size, CKTEEC_SHM_INOUT);
 	if (!ctrl) {
@@ -1647,8 +1700,12 @@ CK_RV ck_unwrap_key(CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism,
 	 *      [serialized-attributes]
 	 * (out) [status]
 	 */
-	ctrl_size = sizeof(session_handle) + sizeof(unwrapping_key_handle) +
-		    smecha.size + sattr.size;
+	ctrl_size = sizeof(session_handle) + sizeof(unwrapping_key_handle);
+	if (ADD_OVERFLOW(ctrl_size, smecha.size, &ctrl_size) ||
+	    ADD_OVERFLOW(ctrl_size, sattr.size, &ctrl_size)) {
+		rv = CKR_ARGUMENTS_BAD;
+		goto bail;
+	}
 
 	ctrl = ckteec_alloc_shm(ctrl_size, CKTEEC_SHM_INOUT);
 	if (!ctrl) {
