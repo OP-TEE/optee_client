@@ -15,6 +15,8 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define STRERROR_BUF_SIZE 128
 #include <sys/types.h>
 #include <tee_client_api.h>
 #include <teec_trace.h>
@@ -319,7 +321,11 @@ CK_RV ckteec_invoke_init(void)
 out:
 	e = pthread_mutex_unlock(&ta_ctx.init_mutex);
 	if (e) {
-		EMSG("pthread_mutex_unlock: %s", strerror(e));
+		char errbuf[STRERROR_BUF_SIZE];
+
+		if (strerror_r(e, errbuf, sizeof(errbuf)))
+			errbuf[0] = '\0';
+		EMSG("pthread_mutex_unlock: %s", errbuf);
 		EMSG("terminating...");
 		exit(EXIT_FAILURE);
 	}
@@ -334,7 +340,11 @@ CK_RV ckteec_invoke_terminate(void)
 
 	e = pthread_mutex_lock(&ta_ctx.init_mutex);
 	if (e) {
-		EMSG("pthread_mutex_lock: %s", strerror(e));
+		char errbuf[STRERROR_BUF_SIZE];
+
+		if (strerror_r(e, errbuf, sizeof(errbuf)))
+			errbuf[0] = '\0';
+		EMSG("pthread_mutex_lock: %s", errbuf);
 		EMSG("terminating...");
 		exit(EXIT_FAILURE);
 	}
@@ -351,7 +361,11 @@ CK_RV ckteec_invoke_terminate(void)
 out:
 	e = pthread_mutex_unlock(&ta_ctx.init_mutex);
 	if (e) {
-		EMSG("pthread_mutex_unlock: %s", strerror(e));
+		char errbuf[STRERROR_BUF_SIZE];
+
+		if (strerror_r(e, errbuf, sizeof(errbuf)))
+			errbuf[0] = '\0';
+		EMSG("pthread_mutex_unlock: %s", errbuf);
 		EMSG("terminating...");
 		exit(EXIT_FAILURE);
 	}
