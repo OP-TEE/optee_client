@@ -559,6 +559,9 @@ static CK_RV serialize_mecha_aes_cbc_encrypt_data(struct serializer *obj,
 	if (!param)
 		return CKR_MECHANISM_PARAM_INVALID;
 
+	if (param->length > UINT32_MAX - sizeof(param->iv) - sizeof(uint32_t))
+		return CKR_MECHANISM_PARAM_INVALID;
+
 	rv = serialize_32b(obj, obj->type);
 	if (rv)
 		return rv;
