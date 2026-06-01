@@ -45,7 +45,11 @@ void release_serial_object(struct serializer *obj)
 static CK_RV serialize(char **bstart, size_t *blen, void *data, size_t len)
 {
 	size_t nlen = *blen + len;
-	char *buf = realloc(*bstart, nlen);
+	char *buf = NULL;
+
+	if (nlen < *blen)
+		return CKR_ARGUMENTS_BAD;
+	buf = realloc(*bstart, nlen);
 
 	if (!buf)
 		return CKR_HOST_MEMORY;
