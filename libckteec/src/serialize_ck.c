@@ -173,6 +173,8 @@ static CK_RV serialize_ck_attribute(struct serializer *obj, CK_ATTRIBUTE *attr)
 		return serialize_indirect_attribute(obj, attr);
 	case CKA_ALLOWED_MECHANISMS:
 		n = attr->ulValueLen / sizeof(CK_ULONG);
+		if (n > UINT32_MAX / sizeof(uint32_t))
+			return CKR_ARGUMENTS_BAD;
 		pkcs11_size = n * sizeof(uint32_t);
 		mech_buf = malloc(pkcs11_size);
 		if (!mech_buf)
