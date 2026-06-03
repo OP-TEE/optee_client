@@ -532,6 +532,77 @@ static CK_RV serialize_mecha_ecdh1_derive_param(struct serializer *obj,
 				params->ulPublicDataLen);
 }
 
+/*
+ * HKDF parameter wire format (matches what the TA parses):
+ *   u32 bExtract
+ *   u32 bExpand
+ *   u32 prfHashMechanism
+ *   u32 ulSaltType
+ *   u32 ulSaltLen
+ *   bytes salt[ulSaltLen]
+ *   u32 hSaltKey
+ *   u32 ulInfoLen
+ *   bytes info[ulInfoLen]
+ */
+static CK_RV serialize_mecha_hkdf_derive_param(struct serializer *obj,
+					       CK_MECHANISM_PTR mecha)
+{
+	CK_HKDF_PARAMS_PTR params = mecha->pParameter;
+	CK_RV rv = CKR_GENERAL_ERROR;
+	size_t params_size = 0;
+
+	if (params->ulSaltLen > UINT32_MAX ||
+	    params->ulInfoLen > UINT32_MAX ||
+	    params->ulSaltLen >
+		    UINT32_MAX - params->ulInfoLen - 7 * sizeof(uint32_t))
+		return CKR_ARGUMENTS_BAD;
+
+	params_size = 7 * sizeof(uint32_t) + params->ulSaltLen +
+		      params->ulInfoLen;
+
+	rv = serialize_32b(obj, obj->type);
+	if (rv)
+		return rv;
+
+	rv = serialize_32b(obj, params_size);
+	if (rv)
+		return rv;
+
+	rv = serialize_32b(obj, params->bExtract);
+	if (rv)
+		return rv;
+
+	rv = serialize_32b(obj, params->bExpand);
+	if (rv)
+		return rv;
+
+	rv = serialize_32b(obj, params->prfHashMechanism);
+	if (rv)
+		return rv;
+
+	rv = serialize_32b(obj, params->ulSaltType);
+	if (rv)
+		return rv;
+
+	rv = serialize_32b(obj, params->ulSaltLen);
+	if (rv)
+		return rv;
+
+	rv = serialize_buffer(obj, params->pSalt, params->ulSaltLen);
+	if (rv)
+		return rv;
+
+	rv = serialize_32b(obj, params->hSaltKey);
+	if (rv)
+		return rv;
+
+	rv = serialize_32b(obj, params->ulInfoLen);
+	if (rv)
+		return rv;
+
+	return serialize_buffer(obj, params->pInfo, params->ulInfoLen);
+}
+
 static CK_RV serialize_mecha_aes_cbc_encrypt_data(struct serializer *obj,
 						  CK_MECHANISM_PTR mecha)
 {
@@ -827,6 +898,9 @@ CK_RV serialize_ck_mecha_params(struct serializer *obj,
 	case CKM_ECDH1_DERIVE:
 	case CKM_ECDH1_COFACTOR_DERIVE:
 		return serialize_mecha_ecdh1_derive_param(obj, &mecha);
+
+	case CKM_HKDF_DERIVE:
+		return serialize_mecha_hkdf_derive_param(obj, &mecha);
 
 	case CKM_RSA_PKCS_PSS:
 	case CKM_SHA1_RSA_PKCS_PSS:
