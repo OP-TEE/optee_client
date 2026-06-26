@@ -375,6 +375,7 @@ typedef CK_MECHANISM_TYPE *CK_MECHANISM_TYPE_PTR;
 #define CKM_AES_CBC_ENCRYPT_DATA	0x01105
 #define CKM_AES_KEY_WRAP		0x02109
 #define CKM_AES_KEY_WRAP_PAD		0x0210a
+#define CKM_HKDF_DERIVE			0x0402a
 
 typedef struct CK_MECHANISM_INFO CK_MECHANISM_INFO;
 typedef struct CK_MECHANISM_INFO *CK_MECHANISM_INFO_PTR;
@@ -524,6 +525,26 @@ typedef struct CK_KEY_DERIVATION_STRING_DATA
 struct CK_KEY_DERIVATION_STRING_DATA {
 	CK_BYTE_PTR pData;
 	CK_ULONG    ulLen;
+};
+
+/* HKDF (PKCS#11 v3.0) salt source selectors */
+#define CKF_HKDF_SALT_NULL	0x00000001UL
+#define CKF_HKDF_SALT_DATA	0x00000002UL
+#define CKF_HKDF_SALT_KEY	0x00000004UL
+
+typedef struct CK_HKDF_PARAMS CK_HKDF_PARAMS;
+typedef struct CK_HKDF_PARAMS *CK_HKDF_PARAMS_PTR;
+
+struct CK_HKDF_PARAMS {
+	CK_BBOOL		bExtract;
+	CK_BBOOL		bExpand;
+	CK_MECHANISM_TYPE	prfHashMechanism;
+	CK_ULONG		ulSaltType;
+	CK_BYTE_PTR		pSalt;
+	CK_ULONG		ulSaltLen;
+	CK_OBJECT_HANDLE	hSaltKey;
+	CK_BYTE_PTR		pInfo;
+	CK_ULONG		ulInfoLen;
 };
 
 /* Parameters for CKM_RSA_PKCS_PSS */

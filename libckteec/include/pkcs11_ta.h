@@ -1301,12 +1301,23 @@ enum pkcs11_mechanism_id {
 	PKCS11_CKM_AES_CBC_ENCRYPT_DATA		= 0x01105,
 	PKCS11_CKM_AES_KEY_WRAP			= 0x02109,
 	PKCS11_CKM_AES_KEY_WRAP_PAD		= 0x0210a,
+	PKCS11_CKM_HKDF_DERIVE			= 0x0402a,
 	/*
 	 * Vendor extensions below.
 	 * PKCS11 added IDs for operation not related to a CK mechanism ID
 	 */
 	PKCS11_PROCESSING_IMPORT		= 0x80000000,
 	PKCS11_CKM_UNDEFINED_ID			= PKCS11_UNDEFINED_ID,
+};
+
+/*
+ * Valid values for HKDF source selectors
+ * PKCS11_CKF_HKDF_SALT_<x> reflects CryptoKi client API IDs CKF_HKDF_SALT_<x>.
+ */
+enum pkcs11_hkdf_salt_type {
+	PKCS11_CKF_HKDF_SALT_NULL		= 0x00000001,
+	PKCS11_CKF_HKDF_SALT_DATA		= 0x00000002,
+	PKCS11_CKF_HKDF_SALT_KEY		= 0x00000004,
 };
 
 /*
