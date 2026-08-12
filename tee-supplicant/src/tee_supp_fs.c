@@ -25,6 +25,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#define _FILE_OFFSET_BITS 64
 #define _GNU_SOURCE
 
 #include <assert.h>
@@ -392,7 +393,7 @@ static TEEC_Result ree_fs_new_write(size_t num_params,
 static TEEC_Result ree_fs_new_truncate(size_t num_params,
 				       struct tee_ioctl_param *params)
 {
-	size_t len = 0;
+	off_t len = 0;
 	int fd = 0;
 
 	if (num_params != 1 ||
