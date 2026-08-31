@@ -143,6 +143,7 @@ TEEC_Result plugin_load_all(void)
 		if (r < 0 || r >= (int)sizeof(path)) {
 			EMSG("assemble of full path for plugin <%s> failed",
 			     entry->d_name);
+			free(p);
 			closedir(dir);
 			return TEEC_ERROR_GENERIC ;
 		}
