@@ -651,7 +651,8 @@ CK_RV ck_init_pin(CK_SESSION_HANDLE session,
 	memcpy(buf, &pkcs11_pin_len, sizeof(pkcs11_pin_len));
 	buf += sizeof(pkcs11_pin_len);
 
-	memcpy(buf, pin, pkcs11_pin_len);
+	if (pin)
+		memcpy(buf, pin, pkcs11_pin_len);
 
 	rv = ckteec_invoke_ctrl(PKCS11_CMD_INIT_PIN, ctrl);
 
@@ -701,10 +702,12 @@ CK_RV ck_set_pin(CK_SESSION_HANDLE session,
 	memcpy(buf, &pkcs11_new_len, sizeof(pkcs11_new_len));
 	buf += sizeof(pkcs11_new_len);
 
-	memcpy(buf, old, pkcs11_old_len);
+	if (old)
+		memcpy(buf, old, pkcs11_old_len);
 	buf += pkcs11_old_len;
 
-	memcpy(buf, new, pkcs11_new_len);
+	if (new)
+		memcpy(buf, new, pkcs11_new_len);
 
 	rv = ckteec_invoke_ctrl(PKCS11_CMD_SET_PIN, ctrl);
 
@@ -750,7 +753,8 @@ CK_RV ck_login(CK_SESSION_HANDLE session, CK_USER_TYPE user_type,
 	memcpy(buf, &pkcs11_pin_len, sizeof(pkcs11_pin_len));
 	buf += sizeof(pkcs11_pin_len);
 
-	memcpy(buf, pin, pkcs11_pin_len);
+	if (pin)
+		memcpy(buf, pin, pkcs11_pin_len);
 
 	rv = ckteec_invoke_ctrl(PKCS11_CMD_LOGIN, ctrl);
 
