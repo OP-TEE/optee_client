@@ -913,7 +913,7 @@ int main(int argc, char *argv[])
 	if (dev) {
 		arg.fd = open_dev(dev, &arg.gen_caps);
 		if (arg.fd < 0) {
-			EMSG("failed to open \"%s\"", argv[1]);
+			EMSG("failed to open \"%s\"", dev);
 			exit(EXIT_FAILURE);
 		}
 	} else {
