@@ -95,6 +95,12 @@ struct thread_arg {
 	pthread_mutex_t mutex;
 };
 
+enum rpc_status {
+	RPC_OK,		/* response delivered to the kernel */
+	RPC_REVOKED,	/* request revoked (client gone), drop and continue */
+	RPC_ERROR,	/* supplicant channel failure, fatal */
+};
+
 struct param_value {
 	uint64_t a;
 	uint64_t b;
@@ -409,16 +415,9 @@ static uint32_t process_alloc(struct thread_arg *arg, size_t num_params,
 	return TEEC_SUCCESS;
 }
 
-static uint32_t process_free(size_t num_params, struct tee_ioctl_param *params)
+static uint32_t release_shm(int id)
 {
-	struct param_value *val = NULL;
 	struct tee_shm *shm = NULL;
-	int id = 0;
-
-	if (num_params != 1 || get_value(num_params, params, 0, &val))
-		return TEEC_ERROR_BAD_PARAMETERS;
-
-	id = val->b;
 
 	shm = pop_tshm(id);
 	if (!shm)
@@ -438,6 +437,16 @@ static uint32_t process_free(size_t num_params, struct tee_ioctl_param *params)
 
 	free(shm);
 	return TEEC_SUCCESS;
+}
+
+static uint32_t process_free(size_t num_params, struct tee_ioctl_param *params)
+{
+	struct param_value *val = NULL;
+
+	if (num_params != 1 || get_value(num_params, params, 0, &val))
+		return TEEC_ERROR_BAD_PARAMETERS;
+
+	return release_shm((int)val->b);
 }
 
 
@@ -537,7 +546,7 @@ static bool read_request(int fd, union tee_rpc_invoke *request)
 	return true;
 }
 
-static bool write_response(int fd, union tee_rpc_invoke *request)
+static enum rpc_status write_response(int fd, union tee_rpc_invoke *request)
 {
 	struct tee_ioctl_buf_data data;
 
@@ -548,10 +557,20 @@ static bool write_response(int fd, union tee_rpc_invoke *request)
 		       sizeof(struct tee_ioctl_param) *
 				(__u64)request->send.num_params;
 	if (ioctl(fd, TEE_IOC_SUPPL_SEND, &data)) {
+		/*
+		 * EBADF means the request was revoked because the client that
+		 * made it has exited. The kernel has already released the
+		 * request ID, so the result is dropped and we keep serving.
+		 */
+		if (errno == EBADF) {
+			DMSG("TEE_IOC_SUPPL_SEND: revoked request: %s",
+			     strerror(errno));
+			return RPC_REVOKED;
+		}
 		EMSG("TEE_IOC_SUPPL_SEND: %s", strerror(errno));
-		return false;
+		return RPC_ERROR;
 	}
-	return true;
+	return RPC_OK;
 }
 
 static bool find_params(union tee_rpc_invoke *request, uint32_t *func,
@@ -678,7 +697,28 @@ static bool process_one_request(struct thread_arg *arg)
 	}
 
 	request.send.ret = ret;
-	return write_response(arg->fd, &request);
+
+	switch (write_response(arg->fd, &request)) {
+	case RPC_OK:
+		return true;
+	case RPC_REVOKED:
+		/*
+		 * The response never reached the kernel, so if this request
+		 * allocated a shared memory nobody will ever ask us to free it
+		 * again - cmd_alloc_suppl() only calls tee_shm_get_from_id()
+		 * after optee_supp_thrd_req() has succeeded.
+		 */
+		if (func == OPTEE_MSG_RPC_CMD_SHM_ALLOC &&
+		    ret == TEEC_SUCCESS) {
+			struct param_value *val = NULL;
+
+			if (!get_value(num_params, params, 0, &val))
+				release_shm((int)val->c);
+		}
+		return true;
+	default:
+		return false;
+	}
 }
 
 static void *thread_main(void *a)
