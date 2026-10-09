@@ -1137,10 +1137,10 @@ enum pkcs11_attr_id {
 	 * CKF_ARRAY_ATTRIBUTE = 0x40000000.
 	 */
 	PKCS11_CKA_ALLOWED_MECHANISMS		= 0x40000600,
+	/* Vendor Defined Indestructible Attribute */
+	PKCS11_CKA_OPTEE_INDESTRUCTIBLE		= 0x80000001,
 	/* Vendor extension: reserved for undefined ID (~0U) */
 	PKCS11_CKA_UNDEFINED_ID			= PKCS11_UNDEFINED_ID,
-	/* Vendor Defined Indestructible Attribute */
-	PKCS11_CKA_OPTEE_INDESTRUCTIBLE               = 0x80000001,
 };
 
 /*
