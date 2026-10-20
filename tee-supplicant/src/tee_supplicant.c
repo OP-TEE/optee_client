@@ -548,6 +548,23 @@ static bool write_response(int fd, union tee_rpc_invoke *request)
 		       sizeof(struct tee_ioctl_param) *
 				(__u64)request->send.num_params;
 	if (ioctl(fd, TEE_IOC_SUPPL_SEND, &data)) {
+		/* EBADF here means the request was cancelled while we were
+		 * processing it, not that something is wrong with us: the
+		 * process calling into OP-TEE got a fatal signal.
+		 *
+		 * Exiting here leaves the supplicant dead: every later RPMB
+         * access waits for it forever, and as single-instance TAs
+		 * share one lock in OP-TEE, all other TA calls hang behind it.
+		 * So drop the response and go on.
+		 *
+		 * If our own file descriptor were broken, the next
+		 * TEE_IOC_SUPPL_RECV fails as well and we exit there.
+		 */
+		if (errno == EBADF) {
+			EMSG("TEE_IOC_SUPPL_SEND: request cancelled by client, response dropped");
+			return true;
+		}
+
 		EMSG("TEE_IOC_SUPPL_SEND: %s", strerror(errno));
 		return false;
 	}
