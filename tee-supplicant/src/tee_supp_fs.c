@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014, STMicroelectronics International N.V.
+ * Copyright 2026 NXP
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -75,6 +76,24 @@ static TEEC_Result errno_to_teec(int err)
 	return TEEC_ERROR_GENERIC;
 }
 
+/*
+ * Return true if @path contains a ".." path component. Such a component
+ * would let the resolved path escape the secure storage directory.
+ */
+static bool path_has_dotdot(const char *path)
+{
+	const char *p = strstr(path, "..");
+
+	while (p) {
+		if ((p == path || p[-1] == '/') &&
+		    (p[2] == '\0' || p[2] == '/'))
+			return true;
+		p = strstr(p + 1, "..");
+	}
+
+	return false;
+}
+
 static size_t tee_fs_get_relative_filename(char *file, char *out,
 					   size_t out_size)
 {
@@ -82,6 +101,12 @@ static size_t tee_fs_get_relative_filename(char *file, char *out,
 
 	if (!file || !out || (out_size <= strlen(file) + 3))
 		return 0;
+
+	/* Keep every access below the secure storage directory */
+	if (path_has_dotdot(file)) {
+		EMSG("Rejecting filename with \"..\" component");
+		return 0;
+	}
 
 	s = snprintf(out, out_size, "./%s", file);
 	if (s < 0 || (size_t)s >= out_size)
@@ -157,7 +182,9 @@ static int openat_wrapper(const char *fname, int flags)
 	int fd = 0;
 
 	while (true) {
-		fd = openat(tee_fs_fd, fname, flags | O_SYNC, 0600);
+		/* Do not follow a symlink planted as the final component */
+		fd = openat(tee_fs_fd, fname, flags | O_SYNC | O_NOFOLLOW,
+			    0600);
 		if (fd >= 0 || errno != EINTR)
 			return fd;
 	}
